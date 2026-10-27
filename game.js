@@ -1,2579 +1,2566 @@
 /**
- * ГЕКСА-ГОНКА 3D (Hex-A-Fall Showdown v2.0)
- * Обновление по фидбеку:
- * 1. Близкая следящая камера с зумом и свободным вращением (мышь drag / Q, E / кнопки / колёсико), размеренный темп игры.
- * 2. Плавное разрушение сот: один раз меняют цвет -> плавно падают вниз и растворяются через прозрачность без резкого мерцания.
- * 3. Полноценные персонажи-фасолинки (Fall Guys Beans) с ручками, ножками, визором, узорами костюмов, шляпами и гардеробом.
- * 4. Строго пропорциональное восстановление (FIFO очередь): первая разрушенная сота восстанавливается первой с тем же интервалом.
- * 5. Плавный старт с отсчётом 3..2..1..СТАРТ! и торжественная финальная плашка Победителя перед таблицей итогов.
- * 6. Генератор смешных рандомных никнеймов над головами всех ботов.
- * 7. Полноценные процедурные анимации фасолинок: дыхание (idle), бег с махами ручек/ножек, прыжок, нырок «рыбкой», приземление (squash & stretch) и победный танец.
+ * HEX-A-GONE 3D SHOW (v3.0 — True 3D WebGL / Three.js + CC0 GLB Models)
+ *
+ * Реализация по итогам /grill-me:
+ * 1. Честное 3D на Three.js (PerspectiveCamera + аппаратный Z-buffer + мягкие тени) — никто никогда не просвечивает сквозь гексы.
+ * 2. Непрерывная проверка коллизий с цилиндром гекса (+15% coyote ledge) — фасолинки стоят строго на верхней грани 3D-плиток и не проваливаются сквозь текстуры.
+ * 3. Полноценная 3D-локация телешоу Fall Guys (Hex-A-GoneIntroLegacy.gif):
+ *    - Стартовый пролёт 3D-камеры вдоль башни ярусов перед отсчётом 3..2..1..СТАРТ!
+ *    - Огромное волнующееся море розовой слизи (Slime Sea) внизу, неоновые колонны по периметру, прожекторы, флаги и облака из CC0 .glb ассетов Kenney.
+ * 4. Объёмные 3D-фасолинки с лицевым визором, глазками, 3D-шляпами/коронами, шарнирными ручками и ботиночками + скелетно-процедурные 3D-анимации.
+ * 5. Соты при наступании один раз меняют цвет, проседают, затем плавно падают вниз и исчезают через прозрачность (без мерцания).
+ * 6. Ускоренное на ~35% пропорциональное восстановление (FIFO очередь: 4.5с / 5.5с / 6.5с): первая упавшая сота первой всплывает снизу.
  */
 
-(() => {
-  'use strict';
+import * as THREE from 'three';
+import { GLTFLoader } from './vendor/GLTFLoader.js';
 
-  // ==================== 1. КОНФИГУРАЦИЯ СЛОЖНОСТИ (РАЗМЕРЕННЫЙ ТЕМП) ====================
-  const DIFFICULTIES = {
-    easy: {
-      id: 'easy',
-      name: 'Чилл-Разминка',
-      botsCount: 7,
-      layersCount: 2,
-      gridRadius: 5,
-      stepHoldTime: 1.40,   // сота меняет цвет и держит 1.4 сек перед падением
-      fallDuration: 0.95,   // плавное падение и растворение через прозрачность
-      regenDelay: 7.0,      // базовое время до старта восстановления первой соты в очереди
-      botIQ: 0.48,
-      powerupInterval: 5.0,
-      specialTileChance: 0.08,
-      scoreMult: 1.0
-    },
-    normal: {
-      id: 'normal',
-      name: 'Классика шоу',
-      botsCount: 9,
-      layersCount: 3,
-      gridRadius: 5,
-      stepHoldTime: 1.05,   // 1.05 сек — комфортно видеть смену цвета и планировать прыжки
-      fallDuration: 0.90,
-      regenDelay: 8.5,
-      botIQ: 0.72,
-      powerupInterval: 4.5,
-      specialTileChance: 0.12,
-      scoreMult: 1.5
-    },
-    hard: {
-      id: 'hard',
-      name: 'Кибер-Финал',
-      botsCount: 11,
-      layersCount: 3,
-      gridRadius: 6,
-      stepHoldTime: 0.75,
-      fallDuration: 0.85,
-      regenDelay: 10.0,
-      botIQ: 0.90,
-      powerupInterval: 4.5,
-      specialTileChance: 0.16,
-      scoreMult: 2.2
-    },
-    chaos: {
-      id: 'chaos',
-      name: 'Мега-Хаос',
-      botsCount: 14,
-      layersCount: 4,
-      gridRadius: 6,
-      stepHoldTime: 0.85,
-      fallDuration: 0.85,
-      regenDelay: 7.5,
-      botIQ: 0.80,
-      powerupInterval: 2.8,
-      specialTileChance: 0.28,
-      scoreMult: 2.5
-    }
-  };
-
-  // Цветовые темы ярусов:
-  // top/side — исходный цвет соты; steppedTop/steppedSide — единый цвет после наступания (без мигания!)
-  const LAYER_THEMES = [
-    {
-      name: 'Лазурный Верх',
-      top: '#00d8ff',
-      side: '#0086a8',
-      steppedTop: '#ff9800',  // тёплый янтарно-оранжевый при наступании
-      steppedSide: '#b25900'
-    },
-    {
-      name: 'Солнечный Экватор',
-      top: '#ffd600',
-      side: '#b28900',
-      steppedTop: '#ff4081',  // кораллово-розовый при наступании
-      steppedSide: '#a00037'
-    },
-    {
-      name: 'Неоновый Аметист',
-      top: '#b388ff',
-      side: '#651fff',
-      steppedTop: '#ff6d00',  // мандариновый при наступании
-      steppedSide: '#a63f00'
-    },
-    {
-      name: 'Изумрудное Дно',
-      top: '#00e676',
-      side: '#008c44',
-      steppedTop: '#ff5252',  // мягкий рубиновый при наступании
-      steppedSide: '#9b0000'
-    }
-  ];
-
-  // Полноценные костюмы фасолинок (с узорами и аксессуарами для будущих скинов)
-  const SKINS = [
-    { id: 0, title: 'Королевский Розовый', c1: '#ff3864', c2: '#ffe600', visor: '#ffffff', pattern: 'pants',   hat: 'crown' },
-    { id: 1, title: 'Кибер-Гонщик',        c1: '#00e5ff', c2: '#1e40af', visor: '#e0f7fa', pattern: 'stripes', hat: 'visor_horn' },
-    { id: 2, title: 'Дино-Завр',           c1: '#76ff03', c2: '#1b5e20', visor: '#fffde7', pattern: 'spots',   hat: 'dino' },
-    { id: 3, title: 'Тигровый Прыгун',     c1: '#ff9100', c2: '#3e2723', visor: '#ffffff', pattern: 'stripes', hat: 'ears' },
-    { id: 4, title: 'Космо-Пришелец',      c1: '#d500f9', c2: '#00e676', visor: '#ccff90', pattern: 'belly',   hat: 'antenna' },
-    { id: 5, title: 'Золотой Рыцарь',      c1: '#ffd700', c2: '#b71c1c', visor: '#fff8e1', pattern: 'pants',   hat: 'plume' },
-    { id: 6, title: 'Повар Пельмешек',     c1: '#ff5252', c2: '#ffffff', visor: '#ffffff', pattern: 'belly',   hat: 'chef' },
-    { id: 7, title: 'Акула-Тусовщик',      c1: '#26c6da', c2: '#f8bbd0', visor: '#ffffff', pattern: 'belly',   hat: 'fin' }
-  ];
-
-  // Типы бонусов (Power-ups)
-  const POWERUP_TYPES = [
-    { id: 'speed',   name: 'Турбо-кеды',      icon: '⚡', color: '#00e5ff', duration: 7.0, instant: false },
-    { id: 'feather', name: 'Грави-перья',     icon: '🪽', color: '#b388ff', duration: 8.0, instant: false },
-    { id: 'ghost',   name: 'Призрачный шаг',  icon: '👻', color: '#69f0ae', duration: 5.0, instant: false },
-    { id: 'shield',  name: 'Батут-спасение',  icon: '🛡️', color: '#ffd740', duration: 15.0, instant: false },
-    { id: 'shock',   name: 'Ударная волна',   icon: '💥', color: '#ff5252', duration: 0,   instant: true },
-    { id: 'builder', name: 'Гекса-Строитель', icon: '🛠️', color: '#00e676', duration: 0,   instant: true }
-  ];
-
-  // ==================== 6. ГЕНЕРАТОР СМЕШНЫХ РАНДОМНЫХ НИКОВ ====================
-  const FUNNY_ADJ = [
-    'Пухлый', 'Дерзкий', 'Сонный', 'Турбо', 'Хитрый', 'Сладкий', 'Бешеный', 'Космический',
-    'Упругий', 'Хрустящий', 'Неоновый', 'Коварный', 'Весёлый', 'Модный', 'Скользкий', 'Боевой'
-  ];
-  const FUNNY_NOUN = [
-    'Пельмешек', 'Чебурек', 'Пингвин', 'Батончик', 'Бобёр', 'Гусь', 'Кабачок', 'Бублик',
-    'Котлетка', 'Вареник', 'Суетолог', 'Тапочек', 'Пончик', 'Карасик', 'Енотик', 'Мармелад'
-  ];
-  const FUNNY_SOLO = [
-    'КусьЗаБок', 'МаминСимпатяга', 'ТанцорДиско', 'НеТолкайсяЭй', 'ПрыгПодскок',
-    'ГдеПолПацаны', 'КорольСлизи', 'СырнаяСосиска', 'УпалНаРовном', 'БоссХолодильника',
-    'КотВТапках', 'ЛапкиТрясутся', 'ЛечуЗаКороной', 'ПельменьБезМасла'
-  ];
-
-  function generateFunnyBotNames(count) {
-    const used = new Set();
-    const result = [];
-    while (result.length < count) {
-      let name = '';
-      if (Math.random() < 0.42) {
-        name = FUNNY_SOLO[Math.floor(Math.random() * FUNNY_SOLO.length)];
-      } else {
-        const a = FUNNY_ADJ[Math.floor(Math.random() * FUNNY_ADJ.length)];
-        const n = FUNNY_NOUN[Math.floor(Math.random() * FUNNY_NOUN.length)];
-        name = `${a}_${n}`;
-      }
-      if (Math.random() < 0.35 && name.length <= 14) {
-        name += '_' + (10 + Math.floor(Math.random() * 89));
-      }
-      if (!used.has(name)) {
-        used.add(name);
-        result.push(name);
-      }
-    }
-    return result;
+// ==================== 1. КОНФИГУРАЦИЯ СЛОЖНОСТИ И УСКОРЕННЫЙ РЕГЕН ====================
+const DIFFICULTIES = {
+  easy: {
+    id: 'easy',
+    name: 'Чилл-Разминка',
+    botsCount: 7,
+    layersCount: 2,
+    gridRadius: 5,
+    stepHoldTime: 1.35,   // сота меняет цвет и держит 1.35с
+    fallDuration: 0.85,   // плавное падение и растворение
+    regenDelay: 4.5,      // ускоренный пропорциональный реген (4.5 сек!)
+    botIQ: 0.50,
+    powerupInterval: 5.0,
+    specialTileChance: 0.08,
+    scoreMult: 1.0
+  },
+  normal: {
+    id: 'normal',
+    name: 'Классика шоу',
+    botsCount: 9,
+    layersCount: 3,
+    gridRadius: 5,
+    stepHoldTime: 1.00,
+    fallDuration: 0.80,
+    regenDelay: 5.5,      // 5.5 сек на Классике
+    botIQ: 0.72,
+    powerupInterval: 4.5,
+    specialTileChance: 0.12,
+    scoreMult: 1.5
+  },
+  hard: {
+    id: 'hard',
+    name: 'Кибер-Финал',
+    botsCount: 11,
+    layersCount: 4,
+    gridRadius: 5,
+    stepHoldTime: 0.72,
+    fallDuration: 0.75,
+    regenDelay: 6.5,      // 6.5 сек на Хардкоре
+    botIQ: 0.90,
+    powerupInterval: 4.5,
+    specialTileChance: 0.16,
+    scoreMult: 2.2
+  },
+  chaos: {
+    id: 'chaos',
+    name: 'Мега-Хаос',
+    botsCount: 14,
+    layersCount: 4,
+    gridRadius: 6,
+    stepHoldTime: 0.82,
+    fallDuration: 0.78,
+    regenDelay: 4.8,      // быстрый реген в Мега-Хаосе
+    botIQ: 0.82,
+    powerupInterval: 2.8,
+    specialTileChance: 0.26,
+    scoreMult: 2.5
   }
+};
 
-  // ==================== ПРОЦЕДУРНЫЙ ЗВУКОВОЙ ДВИЖОК ====================
-  class SoundFX {
-    constructor() {
-      this.ctx = null;
-      this.muted = false;
-    }
+// Цвета ярусов как в оригинальном Hex-A-Gone (Синий -> Жёлтый -> Фиолетовый -> Розовый/Зелёный)
+const LAYER_THEMES = [
+  { name: 'Голубой Верх',       top: 0x00d8ff, rim: 0x0077a8, steppedTop: 0xff9100, steppedRim: 0xb25000 },
+  { name: 'Солнечный Ярус',     top: 0xffd600, rim: 0xc68400, steppedTop: 0xff3d71, steppedRim: 0xa00037 },
+  { name: 'Фиолетовый Шторм',   top: 0xb388ff, rim: 0x6200ea, steppedTop: 0xff6d00, steppedRim: 0x9b3000 },
+  { name: 'Изумрудное Дно',     top: 0x00e676, rim: 0x008c44, steppedTop: 0xff2a85, steppedRim: 0x880e4f }
+];
 
-    init() {
-      if (!this.ctx) {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (AudioCtx) this.ctx = new AudioCtx();
-      }
-      if (this.ctx && this.ctx.state === 'suspended') {
-        this.ctx.resume();
-      }
-    }
+// Костюмы 3D-фасолинок
+const SKINS = [
+  { id: 0, title: 'Королевский Розовый', icon: '👑', c1: 0xff3864, c2: 0xffe600, hat: 'crown' },
+  { id: 1, title: 'Кибер-Гонщик',        icon: '⚡', c1: 0x00e5ff, c2: 0x1e40af, hat: 'horns' },
+  { id: 2, title: 'Дино-Завр',           icon: '🦖', c1: 0x76ff03, c2: 0x1b5e20, hat: 'dino' },
+  { id: 3, title: 'Тигровый Прыгун',     icon: '🐯', c1: 0xff9100, c2: 0x3e2723, hat: 'ears' },
+  { id: 4, title: 'Космо-Пришелец',      icon: '👽', c1: 0xd500f9, c2: 0x00e676, hat: 'antenna' },
+  { id: 5, title: 'Золотой Рыцарь',      icon: '🏆', c1: 0xffd700, c2: 0xb71c1c, hat: 'crown' },
+  { id: 6, title: 'Повар Пельмешек',     icon: '🍓', c1: 0xff5252, c2: 0xffffff, hat: 'chef' },
+  { id: 7, title: 'Акула-Тусовщик',      icon: '🦈', c1: 0x26c6da, c2: 0xf8bbd0, hat: 'fin' }
+];
 
-    play(type) {
-      if (this.muted) return;
-      this.init();
-      if (!this.ctx) return;
+// Типы бонусов
+const POWERUP_TYPES = [
+  { id: 'speed',   name: 'Турбо-кеды',      icon: '⚡', color: '#00e5ff', hex: 0x00e5ff, duration: 7.0, instant: false },
+  { id: 'feather', name: 'Грави-перья',     icon: '🪽', color: '#b388ff', hex: 0xb388ff, duration: 8.0, instant: false },
+  { id: 'ghost',   name: 'Призрачный шаг',  icon: '👻', color: '#69f0ae', hex: 0x69f0ae, duration: 5.0, instant: false },
+  { id: 'shield',  name: 'Батут-спасение',  icon: '🛡️', color: '#ffd740', hex: 0xffd740, duration: 15.0, instant: false },
+  { id: 'shock',   name: 'Ударная волна',   icon: '💥', color: '#ff5252', hex: 0xff5252, duration: 0,   instant: true },
+  { id: 'builder', name: 'Гекса-Строитель', icon: '🛠️', color: '#00e676', hex: 0x00e676, duration: 0,   instant: true }
+];
 
-      const now = this.ctx.currentTime;
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
+// Генератор смешных ников
+const FUNNY_ADJ = [
+  'Пухлый', 'Дерзкий', 'Сонный', 'Турбо', 'Хитрый', 'Сладкий', 'Бешеный', 'Космический',
+  'Упругий', 'Хрустящий', 'Неоновый', 'Коварный', 'Весёлый', 'Модный', 'Скользкий', 'Боевой'
+];
+const FUNNY_NOUN = [
+  'Пельмешек', 'Чебурек', 'Пингвин', 'Батончик', 'Бобёр', 'Гусь', 'Кабачок', 'Бублик',
+  'Котлетка', 'Вареник', 'Суетолог', 'Тапочек', 'Пончик', 'Карасик', 'Енотик', 'Мармелад'
+];
+const FUNNY_SOLO = [
+  'КусьЗаБок', 'МаминСимпатяга', 'ТанцорДиско', 'НеТолкайсяЭй', 'ПрыгПодскок',
+  'ГдеПолПацаны', 'КорольСлизи', 'СырнаяСосиска', 'УпалНаРовном', 'БоссХолодильника',
+  'КотВТапках', 'ЛапкиТрясутся', 'ЛечуЗаКороной', 'ПельменьБезМасла'
+];
 
-      if (type === 'step') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(310 + Math.random() * 50, now);
-        osc.frequency.exponentialRampToValueAtTime(170, now + 0.08);
-        gain.gain.setValueAtTime(0.06, now);
-        gain.gain.linearRampToValueAtTime(0.001, now + 0.08);
-        osc.start(now);
-        osc.stop(now + 0.085);
-      } else if (type === 'break') {
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(165, now);
-        osc.frequency.exponentialRampToValueAtTime(65, now + 0.15);
-        gain.gain.setValueAtTime(0.06, now);
-        gain.gain.linearRampToValueAtTime(0.001, now + 0.15);
-        osc.start(now);
-        osc.stop(now + 0.16);
-      } else if (type === 'regen') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(340, now);
-        osc.frequency.exponentialRampToValueAtTime(560, now + 0.12);
-        gain.gain.setValueAtTime(0.035, now);
-        gain.gain.linearRampToValueAtTime(0.001, now + 0.12);
-        osc.start(now);
-        osc.stop(now + 0.13);
-      } else if (type === 'jump') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(250, now);
-        osc.frequency.exponentialRampToValueAtTime(540, now + 0.18);
-        gain.gain.setValueAtTime(0.12, now);
-        gain.gain.linearRampToValueAtTime(0.001, now + 0.18);
-        osc.start(now);
-        osc.stop(now + 0.19);
-      } else if (type === 'spring') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(210, now);
-        osc.frequency.exponentialRampToValueAtTime(790, now + 0.32);
-        gain.gain.setValueAtTime(0.15, now);
-        gain.gain.linearRampToValueAtTime(0.001, now + 0.32);
-        osc.start(now);
-        osc.stop(now + 0.33);
-      } else if (type === 'dive') {
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(390, now);
-        osc.frequency.exponentialRampToValueAtTime(150, now + 0.22);
-        gain.gain.setValueAtTime(0.11, now);
-        gain.gain.linearRampToValueAtTime(0.001, now + 0.22);
-        osc.start(now);
-        osc.stop(now + 0.23);
-      } else if (type === 'powerup') {
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(440, now);
-        osc.frequency.setValueAtTime(660, now + 0.08);
-        osc.frequency.setValueAtTime(880, now + 0.16);
-        gain.gain.setValueAtTime(0.14, now);
-        gain.gain.linearRampToValueAtTime(0.001, now + 0.28);
-        osc.start(now);
-        osc.stop(now + 0.29);
-      } else if (type === 'shock') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(240, now);
-        osc.frequency.exponentialRampToValueAtTime(55, now + 0.35);
-        gain.gain.setValueAtTime(0.16, now);
-        gain.gain.linearRampToValueAtTime(0.001, now + 0.35);
-        osc.start(now);
-        osc.stop(now + 0.36);
-      } else if (type === 'elim') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(300, now);
-        osc.frequency.exponentialRampToValueAtTime(90, now + 0.35);
-        gain.gain.setValueAtTime(0.11, now);
-        gain.gain.linearRampToValueAtTime(0.001, now + 0.35);
-        osc.start(now);
-        osc.stop(now + 0.36);
-      } else if (type === 'win') {
-        const notes = [523.25, 659.25, 783.99, 1046.5];
-        notes.forEach((n, idx) => {
-          const o = this.ctx.createOscillator();
-          const g = this.ctx.createGain();
-          o.type = 'triangle';
-          o.connect(g);
-          g.connect(this.ctx.destination);
-          o.frequency.setValueAtTime(n, now + idx * 0.11);
-          g.gain.setValueAtTime(0.15, now + idx * 0.11);
-          g.gain.linearRampToValueAtTime(0.001, now + idx * 0.11 + 0.32);
-          o.start(now + idx * 0.11);
-          o.stop(now + idx * 0.11 + 0.34);
-        });
-      } else if (type === 'count') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(480, now);
-        gain.gain.setValueAtTime(0.13, now);
-        gain.gain.linearRampToValueAtTime(0.001, now + 0.16);
-        osc.start(now);
-        osc.stop(now + 0.17);
-      } else if (type === 'go') {
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(740, now);
-        osc.frequency.setValueAtTime(987, now + 0.1);
-        gain.gain.setValueAtTime(0.18, now);
-        gain.gain.linearRampToValueAtTime(0.001, now + 0.35);
-        osc.start(now);
-        osc.stop(now + 0.36);
-      }
-    }
-  }
-
-  const sfx = new SoundFX();
-
-  // ==================== ГЕОМЕТРИЯ ГЕКСАГОНОВ ====================
-  const HEX_RADIUS = 42; // крупнее для более близкого и читаемого вида!
-  const SQRT3 = Math.sqrt(3);
-  const LAYER_GAP = 225;
-
-  function axialToWorld(q, r) {
-    const x = HEX_RADIUS * SQRT3 * (q + r * 0.5);
-    const y = HEX_RADIUS * 1.5 * r;
-    return { x, y };
-  }
-
-  function worldToAxial(x, y) {
-    const q = (SQRT3 / 3 * x - 1 / 3 * y) / HEX_RADIUS;
-    const r = (2 / 3 * y) / HEX_RADIUS;
-    return axialRound(q, r);
-  }
-
-  function axialRound(q, r) {
-    let x = q;
-    let z = r;
-    let y = -x - z;
-    let rx = Math.round(x);
-    let ry = Math.round(y);
-    let rz = Math.round(z);
-
-    const xDiff = Math.abs(rx - x);
-    const yDiff = Math.abs(ry - y);
-    const zDiff = Math.abs(rz - z);
-
-    if (xDiff > yDiff && xDiff > zDiff) {
-      rx = -ry - rz;
-    } else if (yDiff > zDiff) {
-      ry = -rx - rz;
+function generateFunnyBotNames(count) {
+  const used = new Set();
+  const result = [];
+  while (result.length < count) {
+    let name = '';
+    if (Math.random() < 0.42) {
+      name = FUNNY_SOLO[Math.floor(Math.random() * FUNNY_SOLO.length)];
     } else {
-      rz = -rx - ry;
+      const a = FUNNY_ADJ[Math.floor(Math.random() * FUNNY_ADJ.length)];
+      const n = FUNNY_NOUN[Math.floor(Math.random() * FUNNY_NOUN.length)];
+      name = `${a}_${n}`;
     }
-    return { q: rx, r: rz };
+    if (Math.random() < 0.35 && name.length <= 14) {
+      name += '_' + (10 + Math.floor(Math.random() * 89));
+    }
+    if (!used.has(name)) {
+      used.add(name);
+      result.push(name);
+    }
   }
+  return result;
+}
 
-  function hexDistance(q1, r1, q2, r2) {
-    return (Math.abs(q1 - q2) + Math.abs(q1 + r1 - q2 - r2) + Math.abs(r1 - r2)) / 2;
+// ==================== ПРОЦЕДУРНЫЙ ЗВУКОВОЙ ДВИЖОК ====================
+class SoundFX {
+  constructor() {
+    this.ctx = null;
+    this.muted = false;
   }
-
-  // ==================== ХРАНИЛИЩЕ И ЛИДЕРБОРД ====================
-  const STORAGE_KEY = 'hex_fall_guys_save_v2';
-
-  function loadSaveData() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw);
-    } catch (e) {}
-    return {
-      playerName: 'СуперФасолька',
-      skinIndex: 0,
-      difficulty: 'normal',
-      crowns: 0,
-      totalScore: 0,
-      matchesPlayed: 0,
-      bestSurvivalSec: 0,
-      recordsByDiff: {
-        easy: { wins: 0, bestTime: 0, bestScore: 0 },
-        normal: { wins: 0, bestTime: 0, bestScore: 0 },
-        hard: { wins: 0, bestTime: 0, bestScore: 0 },
-        chaos: { wins: 0, bestTime: 0, bestScore: 0 }
-      },
-      rivalStandings: [
-        { name: 'Пухлый_Пельмешек', crowns: 14, bestTime: 96.4, score: 18400 },
-        { name: 'Дерзкий_Чебурек', crowns: 10, bestTime: 84.2, score: 14200 },
-        { name: 'КусьЗаБок', crowns: 7, bestTime: 76.0, score: 10900 },
-        { name: 'Турбо_Гусь_88', crowns: 5, bestTime: 69.5, score: 8300 },
-        { name: 'КорольСлизи', crowns: 3, bestTime: 62.1, score: 5600 },
-        { name: 'Сладкий_Пончик', crowns: 2, bestTime: 54.8, score: 3900 },
-        { name: 'Упругий_Кабачок', crowns: 1, bestTime: 46.0, score: 2100 }
-      ]
-    };
+  init() {
+    if (!this.ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) this.ctx = new AudioCtx();
+    }
+    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
   }
+  play(type) {
+    if (this.muted) return;
+    this.init();
+    if (!this.ctx) return;
 
-  function saveGameData() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(saveData));
-    } catch (e) {}
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    if (type === 'step') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(320 + Math.random() * 50, now);
+      osc.frequency.exponentialRampToValueAtTime(175, now + 0.08);
+      gain.gain.setValueAtTime(0.055, now);
+      gain.gain.linearRampToValueAtTime(0.001, now + 0.08);
+      osc.start(now);
+      osc.stop(now + 0.085);
+    } else if (type === 'break') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(160, now);
+      osc.frequency.exponentialRampToValueAtTime(65, now + 0.14);
+      gain.gain.setValueAtTime(0.055, now);
+      gain.gain.linearRampToValueAtTime(0.001, now + 0.14);
+      osc.start(now);
+      osc.stop(now + 0.15);
+    } else if (type === 'regen') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(350, now);
+      osc.frequency.exponentialRampToValueAtTime(590, now + 0.12);
+      gain.gain.setValueAtTime(0.035, now);
+      gain.gain.linearRampToValueAtTime(0.001, now + 0.12);
+      osc.start(now);
+      osc.stop(now + 0.13);
+    } else if (type === 'jump') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(250, now);
+      osc.frequency.exponentialRampToValueAtTime(550, now + 0.18);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.linearRampToValueAtTime(0.001, now + 0.18);
+      osc.start(now);
+      osc.stop(now + 0.19);
+    } else if (type === 'spring') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.exponentialRampToValueAtTime(820, now + 0.32);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.linearRampToValueAtTime(0.001, now + 0.32);
+      osc.start(now);
+      osc.stop(now + 0.33);
+    } else if (type === 'dive') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(390, now);
+      osc.frequency.exponentialRampToValueAtTime(150, now + 0.22);
+      gain.gain.setValueAtTime(0.11, now);
+      gain.gain.linearRampToValueAtTime(0.001, now + 0.22);
+      osc.start(now);
+      osc.stop(now + 0.23);
+    } else if (type === 'powerup') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.setValueAtTime(660, now + 0.08);
+      osc.frequency.setValueAtTime(880, now + 0.16);
+      gain.gain.setValueAtTime(0.14, now);
+      gain.gain.linearRampToValueAtTime(0.001, now + 0.28);
+      osc.start(now);
+      osc.stop(now + 0.29);
+    } else if (type === 'shock') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(240, now);
+      osc.frequency.exponentialRampToValueAtTime(55, now + 0.35);
+      gain.gain.setValueAtTime(0.16, now);
+      gain.gain.linearRampToValueAtTime(0.001, now + 0.35);
+      osc.start(now);
+      osc.stop(now + 0.36);
+    } else if (type === 'elim') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(300, now);
+      osc.frequency.exponentialRampToValueAtTime(85, now + 0.35);
+      gain.gain.setValueAtTime(0.11, now);
+      gain.gain.linearRampToValueAtTime(0.001, now + 0.35);
+      osc.start(now);
+      osc.stop(now + 0.36);
+    } else if (type === 'win') {
+      const notes = [523.25, 659.25, 783.99, 1046.5];
+      notes.forEach((n, idx) => {
+        const o = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        o.type = 'triangle';
+        o.connect(g);
+        g.connect(this.ctx.destination);
+        o.frequency.setValueAtTime(n, now + idx * 0.11);
+        g.gain.setValueAtTime(0.15, now + idx * 0.11);
+        g.gain.linearRampToValueAtTime(0.001, now + idx * 0.11 + 0.32);
+        o.start(now + idx * 0.11);
+        o.stop(now + idx * 0.11 + 0.34);
+      });
+    } else if (type === 'count') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(490, now);
+      gain.gain.setValueAtTime(0.13, now);
+      gain.gain.linearRampToValueAtTime(0.001, now + 0.16);
+      osc.start(now);
+      osc.stop(now + 0.17);
+    } else if (type === 'go') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(740, now);
+      osc.frequency.setValueAtTime(987, now + 0.1);
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.linearRampToValueAtTime(0.001, now + 0.35);
+      osc.start(now);
+      osc.stop(now + 0.36);
+    }
   }
+}
 
-  let saveData = loadSaveData();
+const sfx = new SoundFX();
 
-  // ==================== СОСТОЯНИЕ ИГРЫ И БЛИЗКОЙ КАМЕРЫ ====================
-  const canvas = document.getElementById('game-canvas');
-  const ctx = canvas.getContext('2d');
+// ==================== 3D МИРОВЫЕ КОНСТАНТЫ (В МЕТРАХ THREE.JS) ====================
+// В Three.js Y — это высота вверх, а X и Z — горизонтальная плоскость гекса-яруса!
+const HEX_RADIUS = 2.25;      // радиус одной шестиугольной 3D-плитки
+const HEX_GAP_SCALE = 0.94;   // небольшой зазор между сотами для чёткой читаемости
+const HEX_THICKNESS = 0.55;   // толщина 3D-призмы соты
+const LAYER_HEIGHT_GAP = 10.5;// расстояние по высоте (Y) между ярусами
+const SQRT3 = Math.sqrt(3);
 
-  // Пресеты зума камеры (по умолчанию Близко: 1.48x!)
-  const ZOOM_PRESETS = [
-    { label: 'Близко',  zoom: 1.52 },
-    { label: 'Крупно',  zoom: 1.80 },
-    { label: 'Средне',  zoom: 1.25 },
-    { label: 'Обзорно', zoom: 1.00 }
-  ];
+function axialToWorldXZ(q, r) {
+  const x = HEX_RADIUS * SQRT3 * (q + r * 0.5);
+  const z = HEX_RADIUS * 1.5 * r;
+  return { x, z };
+}
 
-  let state = {
-    phase: 'menu', // 'menu' | 'countdown' | 'playing' | 'celebrating' | 'gameover'
-    diffKey: saveData.difficulty || 'normal',
-    config: DIFFICULTIES[saveData.difficulty || 'normal'],
-    elapsed: 0,
-    countdownTimer: 3.4,
-    celebrationTimer: 0,
-    matchWinner: null,
+function worldXZToAxial(x, z) {
+  const q = (SQRT3 / 3 * x - 1 / 3 * z) / HEX_RADIUS;
+  const r = (2 / 3 * z) / HEX_RADIUS;
+  return axialRound(q, r);
+}
 
-    // Камера: близкое слежение за персонажем + вращение мышью или клавишами
-    cameraYaw: 0.45,
-    targetCameraYaw: 0.45,
-    cameraPitch: 0.60,
-    targetCameraPitch: 0.60,
-    zoomPresetIdx: 0,
-    cameraZoom: ZOOM_PRESETS[0].zoom,
-    targetCameraZoom: ZOOM_PRESETS[0].zoom,
-    camX: 0,
-    camY: 0,
-    camZ: 0,
+function axialRound(q, r) {
+  let x = q;
+  let z = r;
+  let y = -x - z;
+  let rx = Math.round(x);
+  let ry = Math.round(y);
+  let rz = Math.round(z);
 
-    spectateSpeed: 1,
-    spectateIdx: 0,
-    spectateTarget: null,
+  const xDiff = Math.abs(rx - x);
+  const yDiff = Math.abs(ry - y);
+  const zDiff = Math.abs(rz - z);
 
-    layers: [],
-    regenQueue: [], // 4. FIFO-очередь пропорционального восстановления сот!
-    actors: [],
-    player: null,
-    powerups: [],
-    particles: [],
-    shockwaves: [],
-    eliminationOrder: [],
-    powerupSpawnTimer: 3.0,
-    eventTimer: 18.0
+  if (xDiff > yDiff && xDiff > zDiff) rx = -ry - rz;
+  else if (yDiff > zDiff) ry = -rx - rz;
+  else rz = -rx - ry;
+
+  return { q: rx, r: rz };
+}
+
+function hexDistance(q1, r1, q2, r2) {
+  return (Math.abs(q1 - q2) + Math.abs(q1 + r1 - q2 - r2) + Math.abs(r1 - r2)) / 2;
+}
+
+// ==================== СОХРАНЕНИЯ И ЛИДЕРБОРД ====================
+const STORAGE_KEY = 'hex_fall_guys_save_v3';
+
+function loadSaveData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return {
+    playerName: 'СуперФасолька',
+    skinIndex: 0,
+    difficulty: 'normal',
+    crowns: 0,
+    totalScore: 0,
+    matchesPlayed: 0,
+    bestSurvivalSec: 0,
+    recordsByDiff: {
+      easy: { wins: 0, bestTime: 0, bestScore: 0 },
+      normal: { wins: 0, bestTime: 0, bestScore: 0 },
+      hard: { wins: 0, bestTime: 0, bestScore: 0 },
+      chaos: { wins: 0, bestTime: 0, bestScore: 0 }
+    },
+    rivalStandings: [
+      { name: 'Пухлый_Пельмешек', crowns: 14, bestTime: 96.4, score: 18400 },
+      { name: 'Дерзкий_Чебурек', crowns: 10, bestTime: 84.2, score: 14200 },
+      { name: 'КусьЗаБок', crowns: 7, bestTime: 76.0, score: 10900 },
+      { name: 'Турбо_Гусь_88', crowns: 5, bestTime: 69.5, score: 8300 },
+      { name: 'КорольСлизи', crowns: 3, bestTime: 62.1, score: 5600 },
+      { name: 'Сладкий_Пончик', crowns: 2, bestTime: 54.8, score: 3900 },
+      { name: 'Упругий_Кабачок', crowns: 1, bestTime: 46.0, score: 2100 }
+    ]
   };
+}
 
-  // ==================== 2 & 4. КЛАСС ГЕКСА-ПЛИТКИ (БЕЗ МЕРЦАНИЯ + ОЧЕРЕДЬ РЕГЕНА) ====================
-  class HexTile {
-    constructor(layerIndex, q, r, zHeight, specialType = 'normal') {
-      this.layerIndex = layerIndex;
-      this.q = q;
-      this.r = r;
-      this.key = `${q},${r}`;
-      const pos = axialToWorld(q, r);
-      this.x = pos.x;
-      this.y = pos.y;
-      this.baseZ = zHeight;
+function saveGameData() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(saveData));
+  } catch (e) {}
+}
 
-      this.specialType = specialType; // 'normal' | 'spring' | 'gold' | 'bomb'
+let saveData = loadSaveData();
 
-      // Состояния:
-      // 'solid'    — целая сота исходного цвета
-      // 'stepped'  — наступили: ОДИН РАЗ сменила цвет на тёплый, ждёт stepHoldTime без мигания
-      // 'falling'  — плавно падает вниз (fallOffsetZ) и растворяется через прозрачность (alpha -> 0)
-      // 'waiting'  — скрыта, ждёт своей пропорциональной очереди в state.regenQueue
-      // 'restoring'— плавно проявляется обратно из прозрачности
-      this.status = 'solid';
-      this.timer = 0;
-      this.fallDuration = 0.9;
-      this.fallOffsetZ = 0;
-      this.alpha = 1;
-      this.scale = 1;
-      this.lastTouchedBy = null;
-    }
+// ==================== ИНИЦИАЛИЗАЦИЯ ЧЕСТНОЙ 3D СЦЕНЫ (THREE.JS) ====================
+const canvas = document.getElementById('game-canvas');
+const labelsLayer = document.getElementById('labels-layer');
 
-    triggerStep(actor, config) {
-      if (this.status !== 'solid') return;
+const renderer = new THREE.WebGLRenderer({
+  canvas,
+  antialias: true,
+  powerPreference: 'high-performance'
+});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.12;
 
-      // Если активен «Призрачный шаг», сота не активируется
-      if (actor && actor.buffs.ghost > 0) return;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x180e3a);
+scene.fog = new THREE.FogExp2(0x180e3a, 0.0065);
 
-      // Батутная сота подбрасывает вверх
-      if (this.specialType === 'spring' && actor && actor.vz <= 5) {
-        actor.vz = 350;
-        actor.onGround = false;
-        actor.squash = -0.32; // вытягивание в прыжке
-        sfx.play('spring');
-        spawnParticles(this.x, this.y, this.baseZ, '#00e676', 10);
-      }
+const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.5, 320);
 
-      // 2. Один раз меняет цвет и спокойно ждёт до падения
-      this.status = 'stepped';
-      const mult = this.specialType === 'gold' ? 2.2 : 1.0;
-      this.timer = config.stepHoldTime * mult;
-      this.fallDuration = config.fallDuration;
-      this.lastTouchedBy = actor;
+// Освещение телешоу Fall Guys
+const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x4a148c, 1.15);
+hemiLight.position.set(0, 60, 0);
+scene.add(hemiLight);
 
-      if (actor) {
-        actor.tilesBroken++;
-        actor.score += this.specialType === 'gold' ? 25 : 10;
-        if (actor.isPlayer) sfx.play('step');
-      }
-    }
+const dirLight = new THREE.DirectionalLight(0xfffbeb, 1.45);
+dirLight.position.set(28, 58, 32);
+dirLight.castShadow = true;
+dirLight.shadow.mapSize.width = 2048;
+dirLight.shadow.mapSize.height = 2048;
+dirLight.shadow.camera.near = 5;
+dirLight.shadow.camera.far = 140;
+const dCam = 36;
+dirLight.shadow.camera.left = -dCam;
+dirLight.shadow.camera.right = dCam;
+dirLight.shadow.camera.top = dCam;
+dirLight.shadow.camera.bottom = -dCam;
+dirLight.shadow.bias = -0.0008;
+scene.add(dirLight);
 
-    startFalling(config, layerMap) {
-      if (this.status === 'falling' || this.status === 'waiting') return;
-      this.status = 'falling';
-      this.fallDuration = config.fallDuration;
-      this.timer = this.fallDuration;
-      this.fallOffsetZ = 0;
-      this.alpha = 1;
+// Розовая подсветка снизу от озера слизи
+const slimeGlowLight = new THREE.PointLight(0xff2a85, 2.5, 90);
+slimeGlowLight.position.set(0, -14, 0);
+scene.add(slimeGlowLight);
 
-      if (this.lastTouchedBy && this.lastTouchedBy.isPlayer) {
-        sfx.play('break');
-      }
+// Группы 3D-объектов сцены
+const stadiumGroup = new THREE.Group();
+const arenaGroup = new THREE.Group();
+const actorsGroup = new THREE.Group();
+const fxGroup = new THREE.Group();
+scene.add(stadiumGroup);
+scene.add(arenaGroup);
+scene.add(actorsGroup);
+scene.add(fxGroup);
 
-      // 4. Записываем соту в пропорциональную очередь восстановления (FIFO)
-      // Первая разрушенная сота получит самый ранний targetRegenTime, а следующие — пропорционально времени их разрушения!
-      enqueueTileForProportionalRegen(this, config);
+// ==================== ПОДГРУЗКА CC0 3D-АССЕТОВ (.GLB KENNEY) ====================
+const gltfLoader = new GLTFLoader();
+const loadedGLB = {
+  coin: null,
+  flag: null,
+  cloud: null
+};
 
-      // Если это взрывная сота — активирует соседние соты (они тоже сменят цвет один раз и упадут чуть позже)
-      if (this.specialType === 'bomb') {
-        sfx.play('shock');
-        spawnShockwave(this.x, this.y, this.baseZ, HEX_RADIUS * 2.5, '#ff5252');
-        const dirs = [[1,0],[-1,0],[0,1],[0,-1],[1,-1],[-1,1]];
-        dirs.forEach(([dq, dr]) => {
-          const nb = layerMap.get(`${this.q + dq},${this.r + dr}`);
-          if (nb && nb.status === 'solid') {
-            nb.status = 'stepped';
-            nb.timer = 0.35;
-            nb.fallDuration = config.fallDuration;
-          }
-        });
-      }
-    }
+function loadCC0Assets() {
+  gltfLoader.load('./assets/models/coin.glb', (gltf) => {
+    loadedGLB.coin = gltf.scene;
+  }, undefined, () => {});
 
-    instantRepair() {
-      if (this.status !== 'solid') {
-        this.status = 'restoring';
-        this.timer = 0.45;
-        this.fallOffsetZ = 20;
-        this.alpha = 0.2;
-        this.scale = 0.85;
-        // Удаляем из очереди ожидания
-        state.regenQueue = state.regenQueue.filter(item => item.tile !== this);
-      }
-    }
+  gltfLoader.load('./assets/models/flag.glb', (gltf) => {
+    loadedGLB.flag = gltf.scene;
+    decorateStadiumWithFlags();
+  }, undefined, () => {});
 
-    update(dt, config, layerMap) {
-      if (this.status === 'stepped') {
-        this.timer -= dt;
-        // Лёгкое проседание на 2 пикселя под весом, без мерцания
-        this.fallOffsetZ = -2.5;
-        if (this.timer <= 0) {
-          this.startFalling(config, layerMap);
-        }
-      } else if (this.status === 'falling') {
-        this.timer -= dt;
-        const progress = 1 - Math.max(0, this.timer / this.fallDuration);
-        // 2. Плавно падает вниз с ускорением и растворяется через прозрачность
-        this.fallOffsetZ = -2.5 - (progress * progress) * 145;
-        this.alpha = Math.max(0, 1 - progress);
-        this.scale = 1 - progress * 0.18;
+  gltfLoader.load('./assets/models/cloud.glb', (gltf) => {
+    loadedGLB.cloud = gltf.scene;
+    decorateStadiumWithClouds();
+  }, undefined, () => {});
+}
 
-        if (this.timer <= 0) {
-          this.status = 'waiting';
-          this.alpha = 0;
-          this.fallOffsetZ = 0;
-        }
-      } else if (this.status === 'restoring') {
-        this.timer -= dt;
-        const p = 1 - Math.max(0, this.timer / 0.45);
-        this.alpha = p;
-        this.scale = 0.78 + 0.22 * p;
-        this.fallOffsetZ = (1 - p) * -28;
-        if (this.timer <= 0) {
-          this.status = 'solid';
-          this.alpha = 1;
-          this.scale = 1;
-          this.fallOffsetZ = 0;
-          this.timer = 0;
-        }
-      }
-    }
-  }
+// ==================== 3D ОКРУЖЕНИЕ СТАДИОНА HEX-A-GONE ====================
+let slimeSeaMesh = null;
+let stadiumPillars = [];
+let stadiumClouds = [];
 
-  // 4. Пропорциональная очередь восстановления (FIFO с сохранением интервалов и гарантированным минимальным шагом)
-  function enqueueTileForProportionalRegen(tile, config) {
-    // Базовое время восстановления относительно момента разрушения: state.elapsed + config.regenDelay
-    // Плюс гарантируем строгий порядок очереди (каждая следующая разрушенная сота восстанавливается не раньше предыдущей + 0.14с)
-    const desiredTime = state.elapsed + config.regenDelay;
-    const lastEntry = state.regenQueue[state.regenQueue.length - 1];
-    const minNextTime = lastEntry ? lastEntry.restoreAt + 0.14 : 0;
-    const restoreAt = Math.max(desiredTime, minNextTime);
+function buildStadiumEnvironment() {
+  stadiumGroup.clear();
+  stadiumPillars = [];
 
-    state.regenQueue.push({
-      tile,
-      brokenAt: state.elapsed,
-      restoreAt
+  // 1. Волнующееся море ярко-розовой слизи внизу (Slime Sea)
+  const slimeGeo = new THREE.CylinderGeometry(135, 135, 4, 48, 1, false);
+  const slimeMat = new THREE.MeshStandardMaterial({
+    color: 0xff2a85,
+    emissive: 0xc80055,
+    emissiveIntensity: 0.45,
+    roughness: 0.22,
+    metalness: 0.1
+  });
+  slimeSeaMesh = new THREE.Mesh(slimeGeo, slimeMat);
+  slimeSeaMesh.position.set(0, -16, 0);
+  slimeSeaMesh.receiveShadow = true;
+  stadiumGroup.add(slimeSeaMesh);
+
+  // Светящиеся концентрические кольца на поверхности слизи
+  for (let i = 1; i <= 4; i++) {
+    const ringGeo = new THREE.RingGeometry(i * 15, i * 15 + 0.6, 64);
+    ringGeo.rotateX(-Math.PI / 2);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0xff80b5,
+      transparent: true,
+      opacity: 0.35,
+      side: THREE.DoubleSide
     });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.position.y = -13.9;
+    stadiumGroup.add(ring);
   }
 
-  function processRegenQueue() {
-    while (state.regenQueue.length > 0 && state.elapsed >= state.regenQueue[0].restoreAt) {
-      const entry = state.regenQueue.shift();
-      const t = entry.tile;
-      if (t && (t.status === 'waiting' || t.status === 'falling')) {
-        t.status = 'restoring';
-        t.timer = 0.45;
-        t.alpha = 0.05;
-        t.scale = 0.78;
-        t.fallOffsetZ = -28;
-      }
+  // 2. Огромные неоновые колонны телешоу вокруг арены (как в Hex-A-GoneIntroLegacy.gif)
+  const numPillars = 12;
+  const pillarRadius = 44;
+  const pillarColors = [0x00e5ff, 0xff2a85, 0xffe600, 0xb388ff];
+
+  const pillarGeo = new THREE.CylinderGeometry(2.2, 2.8, 95, 16);
+  const ringBandGeo = new THREE.TorusGeometry(2.55, 0.32, 10, 24);
+  ringBandGeo.rotateX(Math.PI / 2);
+
+  for (let i = 0; i < numPillars; i++) {
+    const ang = (i / numPillars) * Math.PI * 2;
+    const px = Math.cos(ang) * pillarRadius;
+    const pz = Math.sin(ang) * pillarRadius;
+
+    const pGroup = new THREE.Group();
+    pGroup.position.set(px, 22, pz);
+
+    const pMat = new THREE.MeshStandardMaterial({
+      color: 0x261758,
+      roughness: 0.5,
+      metalness: 0.25
+    });
+    const pillar = new THREE.Mesh(pillarGeo, pMat);
+    pGroup.add(pillar);
+
+    // Неоновые светящиеся кольца вдоль каждой колонны
+    const neonCol = pillarColors[i % pillarColors.length];
+    const neonMat = new THREE.MeshBasicMaterial({ color: neonCol });
+    for (let h = -30; h <= 35; h += 13) {
+      const band = new THREE.Mesh(ringBandGeo, neonMat);
+      band.position.y = h;
+      pGroup.add(band);
+    }
+
+    // Купол-прожектор на вершине колонны
+    const topDome = new THREE.Mesh(
+      new THREE.SphereGeometry(2.6, 16, 12),
+      new THREE.MeshBasicMaterial({ color: neonCol })
+    );
+    topDome.position.y = 48;
+    pGroup.add(topDome);
+
+    stadiumGroup.add(pGroup);
+    stadiumPillars.push(pGroup);
+  }
+}
+
+function decorateStadiumWithFlags() {
+  if (!loadedGLB.flag) return;
+  stadiumPillars.forEach((pGroup) => {
+    const flagClone = loadedGLB.flag.clone();
+    flagClone.scale.set(4.5, 4.5, 4.5);
+    flagClone.position.set(0, 49.5, 0);
+    pGroup.add(flagClone);
+  });
+}
+
+function decorateStadiumWithClouds() {
+  if (!loadedGLB.cloud) return;
+  stadiumClouds = [];
+  for (let i = 0; i < 14; i++) {
+    const ang = (i / 14) * Math.PI * 2;
+    const dist = 56 + (i % 3) * 14;
+    const cloud = loadedGLB.cloud.clone();
+    const s = 4.5 + (i % 4) * 1.5;
+    cloud.scale.set(s, s, s);
+    cloud.position.set(Math.cos(ang) * dist, 10 + (i % 4) * 11, Math.sin(ang) * dist);
+    cloud.rotation.y = -ang + Math.PI / 2;
+    stadiumGroup.add(cloud);
+    stadiumClouds.push({ mesh: cloud, baseAngle: ang, dist, speed: 0.03 + (i % 3) * 0.015 });
+  }
+}
+
+// ==================== ОБЩИЕ 3D-ГЕОМЕТРИИ ДЛЯ ГЕКСА-ПЛИТОК ====================
+// Создаём шестиугольную призму с верхним цветным слоем и нижней окантовкой (как настоящие плитки Fall Guys)
+const sharedHexTopGeo = new THREE.CylinderGeometry(
+  HEX_RADIUS * HEX_GAP_SCALE,
+  HEX_RADIUS * HEX_GAP_SCALE * 0.96,
+  HEX_THICKNESS * 0.65,
+  6
+);
+const sharedHexRimGeo = new THREE.CylinderGeometry(
+  HEX_RADIUS * HEX_GAP_SCALE * 0.96,
+  HEX_RADIUS * HEX_GAP_SCALE * 0.86,
+  HEX_THICKNESS * 0.45,
+  6
+);
+const sharedHexInnerRingGeo = new THREE.RingGeometry(
+  HEX_RADIUS * 0.48,
+  HEX_RADIUS * 0.64,
+  6
+);
+sharedHexInnerRingGeo.rotateX(-Math.PI / 2);
+sharedHexInnerRingGeo.rotateY(Math.PI / 6);
+
+// ==================== СОСТОЯНИЕ ИГРЫ И 3D-КАМЕРЫ ====================
+const CAM_PRESETS = [
+  { label: 'За спиной', dist: 14.5, height: 8.2 },
+  { label: 'Крупно',    dist: 10.5, height: 5.8 },
+  { label: 'Средне',    dist: 19.0, height: 11.5 },
+  { label: 'Обзорно',   dist: 25.0, height: 15.5 }
+];
+
+let state = {
+  phase: 'menu', // 'menu' | 'intro_flyover' | 'countdown' | 'playing' | 'celebrating' | 'gameover'
+  diffKey: saveData.difficulty || 'normal',
+  config: DIFFICULTIES[saveData.difficulty || 'normal'],
+  elapsed: 0,
+  introTimer: 0,
+  countdownTimer: 3.2,
+  celebrationTimer: 0,
+  matchWinner: null,
+
+  // Параметры 3D-камеры от третьего лица
+  camYaw: 0,
+  targetCamYaw: 0,
+  camPitchOffset: 0,
+  presetIdx: 0,
+  camDist: CAM_PRESETS[0].dist,
+  camHeight: CAM_PRESETS[0].height,
+  camFocusPos: new THREE.Vector3(0, 10, 0),
+  lastManualOrbitTime: -10,
+
+  spectateSpeed: 1,
+  spectateIdx: 0,
+  spectateTarget: null,
+
+  layers: [],
+  regenQueue: [], // FIFO очередь пропорционального восстановления сот
+  actors: [],
+  player: null,
+  powerups: [],
+  particles: [],
+  shockwaves: [],
+  eliminationOrder: [],
+  powerupSpawnTimer: 3.5,
+  eventTimer: 18.0
+};
+
+// ==================== КЛАСС 3D ГЕКСА-ПЛИТКИ ====================
+class HexTile3D {
+  constructor(layerIndex, q, r, yHeight, specialType = 'normal') {
+    this.layerIndex = layerIndex;
+    this.q = q;
+    this.r = r;
+    this.key = `${q},${r}`;
+
+    const pos = axialToWorldXZ(q, r);
+    this.x = pos.x;
+    this.z = pos.z;
+    this.baseY = yHeight; // уровень верхней грани плитки, по которой бегают фасолинки
+
+    this.specialType = specialType; // 'normal' | 'spring' | 'gold' | 'bomb'
+    this.theme = LAYER_THEMES[layerIndex % LAYER_THEMES.length];
+
+    // Статусы: 'solid' | 'stepped' | 'falling' | 'waiting' | 'restoring'
+    this.status = 'solid';
+    this.timer = 0;
+    this.fallDuration = 0.8;
+    this.offsetY = 0;
+    this.alpha = 1;
+    this.lastTouchedBy = null;
+
+    // 3D меш соты
+    this.group = new THREE.Group();
+    this.group.position.set(this.x, this.baseY, this.z);
+
+    let initTopCol = this.theme.top;
+    let initRimCol = this.theme.rim;
+    if (specialType === 'spring') {
+      initTopCol = 0x00e676;
+      initRimCol = 0x009624;
+    } else if (specialType === 'gold') {
+      initTopCol = 0xffd740;
+      initRimCol = 0xc68400;
+    } else if (specialType === 'bomb') {
+      initTopCol = 0xff5252;
+      initRimCol = 0xb71c1c;
+    }
+    this.baseTopCol = initTopCol;
+    this.baseRimCol = initRimCol;
+
+    this.topMat = new THREE.MeshStandardMaterial({
+      color: initTopCol,
+      roughness: 0.28,
+      metalness: 0.08,
+      transparent: false,
+      opacity: 1
+    });
+    this.rimMat = new THREE.MeshStandardMaterial({
+      color: initRimCol,
+      roughness: 0.45,
+      metalness: 0.15,
+      transparent: false,
+      opacity: 1
+    });
+
+    // Смещаем цилиндры внутри группы так, чтобы верхняя крышка лежала ровно на y = 0 (т.е. worldY = this.baseY)
+    const topMesh = new THREE.Mesh(sharedHexTopGeo, this.topMat);
+    topMesh.position.y = -HEX_THICKNESS * 0.325;
+    topMesh.receiveShadow = true;
+    topMesh.castShadow = true;
+    this.group.add(topMesh);
+
+    const rimMesh = new THREE.Mesh(sharedHexRimGeo, this.rimMat);
+    rimMesh.position.y = -HEX_THICKNESS * 0.775;
+    this.group.add(rimMesh);
+
+    // Внутренний светлый шестиугольный контур на крышке (как в Fall Guys)
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.35
+    });
+    this.innerRing = new THREE.Mesh(sharedHexInnerRingGeo, ringMat);
+    this.innerRing.position.y = 0.015;
+    this.group.add(this.innerRing);
+
+    arenaGroup.add(this.group);
+  }
+
+  setTransparency(alpha) {
+    const needTrans = alpha < 0.99;
+    if (this.topMat.transparent !== needTrans) {
+      this.topMat.transparent = needTrans;
+      this.rimMat.transparent = needTrans;
+      this.topMat.needsUpdate = true;
+      this.rimMat.needsUpdate = true;
+    }
+    this.topMat.opacity = alpha;
+    this.rimMat.opacity = alpha;
+    this.innerRing.material.opacity = alpha * 0.35;
+  }
+
+  triggerStep(actor, config) {
+    if (this.status !== 'solid') return;
+    if (actor && actor.buffs.ghost > 0) return;
+
+    if (this.specialType === 'spring' && actor && actor.vy <= 1.0) {
+      actor.vy = 21.5;
+      actor.onGround = false;
+      actor.squash = -0.32;
+      sfx.play('spring');
+      spawnParticles3D(this.x, this.baseY + 0.5, this.z, 0x00e676, 12);
+    }
+
+    // Один раз меняем цвет на яркий сигнальный оттенок и слегка проседаем вниз (без мигания!)
+    this.status = 'stepped';
+    const mult = this.specialType === 'gold' ? 2.2 : 1.0;
+    this.timer = config.stepHoldTime * mult;
+    this.fallDuration = config.fallDuration;
+    this.lastTouchedBy = actor;
+
+    this.topMat.color.setHex(this.theme.steppedTop);
+    this.topMat.emissive.setHex(this.theme.steppedTop);
+    this.topMat.emissiveIntensity = 0.25;
+    this.rimMat.color.setHex(this.theme.steppedRim);
+
+    if (actor) {
+      actor.tilesBroken++;
+      actor.score += this.specialType === 'gold' ? 25 : 10;
+      if (actor.isPlayer) sfx.play('step');
     }
   }
 
-  // ==================== 3 & 7. КЛАСС ПЕРСОНАЖА-ФАСОЛИНКИ С АНИМАЦИЯМИ ====================
-  class Actor {
-    constructor(id, name, isPlayer, skin, startX, startY, startZ) {
-      this.id = id;
-      this.name = name;
-      this.isPlayer = isPlayer;
-      this.skin = skin;
+  startFalling(config, layerMap) {
+    if (this.status === 'falling' || this.status === 'waiting') return;
+    this.status = 'falling';
+    this.fallDuration = config.fallDuration;
+    this.timer = this.fallDuration;
 
-      this.x = startX;
-      this.y = startY;
-      this.z = startZ;
-      this.vx = 0;
-      this.vy = 0;
-      this.vz = 0;
-
-      this.radius = 16;
-      this.facing = Math.PI * 0.5;
-      this.visualFacing = this.facing;
-      this.onGround = true;
-      this.currentLayer = 0;
-      this.alive = true;
-      this.survivalTime = 0;
-      this.score = 0;
-      this.tilesBroken = 0;
-
-      // Прыжок и нырок (Dive)
-      this.jumpCount = 0;
-      this.diveCooldown = 0;
-      this.isDiving = false;
-      this.diveTimer = 0;
-
-      // 7. Параметры процедурных анимаций фасолинки
-      this.animState = 'idle'; // 'idle' | 'run' | 'jump' | 'fall' | 'dive' | 'celebrate'
-      this.animTime = Math.random() * 10;
-      this.walkCycle = 0;
-      this.squash = 0;         // >0 приплюснут (приземление), <0 вытянут (прыжок)
-      this.tiltForward = 0;    // наклон корпуса вперёд при беге / нырке
-
-      // Активные бонусы
-      this.buffs = {
-        speed: 0,
-        feather: 0,
-        ghost: 0,
-        shield: 0
-      };
-
-      // ИИ память для ботов
-      this.aiTargetTile = null;
-      this.aiRetargetTimer = 0;
+    if (this.lastTouchedBy && this.lastTouchedBy.isPlayer) {
+      sfx.play('break');
     }
 
-    getMaxJumps() {
-      return this.buffs.feather > 0 ? 2 : 1;
-    }
+    // Ставим в пропорциональную очередь восстановления (FIFO)
+    enqueueTileForProportionalRegen(this, config);
 
-    jump() {
-      if (!this.alive || state.phase !== 'playing') return false;
-      const maxJumps = this.getMaxJumps();
-      if (this.onGround || this.jumpCount < maxJumps) {
-        const boost = this.buffs.feather > 0 ? 1.22 : 1.0;
-        this.vz = 248 * boost; // размеренный, высокий и плавный прыжок
-        this.onGround = false;
-        this.jumpCount++;
-        this.squash = -0.26;   // фасолинка вытягивается вверх при отталкивании!
-        if (this.isPlayer) sfx.play('jump');
-        spawnParticles(this.x, this.y, this.z, '#ffffff', 6);
-        return true;
-      }
-      return false;
-    }
-
-    dive() {
-      if (!this.alive || state.phase !== 'playing' || this.diveCooldown > 0) return false;
-      this.diveCooldown = 2.2;
-      this.isDiving = true;
-      this.diveTimer = 0.42;
-      this.squash = -0.18;
-
-      const speed = 235;
-      this.vx = Math.cos(this.facing) * speed;
-      this.vy = Math.sin(this.facing) * speed;
-      if (!this.onGround) {
-        this.vz = Math.max(this.vz, 110);
-      } else {
-        this.vz = 125;
-        this.onGround = false;
-      }
-
-      if (this.isPlayer) sfx.play('dive');
-      spawnParticles(this.x, this.y, this.z + 10, '#ff9100', 8);
-
-      // Толчок соперников впереди
-      state.actors.forEach(other => {
-        if (other !== this && other.alive && Math.abs(other.z - this.z) < 45) {
-          const dx = other.x - this.x;
-          const dy = other.y - this.y;
-          const dist = Math.hypot(dx, dy);
-          if (dist < 60 && dist > 0.01) {
-            const nx = dx / dist;
-            const ny = dy / dist;
-            other.vx += nx * 240;
-            other.vy += ny * 240;
-            other.vz = 140;
-            other.onGround = false;
-            other.squash = 0.25;
-            this.score += 35;
-          }
+    // Взрывная сота активирует соседей
+    if (this.specialType === 'bomb') {
+      sfx.play('shock');
+      spawnShockwave3D(this.x, this.baseY + 0.1, this.z, HEX_RADIUS * 2.6, 0xff5252);
+      const dirs = [[1,0],[-1,0],[0,1],[0,-1],[1,-1],[-1,1]];
+      dirs.forEach(([dq, dr]) => {
+        const nb = layerMap.get(`${this.q + dq},${this.r + dr}`);
+        if (nb && nb.status === 'solid') {
+          nb.triggerStep(this.lastTouchedBy, config);
+          nb.timer = 0.28;
         }
       });
+    }
+  }
 
+  instantRepair() {
+    if (this.status !== 'solid') {
+      this.status = 'restoring';
+      this.timer = 0.42;
+      this.group.visible = true;
+      this.topMat.color.setHex(this.baseTopCol);
+      this.topMat.emissive.setHex(0x000000);
+      this.topMat.emissiveIntensity = 0;
+      this.rimMat.color.setHex(this.baseRimCol);
+      state.regenQueue = state.regenQueue.filter(item => item.tile !== this);
+    }
+  }
+
+  update(dt, config, layerMap) {
+    if (this.status === 'stepped') {
+      this.timer -= dt;
+      this.offsetY += (-0.18 - this.offsetY) * Math.min(1, dt * 14);
+      this.group.position.y = this.baseY + this.offsetY;
+      if (this.timer <= 0) {
+        this.startFalling(config, layerMap);
+      }
+    } else if (this.status === 'falling') {
+      this.timer -= dt;
+      const p = 1 - Math.max(0, this.timer / this.fallDuration);
+      this.offsetY = -0.18 - (p * p) * 7.5;
+      this.alpha = Math.max(0, 1 - p);
+      const sc = 1 - p * 0.22;
+
+      this.group.position.y = this.baseY + this.offsetY;
+      this.group.scale.set(sc, 1, sc);
+      this.setTransparency(this.alpha);
+
+      if (this.timer <= 0) {
+        this.status = 'waiting';
+        this.group.visible = false;
+      }
+    } else if (this.status === 'restoring') {
+      this.timer -= dt;
+      const p = 1 - Math.max(0, this.timer / 0.42);
+      this.offsetY = (1 - p) * -2.5;
+      const sc = 0.75 + 0.25 * p;
+
+      this.group.visible = true;
+      this.group.position.y = this.baseY + this.offsetY;
+      this.group.scale.set(sc, 1, sc);
+      this.setTransparency(p);
+
+      if (this.timer <= 0) {
+        this.status = 'solid';
+        this.offsetY = 0;
+        this.alpha = 1;
+        this.group.position.y = this.baseY;
+        this.group.scale.set(1, 1, 1);
+        this.setTransparency(1);
+      }
+    }
+  }
+}
+
+// Пропорциональная FIFO-очередь восстановления сот (первая разрушенная — первой восстановится)
+function enqueueTileForProportionalRegen(tile, config) {
+  const desiredTime = state.elapsed + config.regenDelay;
+  const lastEntry = state.regenQueue[state.regenQueue.length - 1];
+  const minNextTime = lastEntry ? lastEntry.restoreAt + 0.12 : 0;
+  const restoreAt = Math.max(desiredTime, minNextTime);
+
+  state.regenQueue.push({ tile, restoreAt });
+}
+
+function processRegenQueue() {
+  while (state.regenQueue.length > 0 && state.elapsed >= state.regenQueue[0].restoreAt) {
+    const entry = state.regenQueue.shift();
+    const t = entry.tile;
+    if (t && (t.status === 'waiting' || t.status === 'falling')) {
+      t.status = 'restoring';
+      t.timer = 0.42;
+      t.group.visible = true;
+      t.topMat.color.setHex(t.baseTopCol);
+      t.topMat.emissive.setHex(0x000000);
+      t.topMat.emissiveIntensity = 0;
+      t.rimMat.color.setHex(t.baseRimCol);
+    }
+  }
+}
+
+// ==================== СОЗДАНИЕ 3D-МОДЕЛИ ФАСОЛИНКИ (FALL GUYS BEAN) ====================
+function createBean3DMesh(skin) {
+  const root = new THREE.Group();
+  const bodyPivot = new THREE.Group();
+  root.add(bodyPivot);
+
+  const mainMat = new THREE.MeshStandardMaterial({
+    color: skin.c1,
+    roughness: 0.32,
+    metalness: 0.06
+  });
+  const subMat = new THREE.MeshStandardMaterial({
+    color: skin.c2,
+    roughness: 0.38,
+    metalness: 0.08
+  });
+  const whiteMat = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: 0.2
+  });
+  const darkMat = new THREE.MeshStandardMaterial({
+    color: 0x140a28,
+    roughness: 0.2
+  });
+
+  // 1. Туловище-капсула (Bean Torso)
+  const torsoGeo = new THREE.CapsuleGeometry(0.62, 0.56, 16, 24);
+  const torsoMesh = new THREE.Mesh(torsoGeo, mainMat);
+  torsoMesh.position.y = 1.12;
+  torsoMesh.castShadow = true;
+  torsoMesh.receiveShadow = true;
+  bodyPivot.add(torsoMesh);
+
+  // Нижний пояс / штанишки
+  const pantsGeo = new THREE.CylinderGeometry(0.635, 0.58, 0.42, 24);
+  const pantsMesh = new THREE.Mesh(pantsGeo, subMat);
+  pantsMesh.position.y = 0.78;
+  bodyPivot.add(pantsMesh);
+
+  // 2. Белое лицевое окошко (Faceplate Visor) спереди (+Z направление взгляда)
+  const faceplateGeo = new THREE.SphereGeometry(0.44, 20, 16);
+  faceplateGeo.scale(1.05, 0.76, 0.45);
+  const faceplateMesh = new THREE.Mesh(faceplateGeo, whiteMat);
+  faceplateMesh.position.set(0, 1.28, 0.45);
+  bodyPivot.add(faceplateMesh);
+
+  // Выразительные глазки-бусинки
+  const eyeGeo = new THREE.CapsuleGeometry(0.065, 0.07, 8, 8);
+  const leftEye = new THREE.Mesh(eyeGeo, darkMat);
+  leftEye.position.set(-0.16, 1.30, 0.63);
+  bodyPivot.add(leftEye);
+
+  const rightEye = new THREE.Mesh(eyeGeo, darkMat);
+  rightEye.position.set(0.16, 1.30, 0.63);
+  bodyPivot.add(rightEye);
+
+  // 3. Шарнирные ножки с ботиночками
+  const legGeo = new THREE.CapsuleGeometry(0.17, 0.24, 8, 12);
+  const leftLeg = new THREE.Group();
+  leftLeg.position.set(-0.27, 0.42, 0);
+  const leftFoot = new THREE.Mesh(legGeo, subMat);
+  leftFoot.position.y = -0.15;
+  leftFoot.castShadow = true;
+  leftLeg.add(leftFoot);
+  bodyPivot.add(leftLeg);
+
+  const rightLeg = new THREE.Group();
+  rightLeg.position.set(0.27, 0.42, 0);
+  const rightFoot = new THREE.Mesh(legGeo, subMat);
+  rightFoot.position.y = -0.15;
+  rightFoot.castShadow = true;
+  rightLeg.add(rightFoot);
+  bodyPivot.add(rightLeg);
+
+  // 4. Шарнирные ручки
+  const armGeo = new THREE.CapsuleGeometry(0.145, 0.34, 8, 12);
+  const leftArm = new THREE.Group();
+  leftArm.position.set(-0.68, 1.18, 0);
+  const leftHand = new THREE.Mesh(armGeo, mainMat);
+  leftHand.position.y = -0.18;
+  leftHand.castShadow = true;
+  leftArm.add(leftHand);
+  leftArm.rotation.z = 0.22;
+  bodyPivot.add(leftArm);
+
+  const rightArm = new THREE.Group();
+  rightArm.position.set(0.68, 1.18, 0);
+  const rightHand = new THREE.Mesh(armGeo, mainMat);
+  rightHand.position.y = -0.18;
+  rightHand.castShadow = true;
+  rightArm.add(rightHand);
+  rightArm.rotation.z = -0.22;
+  bodyPivot.add(rightArm);
+
+  // 5. 3D Аксессуар / Корона / Шляпа на макушке
+  const hatGroup = new THREE.Group();
+  hatGroup.position.set(0, 1.98, 0);
+  bodyPivot.add(hatGroup);
+
+  if (skin.hat === 'crown') {
+    const crownMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.65, roughness: 0.2 });
+    const crownBase = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.28, 0.26, 7), crownMat);
+    hatGroup.add(crownBase);
+  } else if (skin.hat === 'dino') {
+    for (let i = -1; i <= 1; i++) {
+      const spike = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.34, 8), subMat);
+      spike.position.set(0, -0.05, i * 0.24);
+      hatGroup.add(spike);
+    }
+  } else if (skin.hat === 'ears') {
+    const earGeo = new THREE.SphereGeometry(0.18, 12, 12);
+    const e1 = new THREE.Mesh(earGeo, subMat);
+    e1.position.set(-0.34, -0.06, 0);
+    const e2 = new THREE.Mesh(earGeo, subMat);
+    e2.position.set(0.34, -0.06, 0);
+    hatGroup.add(e1, e2);
+  } else if (skin.hat === 'antenna') {
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.35, 8), subMat);
+    stem.position.y = 0.12;
+    const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 12), new THREE.MeshBasicMaterial({ color: 0x00e676 }));
+    bulb.position.y = 0.32;
+    hatGroup.add(stem, bulb);
+  } else if (skin.hat === 'chef') {
+    const toque = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.28, 0.38, 16), whiteMat);
+    toque.position.y = 0.12;
+    hatGroup.add(toque);
+  } else if (skin.hat === 'fin') {
+    const fin = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.45, 4), mainMat);
+    fin.position.y = 0.15;
+    hatGroup.add(fin);
+  } else if (skin.hat === 'horns') {
+    const hGeo = new THREE.ConeGeometry(0.11, 0.34, 8);
+    const h1 = new THREE.Mesh(hGeo, new THREE.MeshBasicMaterial({ color: 0x00e5ff }));
+    h1.position.set(-0.28, 0.08, 0);
+    h1.rotation.z = 0.35;
+    const h2 = new THREE.Mesh(hGeo, new THREE.MeshBasicMaterial({ color: 0x00e5ff }));
+    h2.position.set(0.28, 0.08, 0);
+    h2.rotation.z = -0.35;
+    hatGroup.add(h1, h2);
+  }
+
+  // Тень-блоб под ногами (проектируется ровно на поверхность соты под персонажем для 100% читаемости прыжка!)
+  const shadowGeo = new THREE.CircleGeometry(0.65, 20);
+  shadowGeo.rotateX(-Math.PI / 2);
+  const shadowMat = new THREE.MeshBasicMaterial({
+    color: 0x000000,
+    transparent: true,
+    opacity: 0.42,
+    depthWrite: false
+  });
+  const blobShadow = new THREE.Mesh(shadowGeo, shadowMat);
+  blobShadow.position.y = 0.03;
+  root.add(blobShadow);
+
+  // Кольцо щита «Батут-спасение»
+  const shieldRing = new THREE.Mesh(
+    new THREE.TorusGeometry(0.95, 0.06, 10, 28),
+    new THREE.MeshBasicMaterial({ color: 0xffd740 })
+  );
+  shieldRing.rotation.x = Math.PI / 2;
+  shieldRing.position.y = 1.0;
+  shieldRing.visible = false;
+  root.add(shieldRing);
+
+  return {
+    root,
+    bodyPivot,
+    leftLeg,
+    rightLeg,
+    leftArm,
+    rightArm,
+    blobShadow,
+    shieldRing,
+    mainMat
+  };
+}
+
+// ==================== КЛАСС УЧАСТНИКА 3D (ИГРОК И БОТЫ) ====================
+class Actor3D {
+  constructor(id, name, isPlayer, skin, startX, startY, startZ) {
+    this.id = id;
+    this.name = name;
+    this.isPlayer = isPlayer;
+    this.skin = skin;
+
+    this.x = startX;
+    this.y = startY;
+    this.z = startZ;
+    this.vx = 0;
+    this.vy = 0;
+    this.vz = 0;
+
+    this.radius = 0.72; // радиус капсулы персонажа в метрах
+    this.facing = Math.atan2(-startX, -startZ); // угол поворота в плоскости XZ (0 смотрит вдоль +Z)
+    this.visualFacing = this.facing;
+
+    this.onGround = true;
+    this.currentLayer = 0;
+    this.alive = true;
+    this.survivalTime = 0;
+    this.score = 0;
+    this.tilesBroken = 0;
+
+    this.jumpCount = 0;
+    this.diveCooldown = 0;
+    this.isDiving = false;
+    this.diveTimer = 0;
+
+    // 3D анимация
+    this.animState = 'idle';
+    this.walkCycle = Math.random() * 10;
+    this.squash = 0;
+
+    this.buffs = {
+      speed: 0,
+      feather: 0,
+      ghost: 0,
+      shield: 0
+    };
+
+    this.aiTargetTile = null;
+    this.aiRetargetTimer = 0;
+
+    // Создаём 3D-модель фасолинки
+    this.rig = createBean3DMesh(skin);
+    this.rig.root.position.set(this.x, this.y, this.z);
+    actorsGroup.add(this.rig.root);
+
+    // Создаём плавающий 3D-никнейм в DOM
+    this.labelEl = document.createElement('div');
+    this.labelEl.className = 'bean-label' + (isPlayer ? ' is-player' : '');
+    this.labelEl.innerHTML = isPlayer
+      ? `<span class="you-arrow">▼ ВЫ</span>${name}`
+      : name;
+    labelsLayer.appendChild(this.labelEl);
+  }
+
+  destroy() {
+    actorsGroup.remove(this.rig.root);
+    if (this.labelEl && this.labelEl.parentNode) {
+      this.labelEl.remove();
+    }
+  }
+
+  getMaxJumps() {
+    return this.buffs.feather > 0 ? 2 : 1;
+  }
+
+  jump() {
+    if (!this.alive || state.phase !== 'playing') return false;
+    if (this.onGround || this.jumpCount < this.getMaxJumps()) {
+      const boost = this.buffs.feather > 0 ? 1.22 : 1.0;
+      this.vy = 14.2 * boost;
+      this.onGround = false;
+      this.jumpCount++;
+      this.squash = -0.28;
+      if (this.isPlayer) sfx.play('jump');
+      spawnParticles3D(this.x, this.y + 0.3, this.z, 0xffffff, 6);
       return true;
     }
-
-    updateAnimation(dt) {
-      this.animTime += dt;
-      // Плавный возврат squash & stretch к 0
-      this.squash += (0 - this.squash) * Math.min(1, dt * 11);
-
-      // Плавный поворот визуального корпуса к направлению движения
-      let diff = this.facing - this.visualFacing;
-      while (diff > Math.PI) diff -= Math.PI * 2;
-      while (diff < -Math.PI) diff += Math.PI * 2;
-      this.visualFacing += diff * Math.min(1, dt * 12);
-
-      const horizSpeed = Math.hypot(this.vx, this.vy);
-
-      if (state.phase === 'celebrating' && state.matchWinner === this) {
-        this.animState = 'celebrate';
-        this.walkCycle += dt * 10;
-      } else if (this.isDiving) {
-        this.animState = 'dive';
-        this.tiltForward += (0.85 - this.tiltForward) * Math.min(1, dt * 14);
-      } else if (!this.onGround) {
-        this.animState = this.vz > 20 ? 'jump' : 'fall';
-        this.walkCycle += dt * 6;
-        this.tiltForward += (0.15 - this.tiltForward) * Math.min(1, dt * 8);
-      } else if (horizSpeed > 12) {
-        this.animState = 'run';
-        this.walkCycle += dt * (horizSpeed * 0.082);
-        this.tiltForward += (0.22 - this.tiltForward) * Math.min(1, dt * 10);
-      } else {
-        this.animState = 'idle';
-        this.tiltForward += (0 - this.tiltForward) * Math.min(1, dt * 10);
-      }
-    }
+    return false;
   }
 
-  // ==================== ГЕНЕРАЦИЯ АРЕНЫ И ЗАПУСК С ОТСЧЁТОМ ====================
-  function buildArena(config) {
-    state.layers = [];
-    state.regenQueue = [];
-    const R = config.gridRadius;
+  dive() {
+    if (!this.alive || state.phase !== 'playing' || this.diveCooldown > 0) return false;
+    this.diveCooldown = 2.1;
+    this.isDiving = true;
+    this.diveTimer = 0.42;
+    this.squash = -0.20;
 
-    for (let l = 0; l < config.layersCount; l++) {
-      const zHeight = (config.layersCount - 1 - l) * LAYER_GAP;
-      const map = new Map();
-      const list = [];
+    const diveSpeed = 13.8;
+    this.vx = Math.sin(this.facing) * diveSpeed;
+    this.vz = Math.cos(this.facing) * diveSpeed;
+    this.vy = this.onGround ? 7.5 : Math.max(this.vy, 6.2);
+    this.onGround = false;
 
-      for (let q = -R; q <= R; q++) {
-        const r1 = Math.max(-R, -q - R);
-        const r2 = Math.min(R, -q + R);
-        for (let r = r1; r <= r2; r++) {
-          let special = 'normal';
-          const distCenter = hexDistance(0, 0, q, r);
-          if (distCenter > 1 && Math.random() < config.specialTileChance) {
-            const roll = Math.random();
-            if (roll < 0.36) special = 'spring';
-            else if (roll < 0.74) special = 'gold';
-            else special = 'bomb';
-          }
-          const tile = new HexTile(l, q, r, zHeight, special);
-          map.set(tile.key, tile);
-          list.push(tile);
+    if (this.isPlayer) sfx.play('dive');
+    spawnParticles3D(this.x, this.y + 0.8, this.z, 0xff9100, 8);
+
+    // Расталкиваем соперников впереди
+    state.actors.forEach(other => {
+      if (other !== this && other.alive && Math.abs(other.y - this.y) < 2.5) {
+        const dx = other.x - this.x;
+        const dz = other.z - this.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist < 3.2 && dist > 0.01) {
+          other.vx += (dx / dist) * 14.0;
+          other.vz += (dz / dist) * 14.0;
+          other.vy = 8.5;
+          other.onGround = false;
+          other.squash = 0.28;
+          this.score += 35;
         }
       }
-      state.layers.push({ index: l, zHeight, map, list });
-    }
-  }
-
-  function startMatch() {
-    const diffKey = state.diffKey;
-    const config = DIFFICULTIES[diffKey];
-    state.config = config;
-    state.elapsed = 0;
-    state.countdownTimer = 3.5; // 5. Размеренный отсчёт 3.. 2.. 1.. СТАРТ!
-    state.phase = 'countdown';
-    state.matchWinner = null;
-    state.spectateSpeed = 1;
-    state.spectateTarget = null;
-    state.powerups = [];
-    state.particles = [];
-    state.shockwaves = [];
-    state.eliminationOrder = [];
-    state.powerupSpawnTimer = 3.5;
-    state.eventTimer = 18.0;
-
-    document.getElementById('event-banner').classList.add('hidden');
-    document.getElementById('spectator-bar').classList.add('hidden');
-    document.getElementById('winner-banner-overlay').classList.add('hidden');
-    document.getElementById('start-modal').classList.add('hidden');
-    document.getElementById('result-modal').classList.add('hidden');
-    document.getElementById('lb-modal').classList.add('hidden');
-    document.getElementById('killfeed').innerHTML = '';
-
-    buildArena(config);
-
-    const topLayer = state.layers[0];
-    const totalActors = 1 + config.botsCount;
-    state.actors = [];
-
-    const spawnRing = topLayer.list.filter(
-      t => hexDistance(0, 0, t.q, t.r) >= 2 && hexDistance(0, 0, t.q, t.r) <= config.gridRadius - 1
-    );
-
-    const playerSkin = SKINS[saveData.skinIndex % SKINS.length];
-    const pTile = spawnRing[0] || topLayer.list[0];
-    const player = new Actor(
-      'player',
-      saveData.playerName || 'СуперФасолька',
-      true,
-      playerSkin,
-      pTile.x,
-      pTile.y,
-      topLayer.zHeight
-    );
-    // Поворачиваем игрока лицом к центру арены
-    player.facing = Math.atan2(-player.y, -player.x);
-    player.visualFacing = player.facing;
-    state.player = player;
-    state.actors.push(player);
-
-    // 6. Генерируем уникальные смешные ники для ботов
-    const botNames = generateFunnyBotNames(config.botsCount);
-
-    for (let i = 0; i < config.botsCount; i++) {
-      const angle = ((i + 1) / totalActors) * Math.PI * 2;
-      const ringDist = HEX_RADIUS * (config.gridRadius * 0.78);
-      const bx = Math.cos(angle) * ringDist;
-      const by = Math.sin(angle) * ringDist;
-      const axial = worldToAxial(bx, by);
-      const bTile = topLayer.map.get(`${axial.q},${axial.r}`) || spawnRing[(i * 2) % spawnRing.length];
-
-      const botSkin = SKINS[(i + 1) % SKINS.length];
-      const bot = new Actor(
-        `bot_${i}`,
-        botNames[i],
-        false,
-        botSkin,
-        bTile.x,
-        bTile.y,
-        topLayer.zHeight
-      );
-      bot.facing = Math.atan2(-bot.y, -bot.x);
-      bot.visualFacing = bot.facing;
-      state.actors.push(bot);
-    }
-
-    // Ставим камеру сразу близко за спиной игрока
-    state.camX = player.x;
-    state.camY = player.y;
-    state.camZ = player.z;
-    state.targetCameraZoom = ZOOM_PRESETS[state.zoomPresetIdx].zoom;
-    state.cameraZoom = state.targetCameraZoom * 0.85; // плавный наезд камеры во время отсчёта!
-
-    // Показываем стартовый отсчёт
-    const cdOverlay = document.getElementById('countdown-overlay');
-    const cdBadge = document.getElementById('countdown-badge');
-    const cdText = document.getElementById('countdown-text');
-    cdOverlay.classList.remove('hidden');
-    cdBadge.textContent = `РАУНД: ${config.name.toUpperCase()} (${totalActors} УЧАСТНИКОВ)`;
-    cdText.textContent = '3';
-    sfx.play('count');
-
-    updateHUD();
-  }
-
-  // ==================== СПАВН БОНУСОВ И ЧАСТИЦ ====================
-  function spawnPowerup(forcedLayerIndex = null) {
-    const aliveActors = state.actors.filter(a => a.alive);
-    if (aliveActors.length === 0) return;
-
-    let layerIdx = forcedLayerIndex;
-    if (layerIdx === null) {
-      const sampleActor = aliveActors[Math.floor(Math.random() * aliveActors.length)];
-      layerIdx = Math.min(state.layers.length - 1, Math.max(0, sampleActor.currentLayer));
-    }
-
-    const layer = state.layers[layerIdx];
-    if (!layer) return;
-
-    const solidTiles = layer.list.filter(t => t.status === 'solid');
-    if (solidTiles.length === 0) return;
-
-    const tile = solidTiles[Math.floor(Math.random() * solidTiles.length)];
-    const type = POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)];
-
-    state.powerups.push({
-      x: tile.x,
-      y: tile.y,
-      z: layer.zHeight + 22,
-      layerIndex: layerIdx,
-      type,
-      life: 15.0,
-      bobPhase: Math.random() * Math.PI * 2
     });
+
+    return true;
   }
 
-  function applyPowerup(actor, pu) {
-    const t = pu.type;
-    actor.score += 50;
-    if (actor.isPlayer) {
-      sfx.play('powerup');
-      addFeedItem(`✨ Вы взяли: ${t.icon} ${t.name}!`, t.color);
+  update3DAnimation(dt) {
+    this.squash += (0 - this.squash) * Math.min(1, dt * 11);
+
+    let angleDiff = this.facing - this.visualFacing;
+    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+    this.visualFacing += angleDiff * Math.min(1, dt * 13);
+
+    const horizSpeed = Math.hypot(this.vx, this.vz);
+    const { root, bodyPivot, leftLeg, rightLeg, leftArm, rightArm, shieldRing, mainMat } = this.rig;
+
+    root.position.set(this.x, this.y, this.z);
+    bodyPivot.rotation.y = this.visualFacing;
+
+    // Прозрачность при «Призрачном шаге»
+    const ghostActive = this.buffs.ghost > 0;
+    if (mainMat.transparent !== ghostActive) {
+      mainMat.transparent = ghostActive;
+      mainMat.opacity = ghostActive ? 0.6 : 1.0;
+      mainMat.needsUpdate = true;
     }
+    shieldRing.visible = this.buffs.shield > 0;
+    if (shieldRing.visible) shieldRing.rotation.z += dt * 3;
 
-    spawnParticles(pu.x, pu.y, pu.z, t.color, 12);
+    // Squash & Stretch масштабирование
+    const sx = 1 + this.squash * 0.52;
+    const sy = 1 - this.squash * 0.52;
+    bodyPivot.scale.set(sx, sy, sx);
 
-    if (t.id === 'speed') {
-      actor.buffs.speed = t.duration;
-    } else if (t.id === 'feather') {
-      actor.buffs.feather = t.duration;
-    } else if (t.id === 'ghost') {
-      actor.buffs.ghost = t.duration;
-    } else if (t.id === 'shield') {
-      actor.buffs.shield = t.duration;
-    } else if (t.id === 'shock') {
-      sfx.play('shock');
-      spawnShockwave(actor.x, actor.y, actor.z, 145, '#ff5252');
-      state.actors.forEach(other => {
-        if (other !== actor && other.alive && Math.abs(other.z - actor.z) < 60) {
-          const dx = other.x - actor.x;
-          const dy = other.y - actor.y;
-          const d = Math.hypot(dx, dy);
-          if (d < 145 && d > 0.01) {
-            const force = (1 - d / 145) * 310 + 110;
-            other.vx += (dx / d) * force;
-            other.vy += (dy / d) * force;
-            other.vz = 175;
-            other.onGround = false;
-            other.squash = 0.28;
-            actor.score += 40;
-          }
+    if (state.phase === 'celebrating' && state.matchWinner === this) {
+      this.walkCycle += dt * 12;
+      bodyPivot.position.y = Math.abs(Math.sin(this.walkCycle)) * 0.45;
+      bodyPivot.rotation.x = 0;
+      leftArm.rotation.x = -2.4 + Math.sin(this.walkCycle * 1.5) * 0.4;
+      rightArm.rotation.x = -2.4 - Math.sin(this.walkCycle * 1.5) * 0.4;
+      leftLeg.rotation.x = Math.sin(this.walkCycle) * 0.5;
+      rightLeg.rotation.x = -Math.sin(this.walkCycle) * 0.5;
+    } else if (this.isDiving) {
+      // Полёт «рыбкой» животом вперёд!
+      bodyPivot.position.y = 0.35;
+      bodyPivot.rotation.x = 1.25;
+      leftArm.rotation.x = -2.2;
+      rightArm.rotation.x = -2.2;
+      leftLeg.rotation.x = 0.5;
+      rightLeg.rotation.x = 0.5;
+    } else if (!this.onGround) {
+      this.walkCycle += dt * 8;
+      bodyPivot.position.y = 0;
+      bodyPivot.rotation.x = 0.15;
+      leftArm.rotation.x = -1.8 + Math.sin(this.walkCycle) * 0.3;
+      rightArm.rotation.x = -1.8 - Math.sin(this.walkCycle) * 0.3;
+      leftLeg.rotation.x = 0.45;
+      rightLeg.rotation.x = -0.35;
+    } else if (horizSpeed > 0.6) {
+      // Забавный бег фасолинки вразвалочку
+      this.walkCycle += dt * (horizSpeed * 1.85);
+      bodyPivot.position.y = Math.abs(Math.sin(this.walkCycle * 2)) * 0.16;
+      bodyPivot.rotation.x = 0.22; // наклон вперёд при беге
+      bodyPivot.rotation.z = Math.sin(this.walkCycle) * 0.08; // покачивание из стороны в сторону
+      const swing = Math.sin(this.walkCycle * 2) * 0.85;
+      leftLeg.rotation.x = swing;
+      rightLeg.rotation.x = -swing;
+      leftArm.rotation.x = -swing * 0.9;
+      rightArm.rotation.x = swing * 0.9;
+    } else {
+      // Дыхание на месте (Idle)
+      this.walkCycle += dt * 3;
+      bodyPivot.position.y = Math.sin(this.walkCycle) * 0.04;
+      bodyPivot.rotation.x = 0;
+      bodyPivot.rotation.z = 0;
+      leftLeg.rotation.x = 0;
+      rightLeg.rotation.x = 0;
+      leftArm.rotation.x = Math.sin(this.walkCycle) * 0.1;
+      rightArm.rotation.x = -Math.sin(this.walkCycle) * 0.1;
+    }
+  }
+}
+
+// ==================== НЕПРЕРЫВНАЯ ПРОВЕРКА КОЛЛИЗИИ С 3D-ГЕКСАГОНАМИ ====================
+// Проверяет, находится ли точка (wx, wz) в пределах шестиугольной соты (включая +15% запас coyote-ledge для комфорта прыжков)
+function findSupportingTileOnLayer(layer, wx, wz, actorRadius) {
+  const centerAx = worldXZToAxial(wx, wz);
+  const candidates = [
+    [0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, -1], [-1, 1]
+  ];
+
+  const maxSupportDist = HEX_RADIUS * 0.94 + actorRadius * 0.48;
+  let bestTile = null;
+  let bestDist = 999;
+
+  for (const [dq, dr] of candidates) {
+    const t = layer.map.get(`${centerAx.q + dq},${centerAx.r + dr}`);
+    if (!t) continue;
+    if (t.status !== 'solid' && t.status !== 'stepped' && t.status !== 'restoring') continue;
+
+    const d = Math.hypot(wx - t.x, wz - t.z);
+    if (d <= maxSupportDist && d < bestDist) {
+      bestDist = d;
+      bestTile = t;
+    }
+  }
+  return bestTile;
+}
+
+// ==================== ПОСТРОЕНИЕ 3D-БАШНИ И СТАРТ ШОУ ====================
+function buildArena3D(config) {
+  arenaGroup.clear();
+  state.layers = [];
+  state.regenQueue = [];
+  const R = config.gridRadius;
+
+  for (let l = 0; l < config.layersCount; l++) {
+    const yHeight = (config.layersCount - 1 - l) * LAYER_HEIGHT_GAP;
+    const map = new Map();
+    const list = [];
+
+    for (let q = -R; q <= R; q++) {
+      const r1 = Math.max(-R, -q - R);
+      const r2 = Math.min(R, -q + R);
+      for (let r = r1; r <= r2; r++) {
+        let special = 'normal';
+        const distCenter = hexDistance(0, 0, q, r);
+        if (distCenter > 1 && Math.random() < config.specialTileChance) {
+          const roll = Math.random();
+          if (roll < 0.36) special = 'spring';
+          else if (roll < 0.74) special = 'gold';
+          else special = 'bomb';
+        }
+        const tile = new HexTile3D(l, q, r, yHeight, special);
+        map.set(tile.key, tile);
+        list.push(tile);
+      }
+    }
+    state.layers.push({ index: l, yHeight, map, list });
+  }
+}
+
+function clearActorsAndFX() {
+  state.actors.forEach(a => a.destroy());
+  state.actors = [];
+  labelsLayer.innerHTML = '';
+
+  state.powerups.forEach(p => fxGroup.remove(p.mesh));
+  state.powerups = [];
+
+  state.particles.forEach(pt => fxGroup.remove(pt.mesh));
+  state.particles = [];
+
+  state.shockwaves.forEach(sw => fxGroup.remove(sw.mesh));
+  state.shockwaves = [];
+}
+
+function startMatch() {
+  const diffKey = state.diffKey;
+  const config = DIFFICULTIES[diffKey];
+  state.config = config;
+  state.elapsed = 0;
+
+  // Сначала 2.4 сек кинематографический пролёт камеры снизу вверх по 3D-башне (как в Hex-A-GoneIntroLegacy.gif), затем отсчёт 3..2..1!
+  state.phase = 'intro_flyover';
+  state.introTimer = 2.4;
+  state.countdownTimer = 3.2;
+  state.matchWinner = null;
+  state.spectateSpeed = 1;
+  state.spectateTarget = null;
+  state.eliminationOrder = [];
+  state.powerupSpawnTimer = 3.5;
+  state.eventTimer = 18.0;
+
+  document.getElementById('event-banner').classList.add('hidden');
+  document.getElementById('spectator-bar').classList.add('hidden');
+  document.getElementById('winner-banner-overlay').classList.add('hidden');
+  document.getElementById('start-modal').classList.add('hidden');
+  document.getElementById('result-modal').classList.add('hidden');
+  document.getElementById('lb-modal').classList.add('hidden');
+  document.getElementById('killfeed').innerHTML = '';
+
+  clearActorsAndFX();
+  buildArena3D(config);
+
+  const topLayer = state.layers[0];
+  const totalActors = 1 + config.botsCount;
+  const spawnRing = topLayer.list.filter(
+    t => hexDistance(0, 0, t.q, t.r) >= 2 && hexDistance(0, 0, t.q, t.r) <= config.gridRadius - 1
+  );
+
+  const playerSkin = SKINS[saveData.skinIndex % SKINS.length];
+  const pTile = spawnRing[0] || topLayer.list[0];
+  const player = new Actor3D(
+    'player',
+    saveData.playerName || 'СуперФасолька',
+    true,
+    playerSkin,
+    pTile.x,
+    topLayer.yHeight,
+    pTile.z
+  );
+  state.player = player;
+  state.actors.push(player);
+
+  // Ставим камеру за спину игроку лицом к центру арены
+  state.targetCamYaw = player.facing + Math.PI;
+  state.camYaw = state.targetCamYaw;
+  state.camFocusPos.set(player.x, player.y + 1.2, player.z);
+
+  const botNames = generateFunnyBotNames(config.botsCount);
+  for (let i = 0; i < config.botsCount; i++) {
+    const angle = ((i + 1) / totalActors) * Math.PI * 2;
+    const ringDist = HEX_RADIUS * (config.gridRadius * 1.15);
+    const bx = Math.cos(angle) * ringDist;
+    const bz = Math.sin(angle) * ringDist;
+    const axial = worldXZToAxial(bx, bz);
+    const bTile = topLayer.map.get(`${axial.q},${axial.r}`) || spawnRing[(i * 2) % spawnRing.length];
+
+    const botSkin = SKINS[(i + 1) % SKINS.length];
+    const bot = new Actor3D(
+      `bot_${i}`,
+      botNames[i],
+      false,
+      botSkin,
+      bTile.x,
+      topLayer.yHeight,
+      bTile.z
+    );
+    state.actors.push(bot);
+  }
+
+  // Показываем баннер пролёта камеры
+  const cdOverlay = document.getElementById('countdown-overlay');
+  const cdBadge = document.getElementById('countdown-badge');
+  const cdText = document.getElementById('countdown-text');
+  const cdSub = document.getElementById('countdown-sub');
+  cdOverlay.classList.remove('hidden');
+  cdBadge.textContent = `БАШНЯ HEX-A-GONE: ${config.layersCount} ЯРУСА • ${totalActors} ИГРОКОВ`;
+  cdText.textContent = '👀';
+  cdSub.textContent = 'Обзор 3D-арены... Приготовьтесь к старту!';
+
+  updateHUD();
+}
+
+// ==================== 3D БОНУСЫ, ЧАСТИЦЫ И УДАРНЫЕ ВОЛНЫ ====================
+function spawnPowerup3D() {
+  const aliveActors = state.actors.filter(a => a.alive);
+  if (aliveActors.length === 0) return;
+
+  const sampleActor = aliveActors[Math.floor(Math.random() * aliveActors.length)];
+  const layerIdx = Math.min(state.layers.length - 1, Math.max(0, sampleActor.currentLayer));
+  const layer = state.layers[layerIdx];
+  if (!layer) return;
+
+  const solidTiles = layer.list.filter(t => t.status === 'solid');
+  if (solidTiles.length === 0) return;
+
+  const tile = solidTiles[Math.floor(Math.random() * solidTiles.length)];
+  const type = POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)];
+
+  const group = new THREE.Group();
+  group.position.set(tile.x, layer.yHeight + 1.2, tile.z);
+
+  if (loadedGLB.coin) {
+    const cMesh = loadedGLB.coin.clone();
+    cMesh.scale.set(2.4, 2.4, 2.4);
+    group.add(cMesh);
+  } else {
+    const orb = new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.65, 1),
+      new THREE.MeshStandardMaterial({ color: type.hex, emissive: type.hex, emissiveIntensity: 0.4 })
+    );
+    group.add(orb);
+  }
+
+  // Светящееся кольцо вокруг бонуса цвета его типа
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(0.75, 0.07, 8, 24),
+    new THREE.MeshBasicMaterial({ color: type.hex })
+  );
+  ring.rotation.x = Math.PI / 2;
+  group.add(ring);
+
+  fxGroup.add(group);
+  state.powerups.push({
+    x: tile.x,
+    y: layer.yHeight + 1.2,
+    z: tile.z,
+    layerIndex: layerIdx,
+    type,
+    mesh: group,
+    life: 15.0,
+    phase: Math.random() * Math.PI * 2
+  });
+}
+
+function applyPowerup(actor, pu) {
+  const t = pu.type;
+  actor.score += 50;
+  if (actor.isPlayer) {
+    sfx.play('powerup');
+    addFeedItem(`✨ Вы взяли: ${t.icon} ${t.name}!`, t.color);
+  }
+  spawnParticles3D(pu.x, pu.y, pu.z, t.hex, 12);
+
+  if (t.id === 'speed') actor.buffs.speed = t.duration;
+  else if (t.id === 'feather') actor.buffs.feather = t.duration;
+  else if (t.id === 'ghost') actor.buffs.ghost = t.duration;
+  else if (t.id === 'shield') actor.buffs.shield = t.duration;
+  else if (t.id === 'shock') {
+    sfx.play('shock');
+    spawnShockwave3D(actor.x, actor.y + 0.15, actor.z, 8.5, 0xff5252);
+    state.actors.forEach(other => {
+      if (other !== actor && other.alive && Math.abs(other.y - actor.y) < 3.5) {
+        const dx = other.x - actor.x;
+        const dz = other.z - actor.z;
+        const d = Math.hypot(dx, dz);
+        if (d < 8.5 && d > 0.01) {
+          const force = (1 - d / 8.5) * 16.0 + 6.0;
+          other.vx += (dx / d) * force;
+          other.vz += (dz / d) * force;
+          other.vy = 10.5;
+          other.onGround = false;
+          other.squash = 0.3;
+          actor.score += 40;
+        }
+      }
+    });
+  } else if (t.id === 'builder') {
+    sfx.play('regen');
+    spawnShockwave3D(actor.x, actor.y + 0.15, actor.z, 7.5, 0x00e676);
+    const layer = state.layers[actor.currentLayer];
+    if (layer) {
+      const centerAx = worldXZToAxial(actor.x, actor.z);
+      layer.list.forEach(tile => {
+        if (hexDistance(centerAx.q, centerAx.r, tile.q, tile.r) <= 2) {
+          tile.instantRepair();
         }
       });
-    } else if (t.id === 'builder') {
-      sfx.play('regen');
-      spawnShockwave(actor.x, actor.y, actor.z, 135, '#00e676');
-      const layer = state.layers[actor.currentLayer];
-      if (layer) {
-        const centerAx = worldToAxial(actor.x, actor.y);
-        layer.list.forEach(tile => {
-          if (hexDistance(centerAx.q, centerAx.r, tile.q, tile.r) <= 2) {
-            tile.instantRepair();
-          }
-        });
-      }
     }
   }
+}
 
-  function spawnParticles(x, y, z, color, count = 8) {
-    for (let i = 0; i < count; i++) {
-      const ang = Math.random() * Math.PI * 2;
-      const spd = 30 + Math.random() * 85;
-      state.particles.push({
-        x, y, z,
-        vx: Math.cos(ang) * spd,
-        vy: Math.sin(ang) * spd,
-        vz: 50 + Math.random() * 110,
-        color,
-        size: 3 + Math.random() * 3.5,
-        life: 0.4 + Math.random() * 0.3,
-        maxLife: 0.7
-      });
-    }
-  }
+const sharedParticleGeo = new THREE.SphereGeometry(0.16, 6, 6);
+function spawnParticles3D(x, y, z, hexColor, count = 8) {
+  for (let i = 0; i < count; i++) {
+    const mat = new THREE.MeshBasicMaterial({ color: hexColor, transparent: true, opacity: 1 });
+    const mesh = new THREE.Mesh(sharedParticleGeo, mat);
+    mesh.position.set(x, y, z);
+    fxGroup.add(mesh);
 
-  function spawnShockwave(x, y, z, maxRadius, color) {
-    state.shockwaves.push({
-      x, y, z,
-      radius: 10,
-      maxRadius,
-      color,
-      life: 0.45,
-      maxLife: 0.45
+    const ang = Math.random() * Math.PI * 2;
+    const spd = 2.0 + Math.random() * 5.5;
+    state.particles.push({
+      mesh,
+      vx: Math.cos(ang) * spd,
+      vy: 3.5 + Math.random() * 6.5,
+      vz: Math.sin(ang) * spd,
+      life: 0.45 + Math.random() * 0.3,
+      maxLife: 0.75
     });
   }
+}
 
-  function addFeedItem(text, borderColor = '#ff2a85') {
-    const feed = document.getElementById('killfeed');
-    const item = document.createElement('div');
-    item.className = 'feed-item';
-    item.style.borderLeftColor = borderColor;
-    item.textContent = text;
-    feed.prepend(item);
-    while (feed.children.length > 5) {
-      feed.lastChild.remove();
-    }
-    setTimeout(() => {
-      if (item.parentNode) item.remove();
-    }, 4500);
-  }
+function spawnShockwave3D(x, y, z, maxRadius, hexColor) {
+  const geo = new THREE.RingGeometry(0.8, 1.0, 32);
+  geo.rotateX(-Math.PI / 2);
+  const mat = new THREE.MeshBasicMaterial({
+    color: hexColor,
+    transparent: true,
+    opacity: 0.9,
+    side: THREE.DoubleSide
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(x, y, z);
+  fxGroup.add(mesh);
 
-  // ==================== 1. УПРАВЛЕНИЕ И ВРАЩЕНИЕ БЛИЗКОЙ КАМЕРОЙ ====================
-  const keys = {};
-  const joystick = { active: false, dx: 0, dy: 0, pointerId: null };
-  const camDrag = { active: false, lastX: 0, lastY: 0, pointerId: null };
+  state.shockwaves.push({
+    mesh,
+    maxRadius,
+    life: 0.45,
+    maxLife: 0.45
+  });
+}
 
-  function cycleZoomPreset() {
-    state.zoomPresetIdx = (state.zoomPresetIdx + 1) % ZOOM_PRESETS.length;
-    const preset = ZOOM_PRESETS[state.zoomPresetIdx];
-    state.targetCameraZoom = preset.zoom;
-    document.getElementById('hud-zoom-val').textContent = preset.label;
-  }
+function addFeedItem(text, borderColor = '#ff2a85') {
+  const feed = document.getElementById('killfeed');
+  const item = document.createElement('div');
+  item.className = 'feed-item';
+  item.style.borderLeftColor = borderColor;
+  item.textContent = text;
+  feed.prepend(item);
+  while (feed.children.length > 5) feed.lastChild.remove();
+  setTimeout(() => { if (item.parentNode) item.remove(); }, 4500);
+}
 
-  window.addEventListener('keydown', (e) => {
-    keys[e.code] = true;
+// ==================== УПРАВЛЕНИЕ И 3D КАМЕРА ====================
+const keys = {};
+const joystick = { active: false, dx: 0, dy: 0, pointerId: null };
+const camDrag = { active: false, lastX: 0, lastY: 0, pointerId: null };
 
-    if (state.phase === 'playing') {
-      if (e.code === 'Space') {
-        e.preventDefault();
-        state.player?.jump();
-      } else if (e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.code === 'KeyF') {
-        e.preventDefault();
-        state.player?.dive();
-      }
-    }
+function cycleCamPreset() {
+  state.presetIdx = (state.presetIdx + 1) % CAM_PRESETS.length;
+  const p = CAM_PRESETS[state.presetIdx];
+  state.camDist = p.dist;
+  state.camHeight = p.height;
+  document.getElementById('hud-zoom-val').textContent = p.label;
+}
 
-    if (e.code === 'KeyZ') {
-      cycleZoomPreset();
-    } else if (e.code === 'KeyM') {
-      toggleSound();
-    } else if (e.code === 'Tab') {
+window.addEventListener('keydown', (e) => {
+  keys[e.code] = true;
+  if (state.phase === 'playing') {
+    if (e.code === 'Space') {
       e.preventDefault();
-      openLeaderboard();
-    } else if (e.code === 'Escape') {
-      openStartModal();
+      state.player?.jump();
+    } else if (e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.code === 'KeyF') {
+      e.preventDefault();
+      state.player?.dive();
     }
-  });
-
-  window.addEventListener('keyup', (e) => {
-    keys[e.code] = false;
-  });
-
-  // Вращение камеры перетаскиванием мыши / пальца по холсту
-  canvas.addEventListener('pointerdown', (e) => {
-    if (e.button === 2) {
-      // Правая кнопка мыши — быстрый нырок/рывок
-      if (state.phase === 'playing') state.player?.dive();
-      return;
-    }
-    camDrag.active = true;
-    camDrag.pointerId = e.pointerId;
-    camDrag.lastX = e.clientX;
-    camDrag.lastY = e.clientY;
-    canvas.setPointerCapture(e.pointerId);
-  });
-
-  canvas.addEventListener('pointermove', (e) => {
-    if (!camDrag.active || e.pointerId !== camDrag.pointerId) return;
-    const dx = e.clientX - camDrag.lastX;
-    const dy = e.clientY - camDrag.lastY;
-    camDrag.lastX = e.clientX;
-    camDrag.lastY = e.clientY;
-
-    state.targetCameraYaw -= dx * 0.0075;
-    state.targetCameraPitch = Math.max(0.45, Math.min(0.78, state.targetCameraPitch + dy * 0.003));
-  });
-
-  canvas.addEventListener('pointerup', (e) => {
-    if (e.pointerId === camDrag.pointerId) {
-      camDrag.active = false;
-      camDrag.pointerId = null;
-    }
-  });
-
-  // Колёсико мыши для плавного приближения/отдаления камеры
-  canvas.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.10 : 0.10;
-    state.targetCameraZoom = Math.max(0.90, Math.min(2.10, state.targetCameraZoom + delta));
-    const zoomLabel = state.targetCameraZoom >= 1.65 ? 'Крупно' : state.targetCameraZoom >= 1.35 ? 'Близко' : state.targetCameraZoom >= 1.12 ? 'Средне' : 'Обзорно';
-    document.getElementById('hud-zoom-val').textContent = zoomLabel;
-  }, { passive: false });
-
-  // Кнопки камеры в верхней панели
-  document.getElementById('btn-cam-left').addEventListener('click', () => {
-    state.targetCameraYaw -= Math.PI / 5;
-  });
-  document.getElementById('btn-cam-right').addEventListener('click', () => {
-    state.targetCameraYaw += Math.PI / 5;
-  });
-  document.getElementById('btn-cam-zoom').addEventListener('click', cycleZoomPreset);
-
-  // Виртуальный стик
-  const joyBase = document.getElementById('joystick-base');
-  const joyStick = document.getElementById('joystick-stick');
-
-  function handleJoystickMove(clientX, clientY) {
-    const rect = joyBase.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const maxR = rect.width * 0.38;
-
-    let dx = clientX - cx;
-    let dy = clientY - cy;
-    const dist = Math.hypot(dx, dy);
-    if (dist > maxR) {
-      dx = (dx / dist) * maxR;
-      dy = (dy / dist) * maxR;
-    }
-
-    joyStick.style.transform = `translate(${dx}px, ${dy}px)`;
-    joystick.dx = dx / maxR;
-    joystick.dy = dy / maxR;
   }
+  if (e.code === 'KeyZ') cycleCamPreset();
+  else if (e.code === 'KeyM') toggleSound();
+  else if (e.code === 'Tab') { e.preventDefault(); openLeaderboard(); }
+  else if (e.code === 'Escape') openStartModal();
+});
 
-  function resetJoystick() {
-    joystick.active = false;
-    joystick.dx = 0;
-    joystick.dy = 0;
-    joystick.pointerId = null;
-    joyStick.style.transform = 'translate(0px, 0px)';
+window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+canvas.addEventListener('pointerdown', (e) => {
+  if (e.button === 2) {
+    if (state.phase === 'playing') state.player?.dive();
+    return;
   }
+  camDrag.active = true;
+  camDrag.pointerId = e.pointerId;
+  camDrag.lastX = e.clientX;
+  camDrag.lastY = e.clientY;
+  canvas.setPointerCapture(e.pointerId);
+});
 
-  joyBase.addEventListener('pointerdown', (e) => {
-    e.stopPropagation();
-    joystick.active = true;
-    joystick.pointerId = e.pointerId;
-    joyBase.setPointerCapture(e.pointerId);
-    handleJoystickMove(e.clientX, e.clientY);
-  });
+canvas.addEventListener('pointermove', (e) => {
+  if (!camDrag.active || e.pointerId !== camDrag.pointerId) return;
+  const dx = e.clientX - camDrag.lastX;
+  const dy = e.clientY - camDrag.lastY;
+  camDrag.lastX = e.clientX;
+  camDrag.lastY = e.clientY;
 
-  joyBase.addEventListener('pointermove', (e) => {
-    if (joystick.active && e.pointerId === joystick.pointerId) {
-      handleJoystickMove(e.clientX, e.clientY);
-    }
-  });
+  state.targetCamYaw -= dx * 0.0075;
+  state.camPitchOffset = Math.max(-3.5, Math.min(6.0, state.camPitchOffset + dy * 0.03));
+  state.lastManualOrbitTime = state.elapsed;
+});
 
-  joyBase.addEventListener('pointerup', resetJoystick);
-  joyBase.addEventListener('pointercancel', resetJoystick);
+canvas.addEventListener('pointerup', (e) => {
+  if (e.pointerId === camDrag.pointerId) {
+    camDrag.active = false;
+    camDrag.pointerId = null;
+  }
+});
 
-  document.getElementById('btn-touch-jump').addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    state.player?.jump();
-  });
-  document.getElementById('btn-touch-dive').addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    state.player?.dive();
-  });
-  document.getElementById('chip-jump').addEventListener('click', () => state.player?.jump());
-  document.getElementById('chip-dive').addEventListener('click', () => state.player?.dive());
-  document.getElementById('chip-cam').addEventListener('click', () => {
-    state.targetCameraYaw += Math.PI / 4;
-  });
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? 1.5 : -1.5;
+  state.camDist = Math.max(8.5, Math.min(28.0, state.camDist + delta));
+  state.camHeight = state.camDist * 0.58;
+}, { passive: false });
 
-  // ==================== ИИ БОТОВ (РАЗМЕРЕННЫЙ И УМНЫЙ ВЫБОР СОТ) ====================
-  function updateBotAI(bot, dt, config) {
-    bot.aiRetargetTimer -= dt;
+document.getElementById('btn-cam-left').addEventListener('click', () => {
+  state.targetCamYaw += 0.55;
+  state.lastManualOrbitTime = state.elapsed;
+});
+document.getElementById('btn-cam-right').addEventListener('click', () => {
+  state.targetCamYaw -= 0.55;
+  state.lastManualOrbitTime = state.elapsed;
+});
+document.getElementById('btn-cam-zoom').addEventListener('click', cycleCamPreset);
 
-    const layer = state.layers[bot.currentLayer] || state.layers[state.layers.length - 1];
-    const curAx = worldToAxial(bot.x, bot.y);
-    const curTile = layer.map.get(`${curAx.q},${curAx.r}`);
+// Виртуальный джойстик
+const joyBase = document.getElementById('joystick-base');
+const joyStick = document.getElementById('joystick-stick');
 
-    // Если сота под ботом уже сменила цвет и скоро упадёт — ищем соседнюю целую соту
-    const urgent = !curTile || curTile.status === 'falling' || curTile.status === 'waiting' ||
-      (curTile.status === 'stepped' && curTile.timer < config.stepHoldTime * 0.55);
+function handleJoystickMove(clientX, clientY) {
+  const rect = joyBase.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const maxR = rect.width * 0.38;
 
-    if (bot.aiRetargetTimer <= 0 || urgent || !bot.aiTargetTile ||
-        bot.aiTargetTile.status === 'falling' || bot.aiTargetTile.status === 'waiting') {
-      bot.aiRetargetTimer = 0.25 + (1 - config.botIQ) * 0.28;
+  let dx = clientX - cx;
+  let dy = clientY - cy;
+  const dist = Math.hypot(dx, dy);
+  if (dist > maxR) {
+    dx = (dx / dist) * maxR;
+    dy = (dy / dist) * maxR;
+  }
+  joyStick.style.transform = `translate(${dx}px, ${dy}px)`;
+  joystick.dx = dx / maxR;
+  joystick.dy = dy / maxR;
+}
 
-      let bestTile = null;
-      let bestScore = -9999;
+function resetJoystick() {
+  joystick.active = false;
+  joystick.dx = 0;
+  joystick.dy = 0;
+  joystick.pointerId = null;
+  joyStick.style.transform = 'translate(0px, 0px)';
+}
 
-      for (let dq = -2; dq <= 2; dq++) {
-        for (let dr = Math.max(-2, -dq - 2); dr <= Math.min(2, -dq + 2); dr++) {
-          const hDist = hexDistance(0, 0, dq, dr);
-          if (hDist === 0) continue;
-          const candidate = layer.map.get(`${curAx.q + dq},${curAx.r + dr}`);
-          if (!candidate) continue;
+joyBase.addEventListener('pointerdown', (e) => {
+  e.stopPropagation();
+  joystick.active = true;
+  joystick.pointerId = e.pointerId;
+  joyBase.setPointerCapture(e.pointerId);
+  handleJoystickMove(e.clientX, e.clientY);
+});
+joyBase.addEventListener('pointermove', (e) => {
+  if (joystick.active && e.pointerId === joystick.pointerId) handleJoystickMove(e.clientX, e.clientY);
+});
+joyBase.addEventListener('pointerup', resetJoystick);
+joyBase.addEventListener('pointercancel', resetJoystick);
 
-          if (candidate.status !== 'solid' && candidate.status !== 'restoring') {
-            continue;
-          }
+document.getElementById('btn-touch-jump').addEventListener('pointerdown', (e) => {
+  e.preventDefault(); e.stopPropagation(); state.player?.jump();
+});
+document.getElementById('btn-touch-dive').addEventListener('pointerdown', (e) => {
+  e.preventDefault(); e.stopPropagation(); state.player?.dive();
+});
+document.getElementById('chip-jump').addEventListener('click', () => state.player?.jump());
+document.getElementById('chip-dive').addEventListener('click', () => state.player?.dive());
+document.getElementById('chip-cam').addEventListener('click', () => {
+  state.targetCamYaw += 0.6;
+  state.lastManualOrbitTime = state.elapsed;
+});
 
-          let solidNeighbors = 0;
-          const nDirs = [[1,0],[-1,0],[0,1],[0,-1],[1,-1],[-1,1]];
-          for (const [nq, nr] of nDirs) {
-            const nb = layer.map.get(`${candidate.q + nq},${candidate.r + nr}`);
-            if (nb && nb.status === 'solid') solidNeighbors++;
-          }
+// ==================== ИИ БОТОВ В 3D ====================
+function updateBotAI3D(bot, dt, config) {
+  bot.aiRetargetTimer -= dt;
+  const layer = state.layers[bot.currentLayer] || state.layers[state.layers.length - 1];
+  const curAx = worldXZToAxial(bot.x, bot.z);
+  const curTile = layer.map.get(`${curAx.q},${curAx.r}`);
 
-          let score = solidNeighbors * 12;
-          if (hDist === 1) score += 20;
-          if (candidate.specialType === 'gold') score += 16;
-          if (candidate.specialType === 'bomb') score -= 14;
+  const urgent = !curTile || curTile.status === 'falling' || curTile.status === 'waiting' ||
+    (curTile.status === 'stepped' && curTile.timer < config.stepHoldTime * 0.55);
 
-          const centerDist = hexDistance(0, 0, candidate.q, candidate.r);
-          score -= centerDist * 2.2;
-          score += (Math.random() - 0.5) * (1.2 - config.botIQ) * 40;
+  if (bot.aiRetargetTimer <= 0 || urgent || !bot.aiTargetTile ||
+      bot.aiTargetTile.status === 'falling' || bot.aiTargetTile.status === 'waiting') {
+    bot.aiRetargetTimer = 0.24 + (1 - config.botIQ) * 0.25;
 
-          if (score > bestScore) {
-            bestScore = score;
-            bestTile = candidate;
-          }
+    let bestTile = null;
+    let bestScore = -9999;
+
+    for (let dq = -2; dq <= 2; dq++) {
+      for (let dr = Math.max(-2, -dq - 2); dr <= Math.min(2, -dq + 2); dr++) {
+        const hDist = hexDistance(0, 0, dq, dr);
+        if (hDist === 0) continue;
+        const candidate = layer.map.get(`${curAx.q + dq},${curAx.r + dr}`);
+        if (!candidate) continue;
+        if (candidate.status !== 'solid' && candidate.status !== 'restoring') continue;
+
+        let solidNeighbors = 0;
+        const nDirs = [[1,0],[-1,0],[0,1],[0,-1],[1,-1],[-1,1]];
+        for (const [nq, nr] of nDirs) {
+          const nb = layer.map.get(`${candidate.q + nq},${candidate.r + nr}`);
+          if (nb && nb.status === 'solid') solidNeighbors++;
+        }
+
+        let score = solidNeighbors * 12;
+        if (hDist === 1) score += 20;
+        if (candidate.specialType === 'gold') score += 16;
+        if (candidate.specialType === 'bomb') score -= 14;
+
+        const centerDist = hexDistance(0, 0, candidate.q, candidate.r);
+        score -= centerDist * 2.2;
+        score += (Math.random() - 0.5) * (1.2 - config.botIQ) * 38;
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestTile = candidate;
         }
       }
-      bot.aiTargetTile = bestTile;
     }
+    bot.aiTargetTile = bestTile;
+  }
 
-    if (bot.aiTargetTile) {
-      const dx = bot.aiTargetTile.x - bot.x;
-      const dy = bot.aiTargetTile.y - bot.y;
-      const dist = Math.hypot(dx, dy);
+  if (bot.aiTargetTile) {
+    const dx = bot.aiTargetTile.x - bot.x;
+    const dz = bot.aiTargetTile.z - bot.z;
+    const dist = Math.hypot(dx, dz);
 
-      if (dist > 6) {
-        const targetAngle = Math.atan2(dy, dx);
-        bot.facing = targetAngle;
+    if (dist > 0.35) {
+      bot.facing = Math.atan2(dx, dz);
+      const baseSpeed = 6.5 * (bot.buffs.speed > 0 ? 1.35 : 1.0);
+      const desiredVx = (dx / dist) * baseSpeed;
+      const desiredVz = (dz / dist) * baseSpeed;
 
-        // 1. Более плавная и размеренная скорость бега ботов (115 вместо 165)
-        const baseSpeed = 114 * (bot.buffs.speed > 0 ? 1.35 : 1.0);
-        const desiredVx = Math.cos(targetAngle) * baseSpeed;
-        const desiredVy = Math.sin(targetAngle) * baseSpeed;
+      bot.vx += (desiredVx - bot.vx) * Math.min(1, dt * 8);
+      bot.vz += (desiredVz - bot.vz) * Math.min(1, dt * 8);
 
-        bot.vx += (desiredVx - bot.vx) * Math.min(1, dt * 8);
-        bot.vy += (desiredVy - bot.vy) * Math.min(1, dt * 8);
-
-        if (bot.onGround && (dist > HEX_RADIUS * 1.85 || !curTile || curTile.status === 'falling' || curTile.status === 'waiting')) {
-          if (Math.random() < 0.35 + config.botIQ * 0.55) {
-            bot.jump();
-          }
+      if (bot.onGround && (dist > HEX_RADIUS * 1.85 || !curTile || curTile.status === 'falling' || curTile.status === 'waiting')) {
+        if (Math.random() < 0.38 + config.botIQ * 0.55) {
+          bot.jump();
         }
       }
     }
   }
+}
 
-  // ==================== ФИЗИКА И ОБНОВЛЕНИЕ МИРА ====================
-  function updateWorld(dt) {
-    // 1. Плавное вращение камеры клавишами Q / E
-    if (keys['KeyQ']) state.targetCameraYaw -= dt * 1.85;
-    if (keys['KeyE']) state.targetCameraYaw += dt * 1.85;
+// ==================== ОБНОВЛЕНИЕ 3D МИРА, КАМЕРЫ И ФИЗИКИ ====================
+function updateWorld3D(dt, nowSec) {
+  // Анимация волн слизи и облаков на фоне
+  if (slimeSeaMesh) {
+    slimeSeaMesh.position.y = -16 + Math.sin(nowSec * 1.8) * 0.25;
+  }
+  stadiumClouds.forEach(c => {
+    const a = c.baseAngle + nowSec * c.speed;
+    c.mesh.position.x = Math.cos(a) * c.dist;
+    c.mesh.position.z = Math.sin(a) * c.dist;
+    c.mesh.rotation.y = -a + Math.PI / 2;
+  });
 
-    state.cameraYaw += (state.targetCameraYaw - state.cameraYaw) * Math.min(1, dt * 9);
-    state.cameraPitch += (state.targetCameraPitch - state.cameraPitch) * Math.min(1, dt * 9);
-    state.cameraZoom += (state.targetCameraZoom - state.cameraZoom) * Math.min(1, dt * 7);
+  // Поворот камеры клавишами Q / E
+  if (keys['KeyQ']) {
+    state.targetCamYaw += dt * 1.9;
+    state.lastManualOrbitTime = state.elapsed;
+  }
+  if (keys['KeyE']) {
+    state.targetCamYaw -= dt * 1.9;
+    state.lastManualOrbitTime = state.elapsed;
+  }
 
-    // Обновляем анимации фасолинок во всех фазах (даже на старте и на победной плашке!)
-    for (const actor of state.actors) {
-      if (actor.alive) actor.updateAnimation(dt);
-    }
+  // Анимации всех живых фасолинок
+  for (const actor of state.actors) {
+    if (actor.alive) actor.update3DAnimation(dt);
+  }
 
-    // 5. ФАЗА СТАРТОВОГО ОТСЧЁТА (3.. 2.. 1.. СТАРТ!)
-    if (state.phase === 'countdown') {
-      const prevSec = Math.ceil(state.countdownTimer - 0.5);
-      state.countdownTimer -= dt;
-      const curSec = Math.ceil(state.countdownTimer - 0.5);
+  // 1. ФАЗА СТАРТОВОГО ПРОЛЁТА КАМЕРЫ ПО БАШНЕ (как в Hex-A-GoneIntroLegacy.gif)
+  if (state.phase === 'intro_flyover') {
+    state.introTimer -= dt;
+    const p = 1 - Math.max(0, state.introTimer / 2.4); // от 0 (низ у слизи) до 1 (верхний ярус за спиной игрока)
+    const smoothP = p * p * (3 - 2 * p);
 
+    const topY = state.layers[0] ? state.layers[0].yHeight : 20;
+    const flyAngle = state.targetCamYaw + (1 - smoothP) * Math.PI * 1.35;
+    const flyRadius = 32 * (1 - smoothP) + state.camDist * smoothP;
+    const lookY = -6 * (1 - smoothP) + (topY + 1.4) * smoothP;
+
+    const targetX = state.player ? state.player.x * smoothP : 0;
+    const targetZ = state.player ? state.player.z * smoothP : 0;
+
+    camera.position.set(
+      targetX + Math.sin(flyAngle) * flyRadius,
+      lookY + 11 * (1 - smoothP) + state.camHeight * smoothP,
+      targetZ + Math.cos(flyAngle) * flyRadius
+    );
+    camera.lookAt(targetX, lookY, targetZ);
+
+    if (state.introTimer <= 0) {
+      state.phase = 'countdown';
+      const cdBadge = document.getElementById('countdown-badge');
       const cdText = document.getElementById('countdown-text');
       const cdSub = document.getElementById('countdown-sub');
-
-      if (curSec !== prevSec) {
-        if (curSec >= 1) {
-          cdText.textContent = String(curSec);
-          sfx.play('count');
-        } else if (curSec === 0) {
-          cdText.textContent = 'СТАРТ!';
-          cdSub.textContent = 'Бегите и перепрыгивайте проваливающиеся соты!';
-          sfx.play('go');
-        }
-      }
-
-      // Камера плавно фокусируется на игроке во время отсчёта
-      if (state.player) {
-        state.camX += (state.player.x - state.camX) * Math.min(1, dt * 6);
-        state.camY += (state.player.y - state.camY) * Math.min(1, dt * 6);
-        state.camZ += (state.player.z - state.camZ) * Math.min(1, dt * 6);
-      }
-
-      if (state.countdownTimer <= 0) {
-        state.phase = 'playing';
-        document.getElementById('countdown-overlay').classList.add('hidden');
-      }
-      return;
+      cdBadge.textContent = 'ПРИГОТОВЬТЕСЬ К СТАРТУ!';
+      cdText.textContent = '3';
+      cdSub.textContent = 'WASD / Стрелки — бег • ПРОБЕЛ — прыжок • SHIFT — нырок';
+      sfx.play('count');
     }
+    update3DNameplates();
+    return;
+  }
 
-    // 5. ФАЗА ТОРЖЕСТВЕННОЙ ПЛАШКИ ПОБЕДИТЕЛЯ ПЕРЕД ТАБЛИЦЕЙ
-    if (state.phase === 'celebrating') {
-      state.celebrationTimer -= dt;
-      if (state.matchWinner) {
-        state.camX += (state.matchWinner.x - state.camX) * Math.min(1, dt * 5);
-        state.camY += (state.matchWinner.y - state.camY) * Math.min(1, dt * 5);
-        state.camZ += (state.matchWinner.z - state.camZ) * Math.min(1, dt * 5);
-        state.targetCameraYaw += dt * 0.6; // камера красиво облетает победителя
-      }
-      // Обновляем конфетти-частицы
-      for (let i = state.particles.length - 1; i >= 0; i--) {
-        const pt = state.particles[i];
-        pt.life -= dt;
-        pt.x += pt.vx * dt;
-        pt.y += pt.vy * dt;
-        pt.z += pt.vz * dt;
-        pt.vz -= 280 * dt;
-        if (pt.life <= 0) state.particles.splice(i, 1);
-      }
-      if (state.celebrationTimer <= 0) {
-        showFinalResultsModal();
-      }
-      return;
-    }
+  // 2. ФАЗА ОТСЧЁТА 3.. 2.. 1.. СТАРТ!
+  if (state.phase === 'countdown') {
+    const prevSec = Math.ceil(state.countdownTimer - 0.4);
+    state.countdownTimer -= dt;
+    const curSec = Math.ceil(state.countdownTimer - 0.4);
 
-    if (state.phase !== 'playing') return;
-
-    const simDt = dt * (state.player && !state.player.alive ? state.spectateSpeed : 1);
-    state.elapsed += simDt;
-
-    // 4. Проверяем пропорциональную очередь восстановления сот (первая упавшая — первая восстановится)
-    processRegenQueue();
-
-    // Спавн бонусов и событий
-    state.powerupSpawnTimer -= simDt;
-    if (state.powerupSpawnTimer <= 0) {
-      state.powerupSpawnTimer = state.config.powerupInterval;
-      if (state.powerups.length < 6) {
-        spawnPowerup();
+    const cdText = document.getElementById('countdown-text');
+    if (curSec !== prevSec) {
+      if (curSec >= 1) {
+        cdText.textContent = String(curSec);
+        sfx.play('count');
+      } else if (curSec === 0) {
+        cdText.textContent = 'СТАРТ!';
+        sfx.play('go');
       }
     }
 
-    state.eventTimer -= simDt;
-    if (state.eventTimer <= 0) {
-      state.eventTimer = 20.0;
-      triggerArenaEvent();
+    updateThirdPersonCamera(dt);
+    update3DNameplates();
+
+    if (state.countdownTimer <= 0) {
+      state.phase = 'playing';
+      document.getElementById('countdown-overlay').classList.add('hidden');
+    }
+    return;
+  }
+
+  // 3. ФАЗА ПЛАШКИ ПОБЕДИТЕЛЯ
+  if (state.phase === 'celebrating') {
+    state.celebrationTimer -= dt;
+    state.targetCamYaw += dt * 0.85;
+    updateThirdPersonCamera(dt, state.matchWinner);
+    updateFX(dt);
+    update3DNameplates();
+    if (state.celebrationTimer <= 0) {
+      showFinalResultsModal();
+    }
+    return;
+  }
+
+  if (state.phase !== 'playing') {
+    update3DNameplates();
+    return;
+  }
+
+  const simDt = dt * (state.player && !state.player.alive ? state.spectateSpeed : 1);
+  state.elapsed += simDt;
+
+  // Пропорциональное восстановление сот из FIFO очереди
+  processRegenQueue();
+
+  // Спавн бонусов и событий
+  state.powerupSpawnTimer -= simDt;
+  if (state.powerupSpawnTimer <= 0) {
+    state.powerupSpawnTimer = state.config.powerupInterval;
+    if (state.powerups.length < 6) spawnPowerup3D();
+  }
+
+  state.eventTimer -= simDt;
+  if (state.eventTimer <= 0) {
+    state.eventTimer = 20.0;
+    triggerArenaEvent();
+  }
+
+  // Обновляем все 3D-плитки
+  for (const layer of state.layers) {
+    for (const tile of layer.list) {
+      tile.update(simDt, state.config, layer.map);
+    }
+  }
+
+  // Управление игроком относительно направления взгляда 3D-камеры
+  const p = state.player;
+  if (p && p.alive) {
+    let inputRight = 0;
+    let inputForward = 0;
+
+    if (keys['KeyW'] || keys['ArrowUp']) inputForward += 1;
+    if (keys['KeyS'] || keys['ArrowDown']) inputForward -= 1;
+    if (keys['KeyD'] || keys['ArrowRight']) inputRight += 1;
+    if (keys['KeyA'] || keys['ArrowLeft']) inputRight -= 1;
+
+    if (joystick.active) {
+      inputRight += joystick.dx;
+      inputForward -= joystick.dy;
     }
 
-    // Обновление всех гекса-плиток
+    const len = Math.hypot(inputRight, inputForward);
+    if (len > 0.05 && !p.isDiving) {
+      const nr = inputRight / Math.max(1, len);
+      const nf = inputForward / Math.max(1, len);
+
+      // Вектор от камеры к персонажу имеет угол (state.camYaw + Math.PI)
+      const camForwardX = -Math.sin(state.camYaw);
+      const camForwardZ = -Math.cos(state.camYaw);
+      const camRightX = Math.cos(state.camYaw);
+      const camRightZ = -Math.sin(state.camYaw);
+
+      const moveDirX = camForwardX * nf + camRightX * nr;
+      const moveDirZ = camForwardZ * nf + camRightZ * nr;
+
+      p.facing = Math.atan2(moveDirX, moveDirZ);
+      const maxSpeed = 7.2 * (p.buffs.speed > 0 ? 1.35 : 1.0);
+      const targetVx = moveDirX * maxSpeed * Math.min(1, len);
+      const targetVz = moveDirZ * maxSpeed * Math.min(1, len);
+
+      const accel = p.onGround ? 11 : 6.0;
+      p.vx += (targetVx - p.vx) * Math.min(1, simDt * accel);
+      p.vz += (targetVz - p.vz) * Math.min(1, simDt * accel);
+
+      // Мягкий подруливающий авто-поворот камеры за спину при беге вбок (если игрок не крутит мышь вручную последние 1.8 сек)
+      if (state.elapsed - state.lastManualOrbitTime > 1.8 && Math.abs(nr) > 0.35) {
+        state.targetCamYaw -= nr * simDt * 0.75;
+      }
+    } else if (!p.isDiving) {
+      const friction = p.onGround ? 10 : 2.5;
+      p.vx *= Math.max(0, 1 - simDt * friction);
+      p.vz *= Math.max(0, 1 - simDt * friction);
+    }
+  }
+
+  // Физика и непрерывная проверка коллизий с 3D-сотами (никто не проваливается сквозь текстуры!)
+  const slimeSurfaceY = -14.0;
+
+  for (const actor of state.actors) {
+    if (!actor.alive) continue;
+
+    actor.survivalTime = state.elapsed;
+    actor.score += simDt * 12 * state.config.scoreMult;
+
+    for (const k of Object.keys(actor.buffs)) {
+      if (actor.buffs[k] > 0) actor.buffs[k] = Math.max(0, actor.buffs[k] - simDt);
+    }
+    if (actor.diveCooldown > 0) actor.diveCooldown = Math.max(0, actor.diveCooldown - simDt);
+    if (actor.isDiving) {
+      actor.diveTimer -= simDt;
+      if (actor.diveTimer <= 0) actor.isDiving = false;
+    }
+
+    if (!actor.isPlayer) {
+      updateBotAI3D(actor, simDt, state.config);
+    }
+
+    const prevY = actor.y;
+    const wasOnGround = actor.onGround;
+
+    actor.x += actor.vx * simDt;
+    actor.z += actor.vz * simDt;
+
+    const gravity = actor.buffs.feather > 0 && actor.vy < 0 ? 19.0 : 30.0;
+    actor.vy -= gravity * simDt;
+    actor.y += actor.vy * simDt;
+
+    actor.onGround = false;
+
+    // Непрерывный Sweep-тест по всем ярусам сверху вниз
+    let shadowPlaced = false;
     for (const layer of state.layers) {
-      for (const tile of layer.list) {
-        tile.update(simDt, state.config, layer.map);
+      const supportTile = findSupportingTileOnLayer(layer, actor.x, actor.z, actor.radius);
+      const surfaceY = supportTile ? (layer.yHeight + supportTile.offsetY) : layer.yHeight;
+
+      // Проверяем пересечение верхней плоскости соты (с запасом сверху и снизу, чтобы никогда не проскочить сквозь полигон)
+      if (supportTile && actor.vy <= 0 && prevY >= surfaceY - 0.65 && actor.y <= surfaceY + 0.25) {
+        if (!wasOnGround && actor.vy < -4.5) {
+          actor.squash = Math.min(0.32, Math.abs(actor.vy) / 42);
+        }
+        actor.y = surfaceY;
+        actor.vy = 0;
+        actor.onGround = true;
+        actor.jumpCount = 0;
+        actor.currentLayer = layer.index;
+        supportTile.triggerStep(actor, state.config);
+
+        actor.rig.blobShadow.visible = true;
+        actor.rig.blobShadow.position.y = 0.03;
+        shadowPlaced = true;
+        break;
+      }
+
+      // Проекция круглой тени на ближайшую соту внизу во время прыжка
+      if (!shadowPlaced && supportTile && actor.y > surfaceY) {
+        actor.rig.blobShadow.visible = true;
+        actor.rig.blobShadow.position.y = (surfaceY - actor.y) + 0.03;
+        shadowPlaced = true;
       }
     }
 
-    // 1. Управление игроком (размеренная комфортная скорость 124 ед/с)
-    const p = state.player;
-    if (p && p.alive) {
-      let moveX = 0;
-      let moveY = 0;
-
-      if (keys['KeyW'] || keys['ArrowUp']) moveY -= 1;
-      if (keys['KeyS'] || keys['ArrowDown']) moveY += 1;
-      if (keys['KeyA'] || keys['ArrowLeft']) moveX -= 1;
-      if (keys['KeyD'] || keys['ArrowRight']) moveX += 1;
-
-      if (joystick.active) {
-        moveX += joystick.dx;
-        moveY += joystick.dy;
-      }
-
-      const len = Math.hypot(moveX, moveY);
-      if (len > 0.05 && !p.isDiving) {
-        const nx = moveX / Math.max(1, len);
-        const ny = moveY / Math.max(1, len);
-
-        const cosA = Math.cos(-state.cameraYaw);
-        const sinA = Math.sin(-state.cameraYaw);
-        const worldDirX = nx * cosA - ny * sinA;
-        const worldDirY = nx * sinA + ny * cosA;
-
-        p.facing = Math.atan2(worldDirY, worldDirX);
-        const maxSpeed = 124 * (p.buffs.speed > 0 ? 1.35 : 1.0);
-        const targetVx = worldDirX * maxSpeed * Math.min(1, len);
-        const targetVy = worldDirY * maxSpeed * Math.min(1, len);
-
-        const accel = p.onGround ? 10 : 5.5;
-        p.vx += (targetVx - p.vx) * Math.min(1, simDt * accel);
-        p.vy += (targetVy - p.vy) * Math.min(1, simDt * accel);
-      } else if (!p.isDiving) {
-        const friction = p.onGround ? 9 : 2.2;
-        p.vx *= Math.max(0, 1 - simDt * friction);
-        p.vy *= Math.max(0, 1 - simDt * friction);
-      }
+    if (!shadowPlaced) {
+      actor.rig.blobShadow.visible = false;
     }
 
-    // Физика всех участников (размеренная гравитация 540 вместо 760)
-    const abyssZ = -LAYER_GAP - 160;
-
-    for (const actor of state.actors) {
-      if (!actor.alive) continue;
-
-      actor.survivalTime = state.elapsed;
-      actor.score += simDt * 12 * state.config.scoreMult;
-
-      for (const k of Object.keys(actor.buffs)) {
-        if (actor.buffs[k] > 0) {
-          actor.buffs[k] = Math.max(0, actor.buffs[k] - simDt);
-        }
-      }
-
-      if (actor.diveCooldown > 0) actor.diveCooldown = Math.max(0, actor.diveCooldown - simDt);
-      if (actor.isDiving) {
-        actor.diveTimer -= simDt;
-        if (actor.diveTimer <= 0) actor.isDiving = false;
-      }
-
-      if (!actor.isPlayer) {
-        updateBotAI(actor, simDt, state.config);
-      }
-
-      const prevZ = actor.z;
-      const wasOnGround = actor.onGround;
-      actor.x += actor.vx * simDt;
-      actor.y += actor.vy * simDt;
-
-      const gravity = actor.buffs.feather > 0 && actor.vz < 0 ? 340 : 540;
-      actor.vz -= gravity * simDt;
-      actor.z += actor.vz * simDt;
-
-      actor.onGround = false;
-
-      for (const layer of state.layers) {
-        const surfaceZ = layer.zHeight;
-        if (prevZ >= surfaceZ - 9 && actor.z <= surfaceZ + 6 && actor.vz <= 0) {
-          const checkOffsets = [
-            [0, 0],
-            [actor.radius * 0.55, 0],
-            [-actor.radius * 0.55, 0],
-            [0, actor.radius * 0.55],
-            [0, -actor.radius * 0.55]
-          ];
-
-          let landedTile = null;
-          for (const [ox, oy] of checkOffsets) {
-            const ax = worldToAxial(actor.x + ox, actor.y + oy);
-            const t = layer.map.get(`${ax.q},${ax.r}`);
-            if (t && (t.status === 'solid' || t.status === 'stepped' || t.status === 'restoring')) {
-              landedTile = t;
-              break;
-            }
-          }
-
-          if (landedTile) {
-            if (!wasOnGround && actor.vz < -80) {
-              // 7. Эффект пружинистого приземления фасолинки (Squash)
-              actor.squash = Math.min(0.32, Math.abs(actor.vz) / 850);
-            }
-            actor.z = surfaceZ;
-            actor.vz = 0;
-            actor.onGround = true;
-            actor.jumpCount = 0;
-            actor.currentLayer = layer.index;
-            landedTile.triggerStep(actor, state.config);
-            break;
-          }
-        }
-      }
-
-      // Подбор бонусов
-      for (let i = state.powerups.length - 1; i >= 0; i--) {
-        const pu = state.powerups[i];
-        if (Math.abs(actor.z - pu.z) < 42 && Math.hypot(actor.x - pu.x, actor.y - pu.y) < 34) {
-          applyPowerup(actor, pu);
-          state.powerups.splice(i, 1);
-        }
-      }
-
-      // Падение в слизь
-      if (actor.z < abyssZ) {
-        if (actor.buffs.shield > 0) {
-          actor.buffs.shield = 0;
-          const bottomLayer = state.layers[state.layers.length - 1];
-          actor.z = bottomLayer.zHeight + 80;
-          actor.vz = 340;
-          actor.x *= 0.3;
-          actor.y *= 0.3;
-          const cAx = worldToAxial(actor.x, actor.y);
-          const cTile = bottomLayer.map.get(`${cAx.q},${cAx.r}`) || bottomLayer.map.get('0,0');
-          if (cTile) cTile.instantRepair();
-
-          sfx.play('spring');
-          spawnShockwave(actor.x, actor.y, bottomLayer.zHeight, 120, '#ffd740');
-          if (actor.isPlayer) {
-            addFeedItem('🛡️ Батут-спасение вернул вас на арену!', '#ffd740');
-          }
-        } else {
-          actor.alive = false;
-          state.eliminationOrder.push(actor);
-          sfx.play('elim');
-          spawnParticles(actor.x, actor.y, abyssZ + 20, '#ff2a85', 20);
-          addFeedItem(`💦 ${actor.name} плюхнулся в слизь!`, actor.isPlayer ? '#00e5ff' : '#ff2a85');
-
-          if (actor.isPlayer) {
-            onPlayerEliminated();
-          }
-        }
-      }
-    }
-
-    // Столкновения плечами между фасолинками
-    const aliveList = state.actors.filter(a => a.alive);
-    for (let i = 0; i < aliveList.length; i++) {
-      for (let j = i + 1; j < aliveList.length; j++) {
-        const a = aliveList[i];
-        const b = aliveList[j];
-        if (Math.abs(a.z - b.z) < 34) {
-          const dx = b.x - a.x;
-          const dy = b.y - a.y;
-          const dist = Math.hypot(dx, dy);
-          const minDist = a.radius + b.radius;
-          if (dist < minDist && dist > 0.01) {
-            const overlap = (minDist - dist) * 0.5;
-            const nx = dx / dist;
-            const ny = dy / dist;
-            a.x -= nx * overlap;
-            a.y -= ny * overlap;
-            b.x += nx * overlap;
-            b.y += ny * overlap;
-
-            const push = 75;
-            a.vx -= nx * push * simDt * 8;
-            a.vy -= ny * push * simDt * 8;
-            b.vx += nx * push * simDt * 8;
-            b.vy += ny * push * simDt * 8;
-          }
-        }
-      }
-    }
-
-    // Обновление бонусов, частиц и волн
+    // Подбор 3D-бонусов
     for (let i = state.powerups.length - 1; i >= 0; i--) {
       const pu = state.powerups[i];
-      pu.life -= simDt;
-      pu.bobPhase += simDt * 3.5;
-      if (pu.life <= 0) state.powerups.splice(i, 1);
-    }
-
-    for (let i = state.particles.length - 1; i >= 0; i--) {
-      const pt = state.particles[i];
-      pt.life -= simDt;
-      pt.x += pt.vx * simDt;
-      pt.y += pt.vy * simDt;
-      pt.z += pt.vz * simDt;
-      pt.vz -= 320 * simDt;
-      if (pt.life <= 0) state.particles.splice(i, 1);
-    }
-
-    for (let i = state.shockwaves.length - 1; i >= 0; i--) {
-      const sw = state.shockwaves[i];
-      sw.life -= simDt;
-      sw.radius = sw.maxRadius * (1 - sw.life / sw.maxLife);
-      if (sw.life <= 0) state.shockwaves.splice(i, 1);
-    }
-
-    // 1. Близкое слежение камеры за персонажем игрока (или наблюдаемым ботом)
-    let focusActor = state.player;
-    if (!focusActor || !focusActor.alive) {
-      if (!state.spectateTarget || !state.spectateTarget.alive) {
-        state.spectateTarget = aliveList[state.spectateIdx % Math.max(1, aliveList.length)] || state.player;
-      }
-      focusActor = state.spectateTarget;
-      if (focusActor) {
-        document.getElementById('spec-target-name').textContent =
-          `Смотрим за: ${focusActor.name} (Ярус ${focusActor.currentLayer + 1})`;
+      if (Math.abs(actor.y + 1.0 - pu.y) < 2.2 && Math.hypot(actor.x - pu.x, actor.z - pu.z) < 1.85) {
+        applyPowerup(actor, pu);
+        fxGroup.remove(pu.mesh);
+        state.powerups.splice(i, 1);
       }
     }
 
+    // Падение в розовую слизь
+    if (actor.y < slimeSurfaceY) {
+      if (actor.buffs.shield > 0) {
+        actor.buffs.shield = 0;
+        const bottomLayer = state.layers[state.layers.length - 1];
+        actor.y = bottomLayer.yHeight + 4.5;
+        actor.vy = 20.0;
+        actor.x *= 0.3;
+        actor.z *= 0.3;
+        const cAx = worldXZToAxial(actor.x, actor.z);
+        const cTile = bottomLayer.map.get(`${cAx.q},${cAx.r}`) || bottomLayer.map.get('0,0');
+        if (cTile) cTile.instantRepair();
+
+        sfx.play('spring');
+        spawnShockwave3D(actor.x, bottomLayer.yHeight + 0.1, actor.z, 6.5, 0xffd740);
+        if (actor.isPlayer) addFeedItem('🛡️ Батут-спасение катапультировал вас из слизи!', '#ffd740');
+      } else {
+        actor.alive = false;
+        actor.rig.root.visible = false;
+        actor.labelEl.style.display = 'none';
+        state.eliminationOrder.push(actor);
+        sfx.play('elim');
+        spawnParticles3D(actor.x, slimeSurfaceY + 0.5, actor.z, 0xff2a85, 22);
+        addFeedItem(`💦 ${actor.name} плюхнулся в слизь!`, actor.isPlayer ? '#00e5ff' : '#ff2a85');
+
+        if (actor.isPlayer) onPlayerEliminated();
+      }
+    }
+  }
+
+  // Столкновения плечами между 3D-фасолинками
+  const aliveList = state.actors.filter(a => a.alive);
+  for (let i = 0; i < aliveList.length; i++) {
+    for (let j = i + 1; j < aliveList.length; j++) {
+      const a = aliveList[i];
+      const b = aliveList[j];
+      if (Math.abs(a.y - b.y) < 1.8) {
+        const dx = b.x - a.x;
+        const dz = b.z - a.z;
+        const dist = Math.hypot(dx, dz);
+        const minDist = a.radius + b.radius;
+        if (dist < minDist && dist > 0.01) {
+          const overlap = (minDist - dist) * 0.5;
+          const nx = dx / dist;
+          const nz = dz / dist;
+          a.x -= nx * overlap;
+          a.z -= nz * overlap;
+          b.x += nx * overlap;
+          b.z += nz * overlap;
+
+          const push = 4.2;
+          a.vx -= nx * push * simDt * 8;
+          a.vz -= nz * push * simDt * 8;
+          b.vx += nx * push * simDt * 8;
+          b.vz += nz * push * simDt * 8;
+        }
+      }
+    }
+  }
+
+  updateFX(simDt);
+  updateThirdPersonCamera(dt);
+  update3DNameplates();
+
+  if (aliveList.length <= 1) {
+    triggerWinnerCelebration(aliveList[0] || state.eliminationOrder[state.eliminationOrder.length - 1]);
+  }
+
+  updateHUD();
+}
+
+function updateFX(dt) {
+  for (let i = state.powerups.length - 1; i >= 0; i--) {
+    const pu = state.powerups[i];
+    pu.life -= dt;
+    pu.phase += dt * 3.5;
+    pu.mesh.position.y = pu.y + Math.sin(pu.phase) * 0.3;
+    pu.mesh.rotation.y += dt * 2.2;
+    if (pu.life <= 0) {
+      fxGroup.remove(pu.mesh);
+      state.powerups.splice(i, 1);
+    }
+  }
+
+  for (let i = state.particles.length - 1; i >= 0; i--) {
+    const pt = state.particles[i];
+    pt.life -= dt;
+    pt.mesh.position.x += pt.vx * dt;
+    pt.mesh.position.y += pt.vy * dt;
+    pt.mesh.position.z += pt.vz * dt;
+    pt.vy -= 18.0 * dt;
+    pt.mesh.material.opacity = Math.max(0, pt.life / pt.maxLife);
+    if (pt.life <= 0) {
+      fxGroup.remove(pt.mesh);
+      state.particles.splice(i, 1);
+    }
+  }
+
+  for (let i = state.shockwaves.length - 1; i >= 0; i--) {
+    const sw = state.shockwaves[i];
+    sw.life -= dt;
+    const p = 1 - Math.max(0, sw.life / sw.maxLife);
+    const r = 0.5 + p * sw.maxRadius;
+    sw.mesh.scale.set(r, r, r);
+    sw.mesh.material.opacity = Math.max(0, sw.life / sw.maxLife);
+    if (sw.life <= 0) {
+      fxGroup.remove(sw.mesh);
+      state.shockwaves.splice(i, 1);
+    }
+  }
+}
+
+function updateThirdPersonCamera(dt, forcedTarget = null) {
+  state.camYaw += (state.targetCamYaw - state.camYaw) * Math.min(1, dt * 10);
+
+  const aliveList = state.actors.filter(a => a.alive);
+  let focusActor = forcedTarget || state.player;
+  if (!focusActor || !focusActor.alive) {
+    if (!state.spectateTarget || !state.spectateTarget.alive) {
+      state.spectateTarget = aliveList[state.spectateIdx % Math.max(1, aliveList.length)] || state.player;
+    }
+    focusActor = state.spectateTarget;
     if (focusActor) {
-      state.camX += (focusActor.x - state.camX) * Math.min(1, dt * 8.0);
-      state.camY += (focusActor.y - state.camY) * Math.min(1, dt * 8.0);
-      state.camZ += (focusActor.z - state.camZ) * Math.min(1, dt * 6.0);
-    }
-
-    // Проверка окончания раунда
-    if (aliveList.length <= 1) {
-      triggerWinnerCelebration(aliveList[0] || state.eliminationOrder[state.eliminationOrder.length - 1]);
-    }
-
-    updateHUD();
-  }
-
-  function triggerArenaEvent() {
-    const roll = Math.random();
-    const banner = document.getElementById('event-banner');
-    banner.classList.remove('hidden');
-
-    if (roll < 0.45) {
-      banner.textContent = '🎁 СОБЫТИЕ: ДОЖДЬ БОНУСОВ НА ЯРУСАХ!';
-      for (let i = 0; i < 3; i++) spawnPowerup();
-    } else if (roll < 0.78) {
-      banner.textContent = '🛠️ СОБЫТИЕ: УСКОРЕННОЕ ВОССТАНОВЛЕНИЕ СОТ!';
-      // Пропускаем вперёд время восстановления первых 8 сот в очереди
-      for (let i = 0; i < Math.min(8, state.regenQueue.length); i++) {
-        state.regenQueue[i].restoreAt = state.elapsed;
-      }
-      sfx.play('regen');
-    } else {
-      banner.textContent = '🪽 СОБЫТИЕ: ПЛАВНАЯ ГРАВИТАЦИЯ ВСЕМ (5 СЕК)!';
-      state.actors.forEach(a => {
-        if (a.alive) a.buffs.feather = Math.max(a.buffs.feather, 5.0);
-      });
-      sfx.play('powerup');
-    }
-
-    setTimeout(() => {
-      banner.classList.add('hidden');
-    }, 4200);
-  }
-
-  function onPlayerEliminated() {
-    const aliveCount = state.actors.filter(a => a.alive).length;
-    if (aliveCount > 1) {
-      document.getElementById('spectator-bar').classList.remove('hidden');
+      document.getElementById('spec-target-name').textContent =
+        `Смотрим за: ${focusActor.name} (Ярус ${focusActor.currentLayer + 1})`;
     }
   }
 
-  // 5. Показ торжественной плашки победителя в конце игры
-  function triggerWinnerCelebration(winner) {
-    if (state.phase === 'celebrating' || state.phase === 'gameover') return;
-    state.phase = 'celebrating';
-    state.celebrationTimer = 2.8;
-    state.matchWinner = winner;
-
-    document.getElementById('spectator-bar').classList.add('hidden');
-
-    const overlay = document.getElementById('winner-banner-overlay');
-    const ribbon = document.getElementById('winner-plashka-ribbon');
-    const nameEl = document.getElementById('winner-plashka-name');
-    const subEl = document.getElementById('winner-plashka-sub');
-
-    const isPlayerWin = winner && winner.isPlayer;
-    ribbon.textContent = isPlayerWin ? '🎉 ВЫ ПОБЕДИЛИ В ШОУ! 🎉' : '🏁 ФИНАЛ РАУНДА ОКОНЧЕН!';
-    nameEl.textContent = winner ? winner.name : 'Ничья';
-    subEl.textContent = isPlayerWin
-      ? 'Вы перепрыгали всех соперников и забрали Золотую Корону!'
-      : 'становится последним выжившим и забирает Корону!';
-
-    overlay.classList.remove('hidden');
-    sfx.play('win');
-
-    // Салют из конфетти вокруг победителя
-    if (winner) {
-      state.targetCameraZoom = 1.75;
-      for (let i = 0; i < 35; i++) {
-        const cols = ['#ffe600', '#00e5ff', '#ff2a85', '#00e676', '#ffffff'];
-        spawnParticles(winner.x, winner.y, winner.z + 25, cols[i % cols.length], 2);
-      }
-    }
+  if (focusActor) {
+    const targetPos = new THREE.Vector3(focusActor.x, focusActor.y + 1.35, focusActor.z);
+    state.camFocusPos.lerp(targetPos, Math.min(1, dt * 9));
   }
 
-  function showFinalResultsModal() {
-    if (state.phase === 'gameover') return;
-    state.phase = 'gameover';
-    document.getElementById('winner-banner-overlay').classList.add('hidden');
+  const dist = state.phase === 'celebrating' ? 9.5 : state.camDist;
+  const height = state.phase === 'celebrating' ? 4.2 : state.camHeight + state.camPitchOffset;
 
-    const winner = state.matchWinner;
-    const aliveRemaining = state.actors.filter(a => a.alive);
-    const standings = [...aliveRemaining];
-    for (let i = state.eliminationOrder.length - 1; i >= 0; i--) {
-      const a = state.eliminationOrder[i];
-      if (!standings.includes(a)) standings.push(a);
+  const camX = state.camFocusPos.x + Math.sin(state.camYaw) * dist;
+  const camY = state.camFocusPos.y + Math.max(2.5, height);
+  const camZ = state.camFocusPos.z + Math.cos(state.camYaw) * dist;
+
+  camera.position.set(camX, camY, camZ);
+  camera.lookAt(state.camFocusPos.x, state.camFocusPos.y + 0.3, state.camFocusPos.z);
+}
+
+// Проекция 3D координат макушки каждой фасолинки в 2D экранные координаты для чётких смешных ников
+const tempProjVec = new THREE.Vector3();
+function update3DNameplates() {
+  const halfW = window.innerWidth * 0.5;
+  const halfH = window.innerHeight * 0.5;
+
+  for (const actor of state.actors) {
+    if (!actor.alive) {
+      actor.labelEl.style.display = 'none';
+      continue;
+    }
+    tempProjVec.set(actor.x, actor.y + 2.55, actor.z);
+    tempProjVec.project(camera);
+
+    // Если за спиной камеры — скрываем
+    if (tempProjVec.z > 1) {
+      actor.labelEl.style.display = 'none';
+      continue;
     }
 
-    const playerPlace = standings.findIndex(a => a.isPlayer) + 1;
-    const p = state.player;
-    const isVictory = playerPlace === 1;
+    const sx = (tempProjVec.x * halfW) + halfW;
+    const sy = -(tempProjVec.y * halfH) + halfH;
+    actor.labelEl.style.display = 'block';
+    actor.labelEl.style.transform = `translate3d(${sx.toFixed(1)}px, ${sy.toFixed(1)}px, 0) translate(-50%, -100%)`;
+  }
+}
 
-    if (isVictory) {
-      p.score += Math.round(500 * state.config.scoreMult);
-      saveData.crowns += 1;
-      saveData.recordsByDiff[state.diffKey].wins += 1;
+function triggerArenaEvent() {
+  const roll = Math.random();
+  const banner = document.getElementById('event-banner');
+  banner.classList.remove('hidden');
+
+  if (roll < 0.45) {
+    banner.textContent = '🎁 СОБЫТИЕ: ДОЖДЬ БОНУСОВ НА ЯРУСАХ!';
+    for (let i = 0; i < 3; i++) spawnPowerup3D();
+  } else if (roll < 0.78) {
+    banner.textContent = '🛠️ СОБЫТИЕ: ВОЛНА РЕГЕНЕРАЦИИ СОТ!';
+    for (let i = 0; i < Math.min(10, state.regenQueue.length); i++) {
+      state.regenQueue[i].restoreAt = state.elapsed;
     }
-
-    const finalScore = Math.round(p.score);
-    saveData.totalScore += finalScore;
-    saveData.matchesPlayed += 1;
-    if (p.survivalTime > saveData.bestSurvivalSec) {
-      saveData.bestSurvivalSec = p.survivalTime;
-    }
-
-    const rec = saveData.recordsByDiff[state.diffKey];
-    if (p.survivalTime > rec.bestTime) rec.bestTime = p.survivalTime;
-    if (finalScore > rec.bestScore) rec.bestScore = finalScore;
-
-    saveGameData();
-    updateHUD();
-
-    document.getElementById('result-ribbon').textContent = isVictory ? 'ЧЕМПИОН ШОУ!' : 'ИТОГИ ФИНАЛА';
-    document.getElementById('result-title').textContent = isVictory
-      ? 'ПОБЕДА! КОРОНА ВАША! 👑'
-      : `ВЫ ЗАНЯЛИ #${playerPlace} МЕСТО!`;
-    document.getElementById('result-subtitle').textContent = isVictory
-      ? 'Невероятная ловкость на шестиугольных сотах!'
-      : `Победитель шоу: ${winner ? winner.name : 'Бот'} 👑`;
-
-    document.getElementById('spot-winner-name').textContent = winner ? `${winner.name} ${winner.isPlayer ? '(Вы)' : ''}` : 'Чемпион';
-    document.getElementById('spot-winner-meta').textContent = winner
-      ? `Выжил ${formatTime(winner.survivalTime)} и набрал ⭐ ${Math.round(winner.score)} очков!`
-      : '';
-
-    // Рисуем портрет фасолинки-победителя в плашке итогов
-    const winCanvas = document.getElementById('winner- bean-canvas');
-    if (winCanvas && winner) {
-      const wCtx = winCanvas.getContext('2d');
-      wCtx.clearRect(0, 0, winCanvas.width, winCanvas.height);
-      drawBeanAvatar(wCtx, 45, 76, 1.15, winner.skin, performance.now() * 0.005, 'celebrate');
-    }
-
-    document.getElementById('res-place').textContent = `#${playerPlace}`;
-    document.getElementById('res-time').textContent = formatTime(p.survivalTime);
-    document.getElementById('res-tiles').textContent = String(p.tilesBroken);
-    document.getElementById('res-score').textContent = `+${finalScore}`;
-
-    const standingsEl = document.getElementById('match-standings');
-    standingsEl.innerHTML = '';
-    standings.slice(0, 10).forEach((act, idx) => {
-      const row = document.createElement('div');
-      row.className = 'standing-row' + (act.isPlayer ? ' is-player' : '');
-      const medal = idx === 0 ? '👑' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
-      row.innerHTML = `
-        <span>${medal} <strong>${act.name}</strong> ${act.isPlayer ? '(Вы)' : ''}</span>
-        <span>⏱️ ${formatTime(act.survivalTime)} • ⭐ ${Math.round(act.score)}</span>
-      `;
-      standingsEl.appendChild(row);
+    sfx.play('regen');
+  } else {
+    banner.textContent = '🪽 СОБЫТИЕ: НИЗКАЯ ГРАВИТАЦИЯ ВСЕМ (5 СЕК)!';
+    state.actors.forEach(a => {
+      if (a.alive) a.buffs.feather = Math.max(a.buffs.feather, 5.0);
     });
-
-    document.getElementById('result-modal').classList.remove('hidden');
+    sfx.play('powerup');
   }
 
-  // ==================== 3 & 7. РЕНДЕРИНГ 3D СОТ И ПЕРСОНАЖЕЙ-ФАСОЛИНОК ====================
-  function resizeCanvas() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = Math.floor(window.innerWidth * dpr);
-    canvas.height = Math.floor(window.innerHeight * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  setTimeout(() => banner.classList.add('hidden'), 4200);
+}
+
+function onPlayerEliminated() {
+  const aliveCount = state.actors.filter(a => a.alive).length;
+  if (aliveCount > 1) {
+    document.getElementById('spectator-bar').classList.remove('hidden');
   }
-  window.addEventListener('resize', resizeCanvas);
-  resizeCanvas();
-
-  // Проекция мировых координат с учётом близкого зума камеры (state.cameraZoom)
-  function project3D(wx, wy, wz) {
-    const dx = wx - state.camX;
-    const dy = wy - state.camY;
-    const dz = wz - state.camZ;
-
-    const cosA = Math.cos(state.cameraYaw);
-    const sinA = Math.sin(state.cameraYaw);
-
-    const rx = dx * cosA - dy * sinA;
-    const ry = dx * sinA + dy * cosA;
-
-    const cx = window.innerWidth * 0.5;
-    const cy = window.innerHeight * 0.55;
-    const zf = state.cameraZoom;
-
-    const sx = cx + rx * zf;
-    const sy = cy + (ry * state.cameraPitch - dz * 0.80) * zf;
-    const depth = ry - dz * 0.45;
-    return { sx, sy, depth, scale: zf };
-  }
-
-  function drawHexPrism(sx, sy, radius, thickness, topColor, sideColor, strokeColor, alpha = 1) {
-    if (alpha <= 0.01 || radius <= 1) return;
-    const pts = [];
-    for (let i = 0; i < 6; i++) {
-      const ang = state.cameraYaw + (Math.PI / 6) + i * (Math.PI / 3);
-      pts.push({
-        x: sx + Math.cos(ang) * radius,
-        y: sy + Math.sin(ang) * radius * state.cameraPitch
-      });
-    }
-
-    ctx.save();
-    ctx.globalAlpha = alpha;
-
-    // 3D боковая грань соты
-    if (thickness > 1) {
-      ctx.fillStyle = sideColor;
-      ctx.beginPath();
-      for (let i = 0; i < 6; i++) {
-        const p1 = pts[i];
-        const p2 = pts[(i + 1) % 6];
-        if (p1.y + p2.y > sy * 2 - 4) {
-          ctx.moveTo(p1.x, p1.y);
-          ctx.lineTo(p2.x, p2.y);
-          ctx.lineTo(p2.x, p2.y + thickness);
-          ctx.lineTo(p1.x, p1.y + thickness);
-          ctx.closePath();
-        }
-      }
-      ctx.fill();
-    }
-
-    // Верхняя крышка соты
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < 6; i++) ctx.lineTo(pts[i].x, pts[i].y);
-    ctx.closePath();
-    ctx.fillStyle = topColor;
-    ctx.fill();
-
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = strokeColor;
-    ctx.stroke();
-
-    // Внутренний мягкий блик
-    ctx.beginPath();
-    for (let i = 0; i < 6; i++) {
-      const ix = sx + (pts[i].x - sx) * 0.74;
-      const iy = sy + (pts[i].y - sy) * 0.74;
-      if (i === 0) ctx.moveTo(ix, iy);
-      else ctx.lineTo(ix, iy);
-    }
-    ctx.closePath();
-    ctx.strokeStyle = 'rgba(255,255,255,0.28)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    ctx.restore();
-  }
-
-  // 3 & 7. Отрисовка полноценного персонажа-фасолинки (Fall Guys Bean) с частями тела, узорами, шляпами и анимациями!
-  function drawBeanBody(targetCtx, skin, walkCycle, animState, squash, tiltForward, lookDirX, lookDirY) {
-    const isRun = animState === 'run';
-    const isJump = animState === 'jump' || animState === 'fall';
-    const isDive = animState === 'dive';
-    const isCelebrate = animState === 'celebrate';
-
-    // Подпрыгивание корпуса при беге / танце / дыхании
-    let bodyBob = 0;
-    if (isRun) bodyBob = Math.abs(Math.sin(walkCycle * 2)) * 4.5;
-    else if (isCelebrate) bodyBob = Math.abs(Math.sin(walkCycle * 1.5)) * 9;
-    else if (animState === 'idle') bodyBob = Math.sin(walkCycle * 2) * 1.5;
-
-    // Squash & Stretch (растяжение по вертикали / сжатие по горизонтали)
-    const scaleX = 1 + squash * 0.55;
-    const scaleY = 1 - squash * 0.55;
-
-    const legSwing = isRun ? Math.sin(walkCycle * 2) * 8 : isJump ? 5 : isCelebrate ? Math.sin(walkCycle * 3) * 6 : 0;
-    const armSwing = isRun ? Math.cos(walkCycle * 2) * 9 : isJump ? -11 : isCelebrate ? -13 + Math.sin(walkCycle * 3) * 5 : 0;
-
-    targetCtx.save();
-    targetCtx.translate(0, -bodyBob);
-    if (isDive) {
-      targetCtx.rotate(lookDirX >= 0 ? 0.65 : -0.65);
-    } else {
-      targetCtx.rotate(lookDirX * tiltForward * 0.45);
-    }
-    targetCtx.scale(scaleX, scaleY);
-
-    // 1. Задняя ручка (если повёрнут боком)
-    targetCtx.fillStyle = skin.c1;
-    targetCtx.strokeStyle = '#140a2a';
-    targetCtx.lineWidth = 2.2;
-
-    // Ножки-ботиночки (левая и правая)
-    targetCtx.fillStyle = skin.c2;
-    targetCtx.beginPath();
-    targetCtx.roundRect(-10, -9 + legSwing * 0.55, 7.5, 11, 4);
-    targetCtx.fill();
-    targetCtx.stroke();
-
-    targetCtx.beginPath();
-    targetCtx.roundRect(2.5, -9 - legSwing * 0.55, 7.5, 11, 4);
-    targetCtx.fill();
-    targetCtx.stroke();
-
-    // Левая ручка (машет в противофазе ноге)
-    targetCtx.save();
-    targetCtx.translate(-14, -22);
-    targetCtx.rotate((armSwing * 0.045) - (isJump || isCelebrate ? 0.7 : 0.15));
-    targetCtx.fillStyle = skin.c1;
-    targetCtx.beginPath();
-    targetCtx.roundRect(-4.5, -2, 6.5, 13, 3.5);
-    targetCtx.fill();
-    targetCtx.stroke();
-    targetCtx.restore();
-
-    // 2. Основной корпус-фасолинка (Bean Torso) с клиппингом для узоров скина
-    targetCtx.save();
-    targetCtx.beginPath();
-    targetCtx.roundRect(-14.5, -38, 29, 32, 14.5);
-    targetCtx.fillStyle = skin.c1;
-    targetCtx.fill();
-
-    // Узоры костюма внутри силуэта фасолинки
-    targetCtx.clip();
-
-    if (skin.pattern === 'pants') {
-      // Нижние штанишки + ремень с пряжкой
-      targetCtx.fillStyle = skin.c2;
-      targetCtx.fillRect(-16, -15, 32, 12);
-      targetCtx.fillStyle = '#1a0f35';
-      targetCtx.fillRect(-16, -16.5, 32, 2.5);
-      targetCtx.fillStyle = '#ffe600';
-      targetCtx.fillRect(-3.5, -17.5, 7, 4.5);
-    } else if (skin.pattern === 'belly') {
-      // Милое светлое пузико
-      targetCtx.fillStyle = skin.c2;
-      targetCtx.beginPath();
-      targetCtx.ellipse(lookDirX * 2.5, -14, 9.5, 8, 0, 0, Math.PI * 2);
-      targetCtx.fill();
-    } else if (skin.pattern === 'stripes') {
-      // Гоночные / тигровые полоски
-      targetCtx.fillStyle = skin.c2;
-      targetCtx.fillRect(-16, -16, 32, 3.5);
-      targetCtx.fillRect(-16, -10.5, 32, 3.5);
-    } else if (skin.pattern === 'spots') {
-      // Пятнышки динозаврика
-      targetCtx.fillStyle = skin.c2;
-      targetCtx.beginPath();
-      targetCtx.arc(-8, -16, 3.5, 0, Math.PI * 2);
-      targetCtx.arc(8, -14, 4, 0, Math.PI * 2);
-      targetCtx.arc(-6, -28, 3, 0, Math.PI * 2);
-      targetCtx.fill();
-    }
-
-    // Мягкий объёмный блик на макушке и тень снизу
-    const beanGrad = targetCtx.createLinearGradient(0, -38, 0, -6);
-    beanGrad.addColorStop(0, 'rgba(255,255,255,0.28)');
-    beanGrad.addColorStop(0.45, 'rgba(255,255,255,0)');
-    beanGrad.addColorStop(1, 'rgba(0,0,0,0.22)');
-    targetCtx.fillStyle = beanGrad;
-    targetCtx.fillRect(-16, -38, 32, 34);
-    targetCtx.restore();
-
-    // Чёткий мультяшный контур фасолинки
-    targetCtx.beginPath();
-    targetCtx.roundRect(-14.5, -38, 29, 32, 14.5);
-    targetCtx.strokeStyle = '#140a2a';
-    targetCtx.lineWidth = 2.6;
-    targetCtx.stroke();
-
-    // 3. Лицевая маска (Faceplate / Visor) и выразительные глазки
-    const faceOffsetX = lookDirX * 4.5;
-    const faceOffsetY = lookDirY * 1.5;
-
-    targetCtx.fillStyle = skin.visor || '#ffffff';
-    targetCtx.beginPath();
-    targetCtx.ellipse(faceOffsetX, -24.5 + faceOffsetY, 9.5, 6.8, 0, 0, Math.PI * 2);
-    targetCtx.fill();
-    targetCtx.lineWidth = 2.0;
-    targetCtx.strokeStyle = '#140a2a';
-    targetCtx.stroke();
-
-    // Глазки-фасолинки (при прыжке или радости превращаются в весёлые дуги ^ ^)
-    targetCtx.fillStyle = '#140a2a';
-    if (isCelebrate) {
-      targetCtx.lineWidth = 2.2;
-      targetCtx.beginPath();
-      targetCtx.arc(faceOffsetX - 3.6, -24 + faceOffsetY, 2.5, Math.PI, 0);
-      targetCtx.stroke();
-      targetCtx.beginPath();
-      targetCtx.arc(faceOffsetX + 3.6, -24 + faceOffsetY, 2.5, Math.PI, 0);
-      targetCtx.stroke();
-    } else {
-      targetCtx.beginPath();
-      targetCtx.ellipse(faceOffsetX - 3.5, -24.5 + faceOffsetY, 2.0, 2.9, 0, 0, Math.PI * 2);
-      targetCtx.ellipse(faceOffsetX + 3.5, -24.5 + faceOffsetY, 2.0, 2.9, 0, 0, Math.PI * 2);
-      targetCtx.fill();
-
-      // Белые блики в глазках
-      targetCtx.fillStyle = '#ffffff';
-      targetCtx.beginPath();
-      targetCtx.arc(faceOffsetX - 4.1, -25.6 + faceOffsetY, 0.9, 0, Math.PI * 2);
-      targetCtx.arc(faceOffsetX + 2.9, -25.6 + faceOffsetY, 0.9, 0, Math.PI * 2);
-      targetCtx.fill();
-    }
-
-    // 4. Правая ручка
-    targetCtx.save();
-    targetCtx.translate(14, -22);
-    targetCtx.rotate((-armSwing * 0.045) + (isJump || isCelebrate ? 0.7 : 0.15));
-    targetCtx.fillStyle = skin.c1;
-    targetCtx.beginPath();
-    targetCtx.roundRect(-2, -2, 6.5, 13, 3.5);
-    targetCtx.fill();
-    targetCtx.stroke();
-    targetCtx.restore();
-
-    // 5. Головной убор / аксессуар скина (чтобы скины легко расширялись)
-    drawBeanHat(targetCtx, skin.hat, skin.c2);
-
-    targetCtx.restore();
-  }
-
-  function drawBeanHat(targetCtx, hatType, accentColor) {
-    targetCtx.save();
-    targetCtx.strokeStyle = '#140a2a';
-    targetCtx.lineWidth = 2;
-
-    if (hatType === 'crown') {
-      // Золотая корона с рубином
-      targetCtx.fillStyle = '#ffd700';
-      targetCtx.beginPath();
-      targetCtx.moveTo(-8, -37);
-      targetCtx.lineTo(-9, -46);
-      targetCtx.lineTo(-4, -41);
-      targetCtx.lineTo(0, -48);
-      targetCtx.lineTo(4, -41);
-      targetCtx.lineTo(9, -46);
-      targetCtx.lineTo(8, -37);
-      targetCtx.closePath();
-      targetCtx.fill();
-      targetCtx.stroke();
-    } else if (hatType === 'dino') {
-      // Гребень динозаврика
-      targetCtx.fillStyle = accentColor;
-      for (let i = -1; i <= 1; i++) {
-        targetCtx.beginPath();
-        targetCtx.moveTo(i * 5 - 3, -37);
-        targetCtx.lineTo(i * 5, -45);
-        targetCtx.lineTo(i * 5 + 3, -37);
-        targetCtx.closePath();
-        targetCtx.fill();
-        targetCtx.stroke();
-      }
-    } else if (hatType === 'ears') {
-      // Ушки тигра/котика
-      targetCtx.fillStyle = accentColor;
-      targetCtx.beginPath();
-      targetCtx.arc(-8, -38, 4.5, 0, Math.PI * 2);
-      targetCtx.arc(8, -38, 4.5, 0, Math.PI * 2);
-      targetCtx.fill();
-      targetCtx.stroke();
-    } else if (hatType === 'antenna') {
-      // Антенна пришельца
-      targetCtx.beginPath();
-      targetCtx.moveTo(0, -38);
-      targetCtx.lineTo(0, -46);
-      targetCtx.stroke();
-      targetCtx.fillStyle = '#00e676';
-      targetCtx.beginPath();
-      targetCtx.arc(0, -47, 3.8, 0, Math.PI * 2);
-      targetCtx.fill();
-      targetCtx.stroke();
-    } else if (hatType === 'chef') {
-      // Поварской колпак
-      targetCtx.fillStyle = '#ffffff';
-      targetCtx.beginPath();
-      targetCtx.roundRect(-8, -47, 16, 10, 5);
-      targetCtx.fill();
-      targetCtx.stroke();
-    } else if (hatType === 'plume') {
-      // Рыцарский султан
-      targetCtx.fillStyle = '#ff1744';
-      targetCtx.beginPath();
-      targetCtx.ellipse(0, -44, 6, 4.5, -0.2, 0, Math.PI * 2);
-      targetCtx.fill();
-      targetCtx.stroke();
-    } else if (hatType === 'fin') {
-      // Акулий плавник
-      targetCtx.fillStyle = '#26c6da';
-      targetCtx.beginPath();
-      targetCtx.moveTo(-4, -37);
-      targetCtx.lineTo(2, -48);
-      targetCtx.lineTo(6, -37);
-      targetCtx.closePath();
-      targetCtx.fill();
-      targetCtx.stroke();
-    } else if (hatType === 'visor_horn') {
-      // Кибер-нимб / рожки
-      targetCtx.fillStyle = '#00e5ff';
-      targetCtx.beginPath();
-      targetCtx.moveTo(-7, -38);
-      targetCtx.lineTo(-10, -45);
-      targetCtx.lineTo(-3, -39);
-      targetCtx.moveTo(7, -38);
-      targetCtx.lineTo(10, -45);
-      targetCtx.lineTo(3, -39);
-      targetCtx.fill();
-      targetCtx.stroke();
-    }
-    targetCtx.restore();
-  }
-
-  // Вспомогательная функция отрисовки аватара фасолинки в меню Гардероба и Итогов
-  function drawBeanAvatar(targetCtx, cx, cy, scale, skin, time, animState = 'idle') {
-    targetCtx.save();
-    targetCtx.translate(cx, cy);
-    targetCtx.scale(scale, scale);
-    drawBeanBody(targetCtx, skin, time * 2.2, animState, 0, 0, 0.25, 0.1);
-    targetCtx.restore();
-  }
-
-  function drawFallGuyCharacterOnScene(actor, proj) {
-    const { sx, sy, scale } = proj;
-    ctx.save();
-
-    // Тень под персонажем на ближайшем ярусе
-    for (const layer of state.layers) {
-      if (actor.z >= layer.zHeight - 5) {
-        const ax = worldToAxial(actor.x, actor.y);
-        const t = layer.map.get(`${ax.q},${ax.r}`);
-        if (t && (t.status === 'solid' || t.status === 'stepped' || t.status === 'restoring')) {
-          const shProj = project3D(actor.x, actor.y, layer.zHeight);
-          const heightDiff = Math.max(0, actor.z - layer.zHeight);
-          const shScale = Math.max(0.3, 1 - heightDiff / 220) * scale;
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.38)';
-          ctx.beginPath();
-          ctx.ellipse(shProj.sx, shProj.sy, 14 * shScale, 8.5 * shScale, 0, 0, Math.PI * 2);
-          ctx.fill();
-          break;
-        }
-      }
-    }
-
-    if (actor.buffs.ghost > 0) {
-      ctx.globalAlpha = 0.65;
-    }
-
-    ctx.translate(sx, sy);
-    ctx.scale(scale, scale);
-
-    // Аура «Батут-спасение»
-    if (actor.buffs.shield > 0) {
-      ctx.strokeStyle = '#ffd740';
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.arc(0, -18, 24, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-
-    const screenAngle = actor.visualFacing + state.cameraYaw;
-    const lookDirX = Math.cos(screenAngle);
-    const lookDirY = Math.sin(screenAngle);
-
-    drawBeanBody(
-      ctx,
-      actor.skin,
-      actor.walkCycle || actor.animTime,
-      actor.animState,
-      actor.squash,
-      actor.tiltForward,
-      lookDirX,
-      lookDirY
-    );
-
-    // 6. Никнейм над головой персонажа
-    ctx.font = actor.isPlayer ? '900 11px sans-serif' : '700 9.5px sans-serif';
-    ctx.textAlign = 'center';
-    const labelY = -56;
-
-    if (actor.isPlayer) {
-      ctx.fillStyle = '#ffe600';
-      ctx.fillText('▼ ВЫ', 0, labelY - 11);
-    }
-
-    const tw = ctx.measureText(actor.name).width + 10;
-    ctx.fillStyle = actor.isPlayer ? 'rgba(0, 45, 75, 0.85)' : 'rgba(14, 9, 34, 0.78)';
-    ctx.beginPath();
-    ctx.roundRect(-tw / 2, labelY - 9.5, tw, 13.5, 5);
-    ctx.fill();
-
-    if (actor.isPlayer) {
-      ctx.strokeStyle = '#00e5ff';
-      ctx.lineWidth = 1.2;
-      ctx.stroke();
-    }
-
-    ctx.fillStyle = actor.isPlayer ? '#00e5ff' : '#ffffff';
-    ctx.fillText(actor.name, 0, labelY);
-
-    ctx.restore();
-  }
-
-  function renderScene() {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    ctx.clearRect(0, 0, w, h);
-
-    // Неоновое озеро слизи внизу
-    const slimeProj = project3D(0, 0, -LAYER_GAP - 140);
-    const slimeGrad = ctx.createRadialGradient(w * 0.5, slimeProj.sy, 30, w * 0.5, slimeProj.sy, Math.max(w, h) * 0.75);
-    slimeGrad.addColorStop(0, 'rgba(255, 42, 133, 0.24)');
-    slimeGrad.addColorStop(0.5, 'rgba(124, 77, 255, 0.11)');
-    slimeGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = slimeGrad;
-    ctx.fillRect(0, 0, w, h);
-
-    const renderQueue = [];
-
-    // 1. Гекса-плитки всех ярусов
-    for (const layer of state.layers) {
-      const theme = LAYER_THEMES[layer.index % LAYER_THEMES.length];
-      for (const tile of layer.list) {
-        if (tile.status === 'waiting') continue; // полностью исчезнувшие соты ждут очереди регена
-
-        const z = tile.baseZ + tile.fallOffsetZ;
-        const proj = project3D(tile.x, tile.y, z);
-        renderQueue.push({
-          kind: 'tile',
-          tile,
-          theme,
-          proj,
-          sortKey: z * 1000 - proj.depth
-        });
-      }
-    }
-
-    // 2. Ударные волны
-    for (const sw of state.shockwaves) {
-      const proj = project3D(sw.x, sw.y, sw.z);
-      renderQueue.push({
-        kind: 'shockwave',
-        sw,
-        proj,
-        sortKey: sw.z * 1000 - proj.depth + 5
-      });
-    }
-
-    // 3. Бонусы
-    for (const pu of state.powerups) {
-      const z = pu.z + Math.sin(pu.bobPhase) * 5;
-      const proj = project3D(pu.x, pu.y, z);
-      renderQueue.push({
-        kind: 'powerup',
-        pu,
-        proj,
-        sortKey: z * 1000 - proj.depth + 20
-      });
-    }
-
-    // 4. Живые участники
-    for (const actor of state.actors) {
-      if (!actor.alive) continue;
-      const proj = project3D(actor.x, actor.y, actor.z);
-      renderQueue.push({
-        kind: 'actor',
-        actor,
-        proj,
-        sortKey: actor.z * 1000 - proj.depth + 35
-      });
-    }
-
-    // 5. Частицы
-    for (const pt of state.particles) {
-      const proj = project3D(pt.x, pt.y, pt.z);
-      renderQueue.push({
-        kind: 'particle',
-        pt,
-        proj,
-        sortKey: pt.z * 1000 - proj.depth + 40
-      });
-    }
-
-    renderQueue.sort((a, b) => a.sortKey - b.sortKey);
-
-    for (const item of renderQueue) {
-      if (item.kind === 'tile') {
-        const { tile, theme, proj } = item;
-        let topCol = theme.top;
-        let sideCol = theme.side;
-        let strokeCol = 'rgba(255,255,255,0.58)';
-
-        if (tile.specialType === 'spring') {
-          topCol = '#00e676';
-          sideCol = '#009624';
-        } else if (tile.specialType === 'gold') {
-          topCol = '#ffd740';
-          sideCol = '#c68400';
-        } else if (tile.specialType === 'bomb') {
-          topCol = '#ff5252';
-          sideCol = '#b71c1c';
-        }
-
-        // 2. Один раз меняют цвет при наступании и плавно падают с прозрачностью (без мигания!)
-        if (tile.status === 'stepped' || tile.status === 'falling') {
-          topCol = theme.steppedTop;
-          sideCol = theme.steppedSide;
-          strokeCol = 'rgba(255, 235, 180, 0.85)';
-        } else if (tile.status === 'restoring') {
-          strokeCol = '#00e5ff';
-        }
-
-        const r = (HEX_RADIUS - 2) * tile.scale * proj.scale;
-        const thickness = 11 * proj.scale;
-        drawHexPrism(proj.sx, proj.sy, r, thickness, topCol, sideCol, strokeCol, tile.alpha);
-
-        if ((tile.status === 'solid' || tile.status === 'stepped') && tile.specialType !== 'normal') {
-          ctx.save();
-          ctx.globalAlpha = tile.alpha;
-          ctx.font = `${Math.round(13 * proj.scale)}px sans-serif`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          const icon = tile.specialType === 'spring' ? '⏫' : tile.specialType === 'gold' ? '⭐' : '💣';
-          ctx.fillText(icon, proj.sx, proj.sy);
-          ctx.restore();
-        }
-      } else if (item.kind === 'shockwave') {
-        const { sw, proj } = item;
-        ctx.save();
-        ctx.globalAlpha = Math.max(0, sw.life / sw.maxLife);
-        ctx.strokeStyle = sw.color;
-        ctx.lineWidth = 4 * proj.scale;
-        ctx.beginPath();
-        ctx.ellipse(proj.sx, proj.sy, sw.radius * proj.scale, sw.radius * state.cameraPitch * proj.scale, 0, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.restore();
-      } else if (item.kind === 'powerup') {
-        const { pu, proj } = item;
-        ctx.save();
-        ctx.translate(proj.sx, proj.sy - 8 * proj.scale);
-        ctx.scale(proj.scale, proj.scale);
-        ctx.fillStyle = pu.type.color;
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.arc(0, 0, 14, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.font = '15px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(pu.type.icon, 0, 1);
-        ctx.restore();
-      } else if (item.kind === 'actor') {
-        drawFallGuyCharacterOnScene(item.actor, item.proj);
-      } else if (item.kind === 'particle') {
-        const { pt, proj } = item;
-        ctx.save();
-        ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife);
-        ctx.fillStyle = pt.color;
-        ctx.beginPath();
-        ctx.arc(proj.sx, proj.sy, pt.size * proj.scale, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      }
+}
+
+function triggerWinnerCelebration(winner) {
+  if (state.phase === 'celebrating' || state.phase === 'gameover') return;
+  state.phase = 'celebrating';
+  state.celebrationTimer = 2.8;
+  state.matchWinner = winner;
+
+  document.getElementById('spectator-bar').classList.add('hidden');
+
+  const overlay = document.getElementById('winner-banner-overlay');
+  const ribbon = document.getElementById('winner-plashka-ribbon');
+  const nameEl = document.getElementById('winner-plashka-name');
+  const subEl = document.getElementById('winner-plashka-sub');
+
+  const isPlayerWin = winner && winner.isPlayer;
+  ribbon.textContent = isPlayerWin ? '🎉 ВЫ ПОБЕДИЛИ В 3D-ШОУ! 🎉' : '🏁 ФИНАЛ РАУНДА ОКОНЧЕН!';
+  nameEl.textContent = winner ? winner.name : 'Ничья';
+  subEl.textContent = isPlayerWin
+    ? 'Вы перепрыгали всех соперников и забрали Золотую Корону!'
+    : 'становится последним выжившим и забирает Корону!';
+
+  overlay.classList.remove('hidden');
+  sfx.play('win');
+
+  if (winner) {
+    const cols = [0xffe600, 0x00e5ff, 0xff2a85, 0x00e676, 0xffffff];
+    for (let i = 0; i < 35; i++) {
+      spawnParticles3D(winner.x, winner.y + 1.5, winner.z, cols[i % cols.length], 2);
     }
   }
+}
 
-  // ==================== ОБНОВЛЕНИЕ HUD И ГАРДЕРОБА ====================
-  function formatTime(sec) {
-    const mins = Math.floor(sec / 60);
-    const rem = sec % 60;
-    const s = Math.floor(rem);
-    const tenths = Math.floor((rem - s) * 10);
-    return `${String(mins).padStart(2, '0')}:${String(s).padStart(2, '0')}.${tenths}`;
+function showFinalResultsModal() {
+  if (state.phase === 'gameover') return;
+  state.phase = 'gameover';
+  document.getElementById('winner-banner-overlay').classList.add('hidden');
+
+  const winner = state.matchWinner;
+  const aliveRemaining = state.actors.filter(a => a.alive);
+  const standings = [...aliveRemaining];
+  for (let i = state.eliminationOrder.length - 1; i >= 0; i--) {
+    const a = state.eliminationOrder[i];
+    if (!standings.includes(a)) standings.push(a);
   }
 
-  function updateHUD() {
-    const aliveCount = state.actors.filter(a => a.alive).length;
-    const totalCount = state.actors.length || (1 + state.config.botsCount);
+  const playerPlace = standings.findIndex(a => a.isPlayer) + 1;
+  const p = state.player;
+  const isVictory = playerPlace === 1;
 
-    document.getElementById('hud-mode-label').textContent = state.config.name;
-    document.getElementById('hud-alive').textContent = `${aliveCount} / ${totalCount}`;
-
-    const p = state.player;
-    const curLayer = p ? p.currentLayer + 1 : 1;
-    document.getElementById('hud-layer').textContent = `${curLayer} / ${state.config.layersCount}`;
-    document.getElementById('hud-timer').textContent = formatTime(state.elapsed);
-    document.getElementById('hud-crowns').textContent = String(saveData.crowns);
-
-    const cdDiveEl = document.getElementById('cd-dive');
-    if (p && p.diveCooldown > 0) {
-      cdDiveEl.style.height = `${(p.diveCooldown / 2.2) * 100}%`;
-    } else {
-      cdDiveEl.style.height = '0%';
-    }
-
-    const buffsContainer = document.getElementById('active-buffs');
-    if (p && p.alive) {
-      let html = '';
-      for (const puType of POWERUP_TYPES) {
-        if (!puType.instant && p.buffs[puType.id] > 0) {
-          const pct = Math.min(100, (p.buffs[puType.id] / puType.duration) * 100);
-          html += `
-            <div class="buff-pill" style="border-color:${puType.color}">
-              <span class="buff-icon">${puType.icon}</span>
-              <div class="buff-meta">
-                <span class="buff-name">${puType.name} (${p.buffs[puType.id].toFixed(1)}с)</span>
-                <div class="buff-bar-wrap">
-                  <div class="buff-bar-fill" style="width:${pct}%; background:${puType.color}"></div>
-                </div>
-              </div>
-            </div>
-          `;
-        }
-      }
-      buffsContainer.innerHTML = html;
-    } else {
-      buffsContainer.innerHTML = '';
-    }
+  if (isVictory) {
+    p.score += Math.round(500 * state.config.scoreMult);
+    saveData.crowns += 1;
+    saveData.recordsByDiff[state.diffKey].wins += 1;
   }
 
-  function getRankTitle(crowns) {
-    if (crowns >= 15) return '👑 Легенда Гексагона';
-    if (crowns >= 8) return '💎 Алмазная Фасолька';
-    if (crowns >= 4) return '🔥 Мастер Арены';
-    if (crowns >= 1) return '⭐ Обладатель Короны';
-    return '🐣 Новичок Шоу';
-  }
+  const finalScore = Math.round(p.score);
+  saveData.totalScore += finalScore;
+  saveData.matchesPlayed += 1;
+  if (p.survivalTime > saveData.bestSurvivalSec) saveData.bestSurvivalSec = p.survivalTime;
 
-  function openLeaderboard() {
-    const tbody = document.getElementById('lb-tbody');
-    const combined = [
-      ...saveData.rivalStandings.map(r => ({ ...r, isMe: false })),
-      {
-        name: saveData.playerName || 'СуперФасолька',
-        crowns: saveData.crowns,
-        bestTime: saveData.bestSurvivalSec,
-        score: saveData.totalScore,
-        isMe: true
-      }
-    ].sort((a, b) => b.crowns - a.crowns || b.score - a.score);
+  const rec = saveData.recordsByDiff[state.diffKey];
+  if (p.survivalTime > rec.bestTime) rec.bestTime = p.survivalTime;
+  if (finalScore > rec.bestScore) rec.bestScore = finalScore;
 
-    tbody.innerHTML = '';
-    combined.forEach((entry, idx) => {
-      const tr = document.createElement('tr');
-      if (entry.isMe) tr.className = 'me-row';
-      tr.innerHTML = `
-        <td>#${idx + 1}</td>
-        <td>${entry.name} ${entry.isMe ? '(Вы)' : ''}</td>
-        <td>${getRankTitle(entry.crowns)}</td>
-        <td>👑 ${entry.crowns}</td>
-        <td>${formatTime(entry.bestTime)}</td>
-        <td>⭐ ${entry.score}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    const recGrid = document.getElementById('records-grid');
-    recGrid.innerHTML = '';
-    Object.keys(DIFFICULTIES).forEach(key => {
-      const d = DIFFICULTIES[key];
-      const r = saveData.recordsByDiff[key] || { wins: 0, bestTime: 0, bestScore: 0 };
-      const card = document.createElement('div');
-      card.className = 'record-card';
-      card.innerHTML = `
-        <strong style="color:#00e5ff; font-size:15px">${d.name}</strong>
-        <div style="margin-top:6px; font-size:13px; line-height:1.6">
-          <div>👑 Побед в режиме: <strong>${r.wins}</strong></div>
-          <div>⏱️ Лучшее время: <strong>${formatTime(r.bestTime)}</strong></div>
-          <div>⭐ Рекорд очков: <strong>${r.bestScore}</strong></div>
-        </div>
-      `;
-      recGrid.appendChild(card);
-    });
-
-    document.getElementById('lb-modal').classList.remove('hidden');
-  }
-
-  function openStartModal() {
-    state.phase = 'menu';
-    document.getElementById('countdown-overlay').classList.add('hidden');
-    document.getElementById('winner-banner-overlay').classList.add('hidden');
-    document.getElementById('spectator-bar').classList.add('hidden');
-    document.getElementById('start-modal').classList.remove('hidden');
-    document.getElementById('result-modal').classList.add('hidden');
-    document.getElementById('lb-modal').classList.add('hidden');
-  }
-
-  function toggleSound() {
-    sfx.muted = !sfx.muted;
-    document.getElementById('btn-sound').textContent = sfx.muted ? '🔇' : '🔊';
-  }
-
-  // ==================== ПРИВЯЗКА UI СОБЫТИЙ ====================
-  document.querySelectorAll('.diff-card').forEach(card => {
-    card.addEventListener('click', () => {
-      document.querySelectorAll('.diff-card').forEach(c => c.classList.remove('active'));
-      card.classList.add('active');
-      state.diffKey = card.dataset.diff;
-      saveData.difficulty = state.diffKey;
-      saveGameData();
-    });
-  });
-
-  document.querySelectorAll('.skin-swatch').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.skin-swatch').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      saveData.skinIndex = Number(btn.dataset.skin) || 0;
-      const skinObj = SKINS[saveData.skinIndex % SKINS.length];
-      document.getElementById('skin-preview-title').textContent = skinObj.title;
-      saveGameData();
-    });
-  });
-
-  const nameInput = document.getElementById('player-name-input');
-  nameInput.value = saveData.playerName || 'СуперФасолька';
-  nameInput.addEventListener('input', () => {
-    saveData.playerName = nameInput.value.trim() || 'СуперФасолька';
-    saveGameData();
-  });
-
-  document.getElementById('btn-random-nick').addEventListener('click', () => {
-    const randomName = generateFunnyBotNames(1)[0];
-    nameInput.value = randomName;
-    saveData.playerName = randomName;
-    saveGameData();
-  });
-
-  document.getElementById('btn-start-match').addEventListener('click', () => {
-    saveData.playerName = nameInput.value.trim() || 'СуперФасолька';
-    saveGameData();
-    startMatch();
-  });
-
-  document.getElementById('btn-play-again').addEventListener('click', () => {
-    startMatch();
-  });
-
-  document.getElementById('btn-result-settings').addEventListener('click', openStartModal);
-  document.getElementById('btn-menu').addEventListener('click', openStartModal);
-  document.getElementById('btn-sound').addEventListener('click', toggleSound);
-
-  document.getElementById('btn-leaderboard').addEventListener('click', openLeaderboard);
-  document.getElementById('btn-open-lb-from-start').addEventListener('click', openLeaderboard);
-  document.getElementById('btn-result-lb').addEventListener('click', openLeaderboard);
-  document.getElementById('btn-close-lb').addEventListener('click', () => {
-    document.getElementById('lb-modal').classList.add('hidden');
-  });
-
-  document.querySelectorAll('.lb-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      const isGlobal = tab.dataset.tab === 'global';
-      document.getElementById('lb-content-global').classList.toggle('hidden', !isGlobal);
-      document.getElementById('lb-content-records').classList.toggle('hidden', isGlobal);
-    });
-  });
-
-  // Кнопки режима наблюдения
-  document.getElementById('btn-spec-next').addEventListener('click', () => {
-    state.spectateIdx++;
-    state.spectateTarget = null;
-  });
-
-  document.getElementById('btn-spec-fast').addEventListener('click', (e) => {
-    state.spectateSpeed = state.spectateSpeed === 1 ? 2.2 : 1;
-    e.currentTarget.textContent = state.spectateSpeed > 1 ? '⏩ Скорость x2.2 (Вкл)' : '⏩ Ускорить x2';
-  });
-
-  document.getElementById('btn-spec-skip').addEventListener('click', () => {
-    const aliveList = state.actors.filter(a => a.alive);
-    triggerWinnerCelebration(aliveList[0] || state.player);
-  });
-
-  // ==================== ГЛАВНЫЙ ИГРОВОЙ ЦИКЛ + ПРЕВЬЮ ФАСОЛИНКИ В ГАРДЕРОБЕ ====================
-  const previewCanvas = document.getElementById('skin-preview-canvas');
-  const previewCtx = previewCanvas ? previewCanvas.getContext('2d') : null;
-
-  buildArena(state.config);
+  saveGameData();
   updateHUD();
 
-  let lastTime = performance.now();
-  function gameLoop(now) {
-    const dt = Math.min(0.05, (now - lastTime) / 1000);
-    lastTime = now;
+  document.getElementById('result-ribbon').textContent = isVictory ? 'ЧЕМПИОН ШОУ!' : 'ИТОГИ ФИНАЛА';
+  document.getElementById('result-title').textContent = isVictory
+    ? 'ПОБЕДА! КОРОНА ВАША! 👑'
+    : `ВЫ ЗАНЯЛИ #${playerPlace} МЕСТО!`;
+  document.getElementById('result-subtitle').textContent = isVictory
+    ? 'Блестящая победа на трёхмерной башне Hex-A-Gone!'
+    : `Победитель шоу: ${winner ? winner.name : 'Бот'} 👑`;
 
-    if (state.phase === 'menu') {
-      state.cameraYaw += dt * 0.14;
-      state.targetCameraYaw = state.cameraYaw;
+  document.getElementById('spot-winner-name').textContent = winner ? `${winner.name} ${winner.isPlayer ? '(Вы)' : ''}` : 'Чемпион';
+  document.getElementById('spot-winner-meta').textContent = winner
+    ? `Выжил ${formatTime(winner.survivalTime)} и набрал ⭐ ${Math.round(winner.score)} очков!`
+    : '';
 
-      // Отрисовка живой анимированной фасолинки в Гардеробе стартового окна
-      if (previewCtx) {
-        previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-        const curSkin = SKINS[saveData.skinIndex % SKINS.length];
-        drawBeanAvatar(previewCtx, 65, 112, 1.55, curSkin, now * 0.002, 'run');
-      }
-    } else {
-      updateWorld(dt);
-    }
+  document.getElementById('res-place').textContent = `#${playerPlace}`;
+  document.getElementById('res-time').textContent = formatTime(p.survivalTime);
+  document.getElementById('res-tiles').textContent = String(p.tilesBroken);
+  document.getElementById('res-score').textContent = `+${finalScore}`;
 
-    renderScene();
-    requestAnimationFrame(gameLoop);
+  const standingsEl = document.getElementById('match-standings');
+  standingsEl.innerHTML = '';
+  standings.slice(0, 10).forEach((act, idx) => {
+    const row = document.createElement('div');
+    row.className = 'standing-row' + (act.isPlayer ? ' is-player' : '');
+    const medal = idx === 0 ? '👑' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+    row.innerHTML = `
+      <span>${medal} <strong>${act.name}</strong> ${act.isPlayer ? '(Вы)' : ''}</span>
+      <span>⏱️ ${formatTime(act.survivalTime)} • ⭐ ${Math.round(act.score)}</span>
+    `;
+    standingsEl.appendChild(row);
+  });
+
+  document.getElementById('result-modal').classList.remove('hidden');
+}
+
+// ==================== ОБНОВЛЕНИЕ HUD И ЛИДЕРБОРДА ====================
+function formatTime(sec) {
+  const mins = Math.floor(sec / 60);
+  const rem = sec % 60;
+  const s = Math.floor(rem);
+  const tenths = Math.floor((rem - s) * 10);
+  return `${String(mins).padStart(2, '0')}:${String(s).padStart(2, '0')}.${tenths}`;
+}
+
+function updateHUD() {
+  const aliveCount = state.actors.filter(a => a.alive).length;
+  const totalCount = state.actors.length || (1 + state.config.botsCount);
+
+  document.getElementById('hud-mode-label').textContent = state.config.name;
+  document.getElementById('hud-alive').textContent = `${aliveCount} / ${totalCount}`;
+
+  const p = state.player;
+  const curLayer = p ? p.currentLayer + 1 : 1;
+  document.getElementById('hud-layer').textContent = `${curLayer} / ${state.config.layersCount}`;
+  document.getElementById('hud-timer').textContent = formatTime(state.elapsed);
+  document.getElementById('hud-crowns').textContent = String(saveData.crowns);
+
+  const cdDiveEl = document.getElementById('cd-dive');
+  if (p && p.diveCooldown > 0) {
+    cdDiveEl.style.height = `${(p.diveCooldown / 2.1) * 100}%`;
+  } else {
+    cdDiveEl.style.height = '0%';
   }
 
-  requestAnimationFrame(gameLoop);
-})();
+  const buffsContainer = document.getElementById('active-buffs');
+  if (p && p.alive) {
+    let html = '';
+    for (const puType of POWERUP_TYPES) {
+      if (!puType.instant && p.buffs[puType.id] > 0) {
+        const pct = Math.min(100, (p.buffs[puType.id] / puType.duration) * 100);
+        html += `
+          <div class="buff-pill" style="border-color:${puType.color}">
+            <span class="buff-icon">${puType.icon}</span>
+            <div class="buff-meta">
+              <span class="buff-name">${puType.name} (${p.buffs[puType.id].toFixed(1)}с)</span>
+              <div class="buff-bar-wrap">
+                <div class="buff-bar-fill" style="width:${pct}%; background:${puType.color}"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+    buffsContainer.innerHTML = html;
+  } else {
+    buffsContainer.innerHTML = '';
+  }
+}
+
+function getRankTitle(crowns) {
+  if (crowns >= 15) return '👑 Легенда Гексагона';
+  if (crowns >= 8) return '💎 Алмазная Фасолька';
+  if (crowns >= 4) return '🔥 Мастер 3D-Арены';
+  if (crowns >= 1) return '⭐ Обладатель Короны';
+  return '🐣 Новичок Шоу';
+}
+
+function openLeaderboard() {
+  const tbody = document.getElementById('lb-tbody');
+  const combined = [
+    ...saveData.rivalStandings.map(r => ({ ...r, isMe: false })),
+    {
+      name: saveData.playerName || 'СуперФасолька',
+      crowns: saveData.crowns,
+      bestTime: saveData.bestSurvivalSec,
+      score: saveData.totalScore,
+      isMe: true
+    }
+  ].sort((a, b) => b.crowns - a.crowns || b.score - a.score);
+
+  tbody.innerHTML = '';
+  combined.forEach((entry, idx) => {
+    const tr = document.createElement('tr');
+    if (entry.isMe) tr.className = 'me-row';
+    tr.innerHTML = `
+      <td>#${idx + 1}</td>
+      <td>${entry.name} ${entry.isMe ? '(Вы)' : ''}</td>
+      <td>${getRankTitle(entry.crowns)}</td>
+      <td>👑 ${entry.crowns}</td>
+      <td>${formatTime(entry.bestTime)}</td>
+      <td>⭐ ${entry.score}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const recGrid = document.getElementById('records-grid');
+  recGrid.innerHTML = '';
+  Object.keys(DIFFICULTIES).forEach(key => {
+    const d = DIFFICULTIES[key];
+    const r = saveData.recordsByDiff[key] || { wins: 0, bestTime: 0, bestScore: 0 };
+    const card = document.createElement('div');
+    card.className = 'record-card';
+    card.innerHTML = `
+      <strong style="color:#00e5ff; font-size:15px">${d.name}</strong>
+      <div style="margin-top:6px; font-size:13px; line-height:1.6">
+        <div>👑 Побед в режиме: <strong>${r.wins}</strong></div>
+        <div>⏱️ Лучшее время: <strong>${formatTime(r.bestTime)}</strong></div>
+        <div>⭐ Рекорд очков: <strong>${r.bestScore}</strong></div>
+      </div>
+    `;
+    recGrid.appendChild(card);
+  });
+
+  document.getElementById('lb-modal').classList.remove('hidden');
+}
+
+function openStartModal() {
+  state.phase = 'menu';
+  document.getElementById('countdown-overlay').classList.add('hidden');
+  document.getElementById('winner-banner-overlay').classList.add('hidden');
+  document.getElementById('spectator-bar').classList.add('hidden');
+  document.getElementById('start-modal').classList.remove('hidden');
+  document.getElementById('result-modal').classList.add('hidden');
+  document.getElementById('lb-modal').classList.add('hidden');
+}
+
+function toggleSound() {
+  sfx.muted = !sfx.muted;
+  document.getElementById('btn-sound').textContent = sfx.muted ? '🔇' : '🔊';
+}
+
+// ==================== ПРИВЯЗКА UI СОБЫТИЙ ====================
+document.querySelectorAll('.diff-card').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.diff-card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    state.diffKey = card.dataset.diff;
+    saveData.difficulty = state.diffKey;
+    saveGameData();
+  });
+});
+
+document.querySelectorAll('.skin-swatch').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.skin-swatch').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    saveData.skinIndex = Number(btn.dataset.skin) || 0;
+    const skinObj = SKINS[saveData.skinIndex % SKINS.length];
+    document.getElementById('skin-preview-title').textContent = skinObj.title;
+    document.getElementById('preview-bean-icon').textContent = skinObj.icon;
+    saveGameData();
+  });
+});
+
+const nameInput = document.getElementById('player-name-input');
+nameInput.value = saveData.playerName || 'СуперФасолька';
+nameInput.addEventListener('input', () => {
+  saveData.playerName = nameInput.value.trim() || 'СуперФасолька';
+  saveGameData();
+});
+
+document.getElementById('btn-random-nick').addEventListener('click', () => {
+  const randomName = generateFunnyBotNames(1)[0];
+  nameInput.value = randomName;
+  saveData.playerName = randomName;
+  saveGameData();
+});
+
+document.getElementById('btn-start-match').addEventListener('click', () => {
+  saveData.playerName = nameInput.value.trim() || 'СуперФасолька';
+  saveGameData();
+  startMatch();
+});
+
+document.getElementById('btn-play-again').addEventListener('click', startMatch);
+document.getElementById('btn-result-settings').addEventListener('click', openStartModal);
+document.getElementById('btn-menu').addEventListener('click', openStartModal);
+document.getElementById('btn-sound').addEventListener('click', toggleSound);
+
+document.getElementById('btn-leaderboard').addEventListener('click', openLeaderboard);
+document.getElementById('btn-open-lb-from-start').addEventListener('click', openLeaderboard);
+document.getElementById('btn-result-lb').addEventListener('click', openLeaderboard);
+document.getElementById('btn-close-lb').addEventListener('click', () => {
+  document.getElementById('lb-modal').classList.add('hidden');
+});
+
+document.querySelectorAll('.lb-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const isGlobal = tab.dataset.tab === 'global';
+    document.getElementById('lb-content-global').classList.toggle('hidden', !isGlobal);
+    document.getElementById('lb-content-records').classList.toggle('hidden', isGlobal);
+  });
+});
+
+document.getElementById('btn-spec-next').addEventListener('click', () => {
+  state.spectateIdx++;
+  state.spectateTarget = null;
+});
+
+document.getElementById('btn-spec-fast').addEventListener('click', (e) => {
+  state.spectateSpeed = state.spectateSpeed === 1 ? 2.2 : 1;
+  e.currentTarget.textContent = state.spectateSpeed > 1 ? '⏩ Скорость x2.2 (Вкл)' : '⏩ Ускорить x2';
+});
+
+document.getElementById('btn-spec-skip').addEventListener('click', () => {
+  const aliveList = state.actors.filter(a => a.alive);
+  triggerWinnerCelebration(aliveList[0] || state.player);
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ==================== СТАРТ И ГЛАВНЫЙ 3D ЦИКЛ ====================
+buildStadiumEnvironment();
+loadCC0Assets();
+buildArena3D(state.config);
+updateHUD();
+
+let lastTime = performance.now();
+function animate(now) {
+  const dt = Math.min(0.05, (now - lastTime) / 1000);
+  lastTime = now;
+  const nowSec = now * 0.001;
+
+  if (state.phase === 'menu') {
+    // Панорамный облёт 3D-башни в главном меню
+    const menuAng = nowSec * 0.25;
+    const topY = state.layers[0] ? state.layers[0].yHeight : 20;
+    camera.position.set(Math.sin(menuAng) * 34, topY + 12, Math.cos(menuAng) * 34);
+    camera.lookAt(0, topY * 0.45, 0);
+    if (slimeSeaMesh) slimeSeaMesh.position.y = -16 + Math.sin(nowSec * 1.8) * 0.25;
+  } else {
+    updateWorld3D(dt, nowSec);
+  }
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+
+requestAnimationFrame(animate);
