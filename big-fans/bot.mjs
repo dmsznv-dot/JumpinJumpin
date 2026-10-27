@@ -21,7 +21,7 @@ export function botRaceDecision(course, actor) {
   const dx = target.x-actor.x, dz = target.z-actor.z;
   const d = Math.hypot(dx,dz) || 1;
   const dirX = dx/d, dirZ = dz/d;
-  const lookahead = surfaceAt(course, actor.x + dirX*1.8, actor.z + dirZ*1.8);
+  const lookahead = surfaceAt(course, actor.x + dirX*.65, actor.z + dirZ*.65);
   const imminentBeam = course.fans.some(f => beamHit(f, { ...actor, x:actor.x+dirX, z:actor.z+dirZ }));
   return { x: dirX, z: dirZ, jump: actor.onGround && (!lookahead || imminentBeam) };
 }

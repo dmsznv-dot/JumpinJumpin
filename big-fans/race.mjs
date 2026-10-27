@@ -21,8 +21,8 @@ export function updateRace(course, actors, dt, elapsed, limit = 210) {
     if (!actor.isPlayer) {
       const decision = botRaceDecision(course, actor);
       const rate = Math.min(1, dt * 6);
-      actor.vx += (decision.x * 6.5 - actor.vx) * rate;
-      actor.vz += (decision.z * 6.5 - actor.vz) * rate;
+      actor.vx += (decision.x * 7.2 - actor.vx) * rate;
+      actor.vz += (decision.z * 7.2 - actor.vz) * rate;
       actor.facing = Math.atan2(decision.x, decision.z);
       if (decision.jump && actor.onGround) { actor.vy = 12.4; actor.onGround = false; }
     }

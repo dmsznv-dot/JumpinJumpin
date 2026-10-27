@@ -14,6 +14,9 @@
 
 import * as THREE from 'three';
 import { GLTFLoader } from './vendor/GLTFLoader.js';
+import { createCourseState } from './big-fans/course.mjs';
+import { createCourseVisuals } from './big-fans/visuals.mjs';
+import { initializeRacer, updateRace } from './big-fans/race.mjs';
 
 // ==================== 1. КОНФИГУРАЦИЯ СЛОЖНОСТИ И УСКОРЕННЫЙ РЕГЕН ====================
 const DIFFICULTIES = {
@@ -2288,6 +2291,8 @@ function clearActorsAndFX() {
 }
 
 function startMatch() {
+  if (state.raceVisuals) { state.raceVisuals.dispose(); state.raceVisuals = null; }
+  state.race = null;
   const diffKey = state.diffKey;
   const config = DIFFICULTIES[diffKey];
   state.config = config;
@@ -2387,6 +2392,99 @@ function startMatch() {
   cdSub.textContent = 'Обзор 3D-арены... Приготовьтесь к старту!';
 
   updateHUD();
+}
+
+// ==================== BIG FANS: TEST COURSE ====================
+function startBigFans() {
+  startMatch();
+  // The race has a single ground height and its own arena and rules.
+  arenaGroup.clear();
+  state.layers = [{ index: 0, yHeight: 0, list: [], map: new Map() }];
+  state.race = createCourseState();
+  state.raceVisuals = createCourseVisuals(THREE, state.race);
+  arenaGroup.add(state.raceVisuals.root);
+  state.raceVisuals.update();
+  state.phase = 'countdown';
+  state.countdownTimer = 3.2;
+  state.elapsed = 0;
+  state.actors.forEach((actor, i) => {
+    actor.x = ((i % 5) - 2) * 2.2;
+    actor.z = -3 + Math.floor(i / 5) * 2;
+    actor.y = 0; actor.vx = actor.vy = actor.vz = 0;
+    actor.facing = 0; actor.visualFacing = 0;
+    initializeRacer(actor);
+  });
+  state.targetCamYaw = Math.PI;
+  state.camYaw = Math.PI;
+  state.camFocusPos.set(state.player.x, 1.3, state.player.z);
+  document.getElementById('countdown-badge').textContent = 'BIG FANS • ТЕСТОВЫЙ ЗАБЕГ';
+  document.getElementById('countdown-text').textContent = '3';
+  document.getElementById('countdown-sub').textContent = 'Доберитесь до финиша через вращающиеся платформы!';
+  updateRaceHUD();
+}
+function updateRaceHUD() {
+  const finished = state.actors.filter(a => a.raceFinished).length;
+  const quota = Math.max(1, Math.ceil(state.actors.length * .7));
+  document.getElementById('hud-mode-label').textContent = 'BIG FANS • ТЕСТ';
+  document.getElementById('hud-alive').textContent = `${finished} / ${quota}`;
+  document.getElementById('hud-layer').textContent = `${state.player.checkpoint} / 3`;
+  document.getElementById('hud-timer').textContent = formatTime(state.elapsed);
+}
+function finishRace(result) {
+  state.phase = 'gameover';
+  const p = state.player;
+  const place = result.finished.indexOf(p) + 1;
+  const passed = place > 0 && place <= result.quota;
+  document.getElementById('result-ribbon').textContent = 'BIG FANS • ТЕСТОВЫЙ ЗАБЕГ';
+  document.getElementById('result-title').textContent = passed ? `ВЫ ПРОШЛИ! МЕСТО #${place}` : 'ЗАБЕГ ОКОНЧЕН';
+  document.getElementById('result-subtitle').textContent = passed ? 'Вы достигли финиша в числе прошедших!' : 'Квота заполнена или время закончилось. Попробуйте ещё раз!';
+  document.getElementById('spot-winner-name').textContent = result.finished[0]?.name || 'Финиширующих нет';
+  document.getElementById('spot-winner-meta').textContent = `${result.finished.length} / ${result.quota} финишировали`;
+  document.getElementById('res-place').textContent = place ? `#${place}` : '—';
+  document.getElementById('res-time').textContent = formatTime(place ? p.raceFinishTime : state.elapsed);
+  document.getElementById('res-tiles').textContent = String(p.checkpoint);
+  document.getElementById('res-score').textContent = 'ТЕСТ';
+  const standings = document.getElementById('match-standings');
+  standings.replaceChildren();
+  result.finished.slice(0, 10).forEach((actor, index) => {
+    const row = document.createElement('div'); row.className = 'standing-row';
+    row.textContent = `#${index + 1} ${actor.name} — ${formatTime(actor.raceFinishTime)}`;
+    standings.appendChild(row);
+  });
+  document.getElementById('result-modal').classList.remove('hidden');
+}
+function updateBigFans(dt) {
+  const p = state.player;
+  state.elapsed += dt;
+  if (!p.raceFinished) {
+    let right = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
+    let forward = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
+    if (joystick.active) { right += joystick.dx; forward -= joystick.dy; }
+    const length = Math.hypot(right, forward);
+    if (length > .05 && !p.isDiving) {
+      right /= Math.max(1, length); forward /= Math.max(1, length);
+      const dx = -Math.sin(state.camYaw)*forward + Math.cos(state.camYaw)*right;
+      const dz = -Math.cos(state.camYaw)*forward - Math.sin(state.camYaw)*right;
+      p.facing = Math.atan2(dx, dz);
+      const rate = Math.min(1, dt * (p.onGround ? 11 : 6));
+      p.vx += (dx * 7.2 - p.vx) * rate; p.vz += (dz * 7.2 - p.vz) * rate;
+    } else if (!p.isDiving) {
+      const friction = Math.max(0, 1-dt*(p.onGround ? 10 : 2.5));
+      p.vx *= friction; p.vz *= friction;
+    }
+  }
+  for (const actor of state.actors) {
+    actor.diveCooldown = Math.max(0, actor.diveCooldown-dt);
+    if (actor.isDiving && (actor.diveTimer -= dt) <= 0) actor.isDiving = false;
+  }
+  const result = updateRace(state.race, state.actors, dt, state.elapsed);
+  state.raceVisuals.update();
+  for (const actor of state.actors) {
+    actor.rig.blobShadow.visible = actor.onGround;
+    if (actor.raceFinished && !actor.isPlayer) { actor.rig.root.visible = false; actor.labelEl.style.display = 'none'; }
+  }
+  updateFX(dt); updateThirdPersonCamera(dt); update3DNameplates(); updateRaceHUD();
+  if (result.done) finishRace(result);
 }
 
 // ==================== 3D БОНУСЫ, ЧАСТИЦЫ И УДАРНЫЕ ВОЛНЫ ====================
@@ -2875,6 +2973,8 @@ function updateWorld3D(dt, nowSec) {
     update3DNameplates();
     return;
   }
+
+  if (state.race) { updateBigFans(dt); return; }
 
   const simDt = dt * (state.player && !state.player.alive ? state.spectateSpeed : 1);
   state.elapsed += simDt;
@@ -3900,6 +4000,8 @@ function openLeaderboard() {
 }
 
 function openStartModal() {
+  if (state.raceVisuals) { state.raceVisuals.dispose(); state.raceVisuals = null; }
+  state.race = null;
   state.phase = 'menu';
   music.setMode('lobby');
   clearActorsAndFX();
@@ -4024,7 +4126,8 @@ document.getElementById('btn-start-match').addEventListener('click', () => {
   startMatch();
 });
 
-document.getElementById('btn-play-again').addEventListener('click', startMatch);
+document.getElementById('btn-play-again').addEventListener('click', () => state.race ? startBigFans() : startMatch());
+document.getElementById('btn-big-fans').addEventListener('click', startBigFans);
 document.getElementById('btn-result-settings').addEventListener('click', openStartModal);
 document.getElementById('btn-menu').addEventListener('click', openStartModal);
 document.getElementById('btn-sound').addEventListener('click', toggleSound);
