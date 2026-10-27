@@ -19,3 +19,11 @@ test('beams hit low actors but not jumping actors', () => {
   assert.equal(beamHit(f, {x: f.x + 2, z: f.z, y: 0, radius: .5}), true);
   assert.equal(beamHit(f, {x: f.x + 2, z: f.z, y: 1.5, radius: .5}), false);
 });
+test('rotating fans have clearance at every angle', () => {
+  const fans = createCourseState().fans;
+  for (let i=0; i<fans.length; i++) for (let j=i+1; j<fans.length; j++) {
+    const a=fans[i], b=fans[j];
+    assert.ok(Math.hypot(a.x-b.x,a.z-b.z) > a.radius+b.radius,
+      `fans ${i} and ${j} intersect`);
+  }
+});

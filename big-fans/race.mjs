@@ -49,7 +49,12 @@ export function updateRace(course, actors, dt, elapsed, limit = 210) {
     }
     if (actor.y < -10) {
       Object.assign(actor, respawnPosition(actor.checkpoint), {vx:0,vz:0,vy:0,knockVx:0,knockVz:0,onGround:true,jumpCount:0});
-      if (!actor.isPlayer) resetBotRoute(actor);
+      if (!actor.isPlayer) {
+        // Slightly different restart positions prevent bots from synchronising after a fall.
+        const botNumber = Number(String(actor.id || '').replace(/\D/g, '')) || 0;
+        actor.x += ((botNumber % 5) - 2) * 0.55;
+        resetBotRoute(actor);
+      }
     }
     actor.checkpoint = checkpointAt(actor.x, actor.z, actor.checkpoint);
     if (actor.checkpoint === 3 && Math.abs(actor.x) < COURSE.finish.halfWidth && actor.z >= COURSE.finish.z) {

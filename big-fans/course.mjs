@@ -12,10 +12,10 @@ export const COURSE = Object.freeze({
   finish: { x: 0, z: 154, halfWidth: 9, halfLength: 5 },
   // Each section has a small branching path joining a larger central fan.
   fans: [
-    [-5, 10, 5, 1], [5, 10, 5, -1], [0, 23, 6, 1],
-    [-6, 48, 4.5, -1], [0, 48, 5.4, 1], [6, 48, 4.5, -1], [0, 64, 6, -1],
-    [-6, 87, 4.5, 1], [0, 87, 4.5, -1], [6, 87, 4.5, 1], [-4, 99, 5, -1], [4, 99, 5, 1], [0, 108, 4.5, -1, true],
-    [-4, 126, 5, 1, true], [4, 126, 5, -1, true], [0, 141, 6, 1, true]
+    [-6, 10, 5, 1], [6, 10, 5, -1], [0, 23, 6, 1],
+    [-11.7, 48, 4.5, -1], [0, 48, 5.4, 1], [11.7, 48, 4.5, -1], [0, 64, 6, -1],
+    [-10.7, 87, 4.5, 1], [0, 87, 4.5, -1], [10.7, 87, 4.5, 1], [-6, 99, 5, -1], [6, 99, 5, 1], [0, 110, 4.5, -1, true],
+    [-6, 126, 5, 1, true], [6, 126, 5, -1, true], [0, 141, 6, 1, true]
   ]
 });
 
@@ -23,8 +23,8 @@ export function createCourseState() {
   return {
     time: 0,
     fans: COURSE.fans.map(([x,z,radius,direction,beam], i) => ({
-      x, z, radius, y: 0, hubRadius: 1.15, blades: 4,
-      innerHalfWidth: 1.05, outerHalfWidth: 1.35,
+      x, z, radius: radius * 1.15, y: 0, hubRadius: 1.3, blades: 4,
+      innerHalfWidth: 1.20, outerHalfWidth: 1.60,
       angle: i * 0.43, angularSpeed: direction * (0.38 + (i % 3) * 0.045),
       beam: Boolean(beam), beamAngle: i * 0.7, beamSpeed: -direction * 0.8
     }))
