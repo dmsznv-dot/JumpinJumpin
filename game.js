@@ -98,6 +98,26 @@ const COLOR_PALETTES = [
   { id: 'c_gold_ruby',   title: 'Королевское Золото', c1: 0xffd700, c2: 0xb71c1c, css1: '#ffd700', css2: '#b71c1c', defaultPat: 'pat_diamonds',  rarity: 'ЛЕГЕНДА',    unlockType: 'crowns', cost: 1 }
 ];
 
+// Additional selectable two-colour palettes.
+[
+ ['c_peach_sky','Персиковое небо',0xffaa90,0x77cef5],
+ ['c_lavender_cream','Лаванда и сливки',0xb49aff,0xffe7ad],
+ ['c_mint_coral','Мята и коралл',0x71e5ba,0xff786f],
+ ['c_berry_milk','Черника с молоком',0x6e64d8,0xffeee4],
+ ['c_sunset','Закат',0xff7a64,0xffca58],
+ ['c_ocean','Океан',0x258fc2,0x85f1e5],
+ ['c_cherry','Вишнёвый лёд',0xd93669,0xffb7c3],
+ ['c_pistachio','Фисташка',0xa4d96c,0xffedb2],
+ ['c_plum','Слива',0x8b4cab,0xf5a3ce],
+ ['c_tangerine','Мандарин',0xffa540,0x4aaabd],
+ ['c_cotton','Облачко',0xd6e9ff,0xff9ec4],
+ ['c_slate','Ночной космос',0x494e8e,0x91d9ef],
+ ['c_limeberry','Лайм и ягода',0xb8e85c,0xa44680],
+ ['c_sand','Песок и море',0xe9c47a,0x36b1a7]
+].forEach(([id,title,c1,c2]) => COLOR_PALETTES.push({id,title,c1,c2,
+ css1:'#'+c1.toString(16).padStart(6,'0'),css2:'#'+c2.toString(16).padStart(6,'0'),
+ defaultPat:'pat_belly',rarity:'ОБЫЧНЫЙ',unlockType:'free',cost:0}));
+
 const PATTERN_ITEMS = [
   { id: 'pat_belly',     title: 'Пузико Пингвина',    icon: '🐧', pattern: 'belly',     rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
   { id: 'pat_stripes',   title: 'Тигровые Полосы',    icon: '🐯', pattern: 'stripes',   rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
@@ -121,6 +141,20 @@ const COSTUME_ITEMS = [
   { id: 'hat_pineapple', title: 'Тропический Ананас',  sub: 'Корона листьев + Очки + Юбка',   icon: '🍍', hat: 'pineapple', rarity: 'ЛЕГЕНДА',   unlockType: 'crowns', cost: 2 },
   { id: 'hat_king',      title: 'Император Короны',    sub: 'Золотая Корона + Царская Мантия',icon: '👑', hat: 'king',      rarity: 'ЛЕГЕНДА',   unlockType: 'crowns', cost: 3 }
 ];
+
+// Original costume pieces shaped for the bean rig, available for test previews.
+const EXTRA_COSTUMES = [
+ ['fox','Лисёнок','🦊',0xe98242],['rabbit','Кролик','🐰',0xe9b8d0],
+ ['cat','Котёнок','🐱',0x798aa8],['bear','Медвежонок','🐻',0xaa744e],
+ ['frog','Лягушонок','🐸',0x62c87b],['shark','Акула','🦈',0x648db2],
+ ['dragon','Дракончик','🐉',0x9869c4],['bee','Пчёлка','🐝',0xf3ca4d],
+ ['robot','Робот','🤖',0x8ba7ba],['diver','Водолаз','🤿',0x37a6a3],
+ ['cow','Коровка','🐮',0xe8e4dc],['panda','Панда','🐼',0xdfe2e5],
+ ['owl','Совёнок','🦉',0xb38664]
+];
+EXTRA_COSTUMES.forEach(([hat,title,icon,color]) => COSTUME_ITEMS.push({
+ id:'hat_'+hat,title,icon,hat,color,sub:'Объёмный костюм',rarity:'ОБЫЧНЫЙ',unlockType:'free',cost:0
+}));
 
 const SEASON_TIERS = [
   { level: 1, xpReq: 0,    title: 'Старт Сезона',       icon: '🥽', rewardText: 'Очки Миньона' },
@@ -1608,23 +1642,28 @@ function createBean3DMesh(skin) {
   torsoMesh.receiveShadow = true;
   bodyPivot.add(torsoMesh);
 
-  // Rounded face plate and simple eyes keep the expression readable at game distance.
+  // Soft, dimensional goggles: each eye mode builds its own frame.
   const faceGroup = new THREE.Group();
   bodyPivot.add(faceGroup);
-  const faceMat = new THREE.MeshStandardMaterial({ color: 0xfff4df, roughness: 0.55 });
-  const face = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 20), faceMat);
-  face.scale.set(0.43, 0.275, 0.075);
-  face.position.set(0, 1.40, 0.603);
-  faceGroup.add(face);
-  const eyeGeo = new THREE.SphereGeometry(1, 16, 12);
-  const addEye = (x) => {
-    const eye = new THREE.Mesh(eyeGeo, darkMat);
-    eye.scale.set(0.057, 0.105, 0.025);
-    eye.position.set(x, 1.40, 0.676);
-    faceGroup.add(eye);
+  const strap = new THREE.Mesh(new THREE.CylinderGeometry(.635, .635, .095, 32, 1, true), darkMat);
+  strap.position.y = 1.40; faceGroup.add(strap);
+  const irisMat = new THREE.MeshStandardMaterial({ color: 0x76513c, roughness: .3 });
+  const eyeFrame = (x, radius) => {
+    const unit = new THREE.Group(); unit.position.set(x, 1.40, .605);
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(radius, .055, 12, 32), chromeMat);
+    unit.add(rim);
+    const white = new THREE.Mesh(new THREE.SphereGeometry(radius*.86, 24, 16), whiteMat);
+    white.scale.z = .5; white.position.z = .01; unit.add(white);
+    const iris = new THREE.Mesh(new THREE.SphereGeometry(radius*.34, 20, 12), irisMat);
+    iris.scale.z = .32; iris.position.set(0,-.015,radius*.43); unit.add(iris);
+    const pupil = new THREE.Mesh(new THREE.SphereGeometry(radius*.18, 16, 12), darkMat);
+    pupil.scale.z = .35; pupil.position.set(0,-.015,radius*.53); unit.add(pupil);
+    const shine = new THREE.Mesh(new THREE.SphereGeometry(radius*.075, 12, 8), whiteMat);
+    shine.position.set(-radius*.10,radius*.09,radius*.59); unit.add(shine);
+    faceGroup.add(unit);
   };
-  if (skin.eyeCount === 1) addEye(0);
-  else { addEye(-0.145); addEye(0.145); }
+  if (skin.eyeCount === 1) eyeFrame(0, .24);
+  else { eyeFrame(-.20, .18); eyeFrame(.20, .18); }
 
   // 3. Шарнирные ножки с ботиночками
   const legGeo = new THREE.CapsuleGeometry(0.17, 0.24, 8, 12);
@@ -1677,7 +1716,12 @@ function createBean3DMesh(skin) {
   const pantsMat = new THREE.MeshStandardMaterial({ color: skin.c2, roughness: 0.38 });
   const pantsMesh = new THREE.Mesh(pantsGeo, pantsMat);
   pantsMesh.position.y = 0.72;
-  costumeGroup.add(pantsMesh);
+  // Separate trouser legs move with the character's existing leg joints.
+  const trouserGeo = new THREE.CapsuleGeometry(.22, .20, 8, 16);
+  const leftTrouser = new THREE.Mesh(trouserGeo, pantsMat);
+  leftTrouser.position.y = -.12; leftLeg.add(leftTrouser);
+  const rightTrouser = new THREE.Mesh(trouserGeo, pantsMat);
+  rightTrouser.position.y = -.12; rightLeg.add(rightTrouser);
 
   const cType = skin.hat || 'none';
 
@@ -1688,7 +1732,8 @@ function createBean3DMesh(skin) {
     pantsMat.color.setHex(0x009624);
 
     // Верхняя челюсть-капюшон над очками
-    const snout = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.34, 0.68), dinoMat);
+    const snout = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), dinoMat);
+    snout.scale.set(.40,.24,.40);
     snout.position.set(0, -0.02, 0.16);
     hatGroup.add(snout);
 
@@ -1971,6 +2016,53 @@ function createBean3DMesh(skin) {
     const goldSash = new THREE.Mesh(new THREE.CylinderGeometry(0.66, 0.66, 0.14, 24), goldMat);
     goldSash.position.y = 0.86;
     costumeGroup.add(furCollar, royalCape, goldSash);
+  }
+
+  const extra = EXTRA_COSTUMES.find(item => item[0] === cType);
+  if (extra) {
+    const tone = new THREE.MeshStandardMaterial({color:extra[3],roughness:.48});
+    const accent = new THREE.MeshStandardMaterial({color: cType === 'bee' ? 0x4b342a : 0xffd7cb,roughness:.55});
+    pantsMat.color.setHex(extra[3]);
+    // Rounded hood sits behind the goggles; the face remains visible.
+    const hood = new THREE.Mesh(new THREE.SphereGeometry(1,24,18),tone);
+    hood.scale.set(.58,.32,.53); hood.position.set(0,.04,-.03); hatGroup.add(hood);
+    const addOval = (x,y,z,sx,sy,sz,mat=tone) => {
+      const m=new THREE.Mesh(new THREE.SphereGeometry(1,20,14),mat);
+      m.scale.set(sx,sy,sz); m.position.set(x,y,z); hatGroup.add(m); return m;
+    };
+    if (['fox','cat','rabbit','bear','panda','cow','owl'].includes(cType)) {
+      const long = cType === 'rabbit';
+      for (const side of [-1,1]) {
+        const ear=addOval(side*.36,long?.43:.23,-.02,long?.16:.20,long?.42:.24,.14);
+        ear.rotation.z = -side*.28;
+        const inner=addOval(side*.36,long?.45:.24,.11,long?.085:.10,long?.27:.12,.035,accent);
+        inner.rotation.z=-side*.28;
+      }
+    }
+    if (['frog','shark','dragon'].includes(cType)) {
+      if(cType==='frog') for(const side of [-1,1]) {
+        addOval(side*.32,.25,.10,.18,.17,.16);
+        addOval(side*.32,.28,.24,.09,.09,.035,whiteMat);
+        addOval(side*.32,.28,.275,.045,.05,.02,darkMat);
+      }
+      else {
+        const fin = new THREE.Mesh(new THREE.ConeGeometry(.19,.47,8),tone);
+        fin.position.set(0,.36,-.08); hatGroup.add(fin);
+        const nose=addOval(0,-.02,.37,.36,.15,.24);
+        for(let i=-2;i<=2;i++) { const tooth=new THREE.Mesh(new THREE.ConeGeometry(.035,.11,8),whiteMat); tooth.rotation.x=Math.PI; tooth.position.set(i*.12,-.17,.53);hatGroup.add(tooth); }
+      }
+    }
+    if(cType==='bee') {
+      for(const side of [-1,1]) {
+        const antenna=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.32,10),darkMat); antenna.position.set(side*.22,.34,0); antenna.rotation.z=-side*.35;hatGroup.add(antenna);
+        addOval(side*.27,.50,0,.07,.07,.07,darkMat);
+        const wing=new THREE.Mesh(new THREE.SphereGeometry(1,16,12),whiteMat); wing.scale.set(.25,.36,.08); wing.position.set(side*.43,1.18,-.56);wing.rotation.z=side*.55;costumeGroup.add(wing);
+      }
+    }
+    if(cType==='robot'||cType==='diver') {
+      const antenna=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,.28,12),chromeMat); antenna.position.y=.36;hatGroup.add(antenna);addOval(0,.53,0,.09,.09,.09,cType==='diver'?primarySolidMat:goldMat);
+    }
+    if(cType==='cow') for(const side of [-1,1]) { const horn=new THREE.Mesh(new THREE.ConeGeometry(.09,.24,12),whiteMat);horn.position.set(side*.28,.32,-.04);hatGroup.add(horn); }
   }
 
   // Тень-блоб под ногами (проектируется ровно на поверхность соты под персонажем для 100% читаемости прыжка!)

@@ -5,15 +5,16 @@ export function fanSurfaceAt(fan, x, z) {
   const dz = z - fan.z;
   const distance = Math.hypot(dx, dz);
   if (distance <= fan.hubRadius) return { part: 'hub', distance };
-  if (distance > fan.radius) return null;
   const angle = Math.atan2(dz, dx) - fan.angle;
   const spacing = Math.PI * 2 / fan.blades;
   const local = ((angle + spacing / 2) % spacing + spacing) % spacing - spacing / 2;
-  // Blades widen from the hub towards the outer edge.
-  const t = (distance - fan.hubRadius) / (fan.radius - fan.hubRadius);
+  // Use the same tapered polygon as the rendered blade, including its outer corners.
+  const along = Math.cos(local) * distance;
+  const across = Math.abs(Math.sin(local) * distance);
+  if (along < fan.hubRadius || along > fan.radius) return null;
+  const t = (along - fan.hubRadius) / (fan.radius - fan.hubRadius);
   const halfWidth = fan.innerHalfWidth + t * (fan.outerHalfWidth - fan.innerHalfWidth);
-  return Math.abs(Math.sin(local) * distance) <= halfWidth && Math.cos(local) > 0
-    ? { part: 'blade', distance } : null;
+  return across <= halfWidth ? { part: 'blade', distance } : null;
 }
 
 export function advanceFan(fan, dt) {

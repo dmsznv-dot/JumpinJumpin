@@ -23,3 +23,8 @@ test('reverse rotation carries in the opposite direction', () => {
   const p = carryByFan(f, 4, 2, 1);
   assert.ok(Math.abs(p.z + 1) < 1e-9);
 });
+test('supports visible outer blade corners without filling gaps', () => {
+  const f=fan();
+  assert.equal(fanSurfaceAt(f, f.x+f.radius-.01, f.z+f.outerHalfWidth-.02)?.part,'blade');
+  assert.equal(fanSurfaceAt(f, f.x+f.radius+.1, f.z+f.outerHalfWidth),null);
+});
