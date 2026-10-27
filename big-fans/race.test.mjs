@@ -9,7 +9,7 @@ test('falling respawns at latest checkpoint', () => {
   assert.equal(a.z,76); assert.equal(a.y,0); assert.equal(a.checkpoint,2);
 });
 test('finish requires checkpoint and ends after quota', () => {
-  const a=racer(0,154); initializeRacer(a);
+  const a=racer(0,158); initializeRacer(a);
   let result=updateRace(createCourseState(),[a],.01,5);
   assert.equal(result.done,false);
   a.checkpoint=3; result=updateRace(createCourseState(),[a],.01,6);

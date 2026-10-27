@@ -2,10 +2,10 @@ import { COURSE, surfaceAt, beamHit } from './course.mjs';
 
 // A central route leaves side fans available as alternative paths for players.
 const ROUTE = [
-  {x:-6,z:10}, {x:0,z:23}, {x:0,z:37},
+  {x:-6,z:11.5}, {x:0,z:23}, {x:0,z:37},
   {x:0,z:48}, {x:0,z:64}, {x:0,z:76},
-  {x:0,z:87}, {x:-6,z:99}, {x:0,z:110}, {x:0,z:115},
-  {x:-6,z:126}, {x:0,z:141}, {x:0,z:154}
+  {x:0,z:87}, {x:-6,z:99}, {x:0,z:110}, {x:0,z:119.5},
+  {x:-6,z:132}, {x:0,z:145}, {x:0,z:158}
 ];
 export function resetBotRoute(actor) {
   const checkpointZ = actor.checkpoint > 0 ? COURSE.checkpoints[actor.checkpoint-1].z : 0;

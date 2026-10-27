@@ -27,3 +27,11 @@ test('rotating fans have clearance at every angle', () => {
       `fans ${i} and ${j} intersect`);
   }
 });
+test('fans clear start, checkpoint and finish pads throughout rotation', () => {
+  const pads=[COURSE.start,...COURSE.checkpoints,COURSE.finish];
+  for (const [i, fan] of createCourseState().fans.entries()) for (const [j, pad] of pads.entries()) {
+    const dx=Math.max(0,Math.abs(fan.x-pad.x)-pad.halfWidth);
+    const dz=Math.max(0,Math.abs(fan.z-pad.z)-pad.halfLength);
+    assert.ok(Math.hypot(dx,dz)>fan.radius,`fan ${i} overlaps pad ${j}`);
+  }
+});

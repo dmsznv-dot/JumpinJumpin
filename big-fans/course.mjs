@@ -7,15 +7,15 @@ export const COURSE = Object.freeze({
   checkpoints: [
     { x: 0, z: 37, halfWidth: 9, halfLength: 3.5 },
     { x: 0, z: 76, halfWidth: 9, halfLength: 3.5 },
-    { x: 0, z: 115, halfWidth: 9, halfLength: 3.5 }
+    { x: 0, z: 119.5, halfWidth: 9, halfLength: 3.5 }
   ],
-  finish: { x: 0, z: 154, halfWidth: 9, halfLength: 5 },
+  finish: { x: 0, z: 158, halfWidth: 9, halfLength: 5 },
   // Each section has a small branching path joining a larger central fan.
   fans: [
-    [-6, 10, 5, 1], [6, 10, 5, -1], [0, 23, 6, 1],
+    [-6, 11.5, 5, 1], [6, 11.5, 5, -1], [0, 23, 6, 1],
     [-11.7, 48, 4.5, -1], [0, 48, 5.4, 1], [11.7, 48, 4.5, -1], [0, 64, 6, -1],
     [-10.7, 87, 4.5, 1], [0, 87, 4.5, -1], [10.7, 87, 4.5, 1], [-6, 99, 5, -1], [6, 99, 5, 1], [0, 110, 4.5, -1, true],
-    [-6, 126, 5, 1, true], [6, 126, 5, -1, true], [0, 141, 6, 1, true]
+    [-6, 132, 5, 1, true], [6, 132, 5, -1, true], [0, 145, 6, 1, true]
   ]
 });
 

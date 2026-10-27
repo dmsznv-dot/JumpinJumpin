@@ -2325,6 +2325,7 @@ function startMatch() {
   music.setMode('arena');
   lobbyGroup.visible = false;
   stadiumGroup.visible = true;
+  stadiumPillars.forEach(pillar => { pillar.visible = true; });
   arenaGroup.visible = true;
   actorsGroup.visible = true;
   fxGroup.visible = true;
@@ -2397,6 +2398,7 @@ function startMatch() {
 // ==================== BIG FANS: TEST COURSE ====================
 function startBigFans() {
   startMatch();
+  stadiumPillars.forEach(pillar => { pillar.visible = false; });
   // The race has a single ground height and its own arena and rules.
   arenaGroup.clear();
   state.layers = [{ index: 0, yHeight: 0, list: [], map: new Map() }];
