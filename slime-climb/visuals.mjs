@@ -231,11 +231,16 @@ export function createVisuals(THREE, c) {
   ctx.fillText('FINISH!', 256, 92);
   const signTex = new THREE.CanvasTexture(cnv);
   signTex.colorSpace = THREE.SRGBColorSpace;
-  const signMat = new THREE.MeshBasicMaterial({ map: signTex });
+  const signMat = new THREE.MeshBasicMaterial({
+    map: signTex,
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -1
+  });
   mats.push(signMat);
   const signMesh = new THREE.Mesh(new THREE.PlaneGeometry(10.5, 2.6), signMat);
   signMesh.rotation.y = Math.PI;
-  signMesh.position.set(0, 34.6, 123.4);
+  signMesh.position.set(0, 33.5, 123.36);
   root.add(signMesh);
 
   // Rotating Golden Crown above the Finish Podium

@@ -380,11 +380,46 @@ export function botDecision(c, a) {
   const dz = target.z - a.z;
   const len = Math.hypot(dx, dz);
 
-  const speed = elite ? 7.0 : 6.0;
+  const speed = elite ? 7.2 : 6.2;
   let vx = 0, vz = 0;
   if (len > 0.1) {
     vx = (dx / len) * speed;
     vz = (dz / len) * speed;
+  }
+
+  // 1. Уклонение от глянцевых треугольных бамперов на старте (Z in [10, 18])
+  if (a.z >= 9.5 && a.z <= 17.5) {
+    if (Math.hypot(a.x - 0.0, a.z - 16.5) < 1.7) {
+      vx += (a.x >= 0 ? 3.0 : -3.0);
+    } else if (Math.hypot(a.x - (-2.3), a.z - 11.5) < 1.7) {
+      vx += 3.2;
+    } else if (Math.hypot(a.x - 2.3, a.z - 11.5) < 1.7) {
+      vx -= 3.2;
+    }
+  }
+
+  // 2. Уклонение от боксерских толкателей на 1 этаже (Z in [33, 43])
+  if (a.z >= 33.0 && a.z <= 42.5 && a.x < -0.8) {
+    // Держимся правой стороны прохода, чтобы толкатели не сбросили в слайм
+    vx += 2.5;
+  }
+
+  // 3. Активная компенсация вращения цилиндров (бревен) на 3 этаже
+  if (a.x >= 1.0 && a.x <= 13.0 && a.y >= 11.4 && a.y <= 13.0) {
+    if (Math.abs(a.z - 61.5) < 0.95) {
+      // Цилиндр сносит в +Z, бот активно удерживает центр цилиндра
+      vz -= 1.8;
+    } else if (Math.abs(a.z - 64.5) < 0.95) {
+      // Цилиндр сносит в -Z
+      vz += 1.8;
+    }
+  }
+
+  // 4. Уклонение от катящегося гигантского шара на 2 этаже
+  if (c && c.boulder && c.boulder.active && a.y >= 5.2 && a.y <= 11.5 && Math.abs(a.z - c.boulder.z) < 7.0) {
+    // Если шар близко, смещаемся к безопасному краю рампы
+    const avoidDir = (a.x > c.boulder.x) ? 3.5 : -3.5;
+    vx += avoidDir;
   }
 
   const jump = a.onGround && (

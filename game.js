@@ -1314,10 +1314,14 @@ class HexTile3D {
     const ringMat = new THREE.MeshBasicMaterial({
       color: 0xffffff,
       transparent: true,
-      opacity: 0.35
+      opacity: 0.35,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -1
     });
     this.innerRing = new THREE.Mesh(sharedHexInnerRingGeo, ringMat);
-    this.innerRing.position.y = 0.015;
+    this.innerRing.position.y = 0.02;
     this.group.add(this.innerRing);
 
     arenaGroup.add(this.group);
@@ -2119,7 +2123,10 @@ function createBean3DMesh(skin) {
     color: 0x000000,
     transparent: true,
     opacity: 0.44,
-    depthWrite: false
+    depthWrite: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -1
   });
   const blobShadow = new THREE.Mesh(shadowGeo, shadowMat);
   blobShadow.position.y = 0.03;
@@ -2591,7 +2598,17 @@ function finishRace(result) {
   const qualifiers = result.finished.slice(0, result.quota);
   const playerQualified = qualifiers.includes(state.player);
   if (state.showMode === 'championship' && playerQualified) {
-    startRollOut('championship_rollout', qualifiers);
+    showCelebrationOverlay({
+      type: 'qualified',
+      icon: '🏁',
+      ribbon: 'РАУНД 1 ПРОЙДЕН!',
+      title: 'КВАЛИФИЦИРОВАН!',
+      subtitle: 'ТЫ ПРОШЁЛ! Переход в Раунд 2: Roll Out...',
+      duration: 2.4,
+      onComplete: () => {
+        startRollOut('championship_rollout', qualifiers);
+      }
+    });
     return;
   }
   state.phase = 'gameover';
@@ -2645,17 +2662,14 @@ function updateBigFans(dt) {
   if (!playerFinishedBefore && p.raceFinished) {
     const place = result.finished.indexOf(p) + 1;
     state.raceVisuals.celebrateFinish();
-    sfx.play('win');
-    state.raceFinishNotice = 3;
-    const notice = document.createElement('div');
-    notice.id = 'race-finish-notice'; notice.setAttribute('role', 'status');
-    notice.textContent = `🏁 ФИНИШ! ТЫ ПРИШЁЛ #${place}`;
-    Object.assign(notice.style, {position:'fixed',top:'22%',left:'50%',transform:'translateX(-50%)',zIndex:'10000',background:'#7b35d1',color:'#fff',border:'4px solid #ffe600',borderRadius:'22px',padding:'18px 30px',font:'900 clamp(20px,4vw,40px) sans-serif',boxShadow:'0 8px 0 #351468',textAlign:'center',whiteSpace:'nowrap'});
-    document.body.appendChild(notice);
-  }
-  if (state.raceFinishNotice > 0) {
-    state.raceFinishNotice = Math.max(0, state.raceFinishNotice - dt);
-    if (!state.raceFinishNotice) document.getElementById('race-finish-notice')?.remove();
+    showCelebrationOverlay({
+      type: 'qualified',
+      icon: '🏁',
+      ribbon: state.showMode === 'championship' ? 'BIG FANS • РАУНД 1' : 'BIG FANS • ФИНИШ',
+      title: 'КВАЛИФИЦИРОВАН!',
+      subtitle: `ТЫ ПРОШЁЛ! Место #${place} из ${result.quota} прошедших!`,
+      duration: 3.0
+    });
   }
   state.raceVisuals.update();
   for (const actor of state.actors) {
@@ -2663,7 +2677,7 @@ function updateBigFans(dt) {
     if (actor.raceFinished && !actor.isPlayer) { actor.rig.root.visible = false; actor.labelEl.style.display = 'none'; }
   }
   updateFX(dt); updateThirdPersonCamera(dt); update3DNameplates(); updateRaceHUD();
-  if (result.done && state.raceFinishNotice <= 0) finishRace(result);
+  if (result.done && !state.celebrationTimeout) finishRace(result);
 }
 
 // ==================== ROLL OUT: SURVIVAL ROUND ====================
@@ -2704,10 +2718,39 @@ function updateRolloutHUD() {
 }
 function finishRollOut() {
   const survivors=state.actors.filter(a=>a.alive);
-  if (state.showMode==='championship_rollout' && state.player.alive) {
-    startSlimeClimb('championship_slime',survivors);
+  const playerAlive = state.player && state.player.alive;
+  if (state.showMode==='championship_rollout' && playerAlive) {
+    showCelebrationOverlay({
+      type: 'qualified',
+      icon: '🛡️',
+      ribbon: 'РАУНД 2 ПРОЙДЕН!',
+      title: 'КВАЛИФИЦИРОВАН!',
+      subtitle: 'ТЫ ПРОШЁЛ! Переход в Раунд 3: Slime Climb...',
+      duration: 2.6,
+      onComplete: () => {
+        startSlimeClimb('championship_slime', survivors);
+      }
+    });
     return;
   }
+  if (playerAlive) {
+    showCelebrationOverlay({
+      type: 'qualified',
+      icon: '🛡️',
+      ribbon: 'ROLL OUT • ВЫЖИВАНИЕ',
+      title: 'КВАЛИФИЦИРОВАН!',
+      subtitle: `ТЫ ПРОШЁЛ! Вы удержались на барабанах! Выжило: ${survivors.length}`,
+      duration: 2.6,
+      onComplete: () => {
+        showRollOutResultsModal(survivors);
+      }
+    });
+    return;
+  }
+  showRollOutResultsModal(survivors);
+}
+
+function showRollOutResultsModal(survivors) {
   state.phase='gameover';
   document.getElementById('spectator-bar').classList.add('hidden');
   document.getElementById('result-ribbon').textContent='ROLL OUT • ВЫЖИВАНИЕ';
@@ -2794,11 +2837,42 @@ function updateSlimeHUD(){
 }
 function finishSlimeClimb(){
  const finished=state.actors.filter(a=>a.climbFinished).sort((a,b)=>a.climbTime-b.climbTime);
- if(state.showMode==='championship_slime' && state.player.climbFinished){
-   state.showMode='championship_final';startMatch({qualifiers:finished});
-   document.getElementById('countdown-badge').textContent=`ФИНАЛ HEX-A-GONE • ${finished.length} УЧАСТНИКОВ`;
-   document.getElementById('countdown-sub').textContent='Финишировавшие выходят в финал!';return;
+ const playerQualified = state.player && state.player.climbFinished;
+ if(state.showMode==='championship_slime' && playerQualified){
+   showCelebrationOverlay({
+     type: 'qualified',
+     icon: '🏆',
+     ribbon: 'РАУНД 3 ПРОЙДЕН!',
+     title: 'КВАЛИФИЦИРОВАН!',
+     subtitle: 'ТЫ В ГРАНД-ФИНАЛЕ! Переход к борьбе за Корону...',
+     duration: 2.6,
+     onComplete: () => {
+       state.showMode='championship_final';startMatch({qualifiers:finished});
+       document.getElementById('countdown-badge').textContent=`ГРАНД-ФИНАЛ HEX-A-GONE • ${finished.length} УЧАСТНИКОВ`;
+       document.getElementById('countdown-sub').textContent='Борьба за Золотую Корону!';
+     }
+   });
+   return;
  }
+ if(playerQualified){
+   const place=finished.indexOf(state.player)+1;
+   showCelebrationOverlay({
+     type: 'qualified',
+     icon: '🏆',
+     ribbon: 'SLIME CLIMB • ВЕРШИНА',
+     title: 'КВАЛИФИЦИРОВАН!',
+     subtitle: `ТЫ ПРОШЁЛ! Место #${place} на вершине!`,
+     duration: 2.6,
+     onComplete: () => {
+       showSlimeClimbResultsModal(finished);
+     }
+   });
+   return;
+ }
+ showSlimeClimbResultsModal(finished);
+}
+
+function showSlimeClimbResultsModal(finished) {
  state.phase='gameover';document.getElementById('spectator-bar').classList.add('hidden');
  const place=finished.indexOf(state.player)+1;
  document.getElementById('result-ribbon').textContent='SLIME CLIMB • ГОНКА';
@@ -2816,7 +2890,8 @@ function finishSlimeClimb(){
 function updateSlimeClimb(dt){
  state.elapsed+=dt;advanceSlimeCourse(state.slimeCourse,dt,state.actors);state.slimeVisuals.update();
  const p=state.player;
- if(p.alive&&!p.climbFinished&&!p.isDiving){
+ const playerClimbedBefore = p ? p.climbFinished : false;
+ if(p&&p.alive&&!p.climbFinished&&!p.isDiving){
   let right=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0), forward=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0);
   if(joystick.active){right+=joystick.dx;forward-=joystick.dy;}
   const len=Math.hypot(right,forward);
@@ -2918,6 +2993,19 @@ function updateSlimeClimb(dt){
   if(a.z>=120&&Math.abs(a.x)<8.5&&a.y>=25.0){a.climbFinished=true;a.climbTime=state.elapsed;a.vx=a.vz=0;if(!a.isPlayer){a.rig.root.visible=false;a.labelEl.style.display='none';}}
   else if(a.y<=risingSlimeY(state.elapsed)||a.y< -20){a.alive=false;a.rig.root.visible=false;a.labelEl.style.display='none';state.eliminationOrder.push(a);sfx.play('elim');if(a.isPlayer)onPlayerEliminated();}
  }
+
+ if (!playerClimbedBefore && p && p.climbFinished) {
+   const place = state.actors.filter(a => a.climbFinished).length;
+   showCelebrationOverlay({
+     type: 'qualified',
+     icon: '🏆',
+     ribbon: state.showMode === 'championship_slime' ? 'SLIME CLIMB • РАУНД 3' : 'SLIME CLIMB • ВЕРШИНА',
+     title: 'КВАЛИФИЦИРОВАН!',
+     subtitle: `ТЫ ПРОШЁЛ! Место #${place}! Вы обогнали розовую слизь!`,
+     duration: 3.0
+   });
+ }
+
  const active=state.actors.filter(a=>a.alive&&!a.climbFinished);
  for(let i=0;i<active.length;i++)for(let j=i+1;j<active.length;j++){
   const a=active[i],b=active[j];if(Math.abs(a.y-b.y)>1.8)continue;const dx=b.x-a.x,dz=b.z-a.z,d=Math.hypot(dx,dz),min=(a.radius+b.radius)*.8;
@@ -3234,53 +3322,87 @@ document.getElementById('chip-cam').addEventListener('click', () => {
   state.lastManualOrbitTime = state.elapsed;
 });
 
-// ==================== ИИ БОТОВ В 3D ====================
+// ==================== УМНЫЙ ИИ БОТОВ В 3D (HEX-A-GONE) ====================
 function updateBotAI3D(bot, dt, config) {
   bot.aiRetargetTimer -= dt;
-  const layer = state.layers[bot.currentLayer] || state.layers[state.layers.length - 1];
+  const currentLayerIdx = Math.min(state.layers.length - 1, Math.max(0, bot.currentLayer));
+  const layer = state.layers[currentLayerIdx] || state.layers[state.layers.length - 1];
   const curAx = worldXZToAxial(bot.x, bot.z);
-  const curTile = layer.map.get(`${curAx.q},${curAx.r}`);
+  const curTile = layer ? layer.map.get(`${curAx.q},${curAx.r}`) : null;
 
   const urgent = !curTile || curTile.status === 'falling' || curTile.status === 'waiting' ||
-    (curTile.status === 'stepped' && curTile.timer < config.stepHoldTime * 0.55);
+    (curTile.status === 'stepped' && curTile.timer < config.stepHoldTime * 0.65);
 
   if (bot.aiRetargetTimer <= 0 || urgent || !bot.aiTargetTile ||
       bot.aiTargetTile.status === 'falling' || bot.aiTargetTile.status === 'waiting') {
-    bot.aiRetargetTimer = 0.24 + (1 - config.botIQ) * 0.25;
+    bot.aiRetargetTimer = 0.20 + (1 - config.botIQ) * 0.22;
 
     let bestTile = null;
     let bestScore = -9999;
 
-    for (let dq = -2; dq <= 2; dq++) {
-      for (let dr = Math.max(-2, -dq - 2); dr <= Math.min(2, -dq + 2); dr++) {
-        const hDist = hexDistance(0, 0, dq, dr);
-        if (hDist === 0) continue;
-        const candidate = layer.map.get(`${curAx.q + dq},${curAx.r + dr}`);
-        if (!candidate) continue;
-        if (candidate.status !== 'solid' && candidate.status !== 'restoring') continue;
+    // Сначала ищем в ближнем радиусе 2, если все соты вокруг разрушены — расширяем до 4
+    for (const searchRadius of [2, 4]) {
+      for (let dq = -searchRadius; dq <= searchRadius; dq++) {
+        for (let dr = Math.max(-searchRadius, -dq - searchRadius); dr <= Math.min(searchRadius, -dq + searchRadius); dr++) {
+          const hDist = hexDistance(0, 0, dq, dr);
+          if (hDist === 0) continue;
+          const candidate = layer.map.get(`${curAx.q + dq},${curAx.r + dr}`);
+          if (!candidate) continue;
+          if (candidate.status !== 'solid' && candidate.status !== 'restoring') continue;
 
-        let solidNeighbors = 0;
-        const nDirs = [[1,0],[-1,0],[0,1],[0,-1],[1,-1],[-1,1]];
-        for (const [nq, nr] of nDirs) {
-          const nb = layer.map.get(`${candidate.q + nq},${candidate.r + nr}`);
-          if (nb && nb.status === 'solid') solidNeighbors++;
-        }
+          let solidNeighbors = 0;
+          const nDirs = [[1,0],[-1,0],[0,1],[0,-1],[1,-1],[-1,1]];
+          for (const [nq, nr] of nDirs) {
+            const nb = layer.map.get(`${candidate.q + nq},${candidate.r + nr}`);
+            if (nb && (nb.status === 'solid' || nb.status === 'restoring')) solidNeighbors++;
+          }
 
-        let score = solidNeighbors * 12;
-        if (hDist === 1) score += 20;
-        if (candidate.specialType === 'gold') score += 16;
-        if (candidate.specialType === 'bomb') score -= 14;
+          let score = solidNeighbors * 14;
+          if (hDist === 1) score += 24;
+          else if (hDist === 2) score += 12;
+          else score -= (hDist - 2) * 8;
 
-        const centerDist = hexDistance(0, 0, candidate.q, candidate.r);
-        score -= centerDist * 2.2;
-        score += (Math.random() - 0.5) * (1.2 - config.botIQ) * 38;
+          if (candidate.specialType === 'gold') score += 20;
+          if (candidate.specialType === 'spring') score += 8;
+          if (candidate.specialType === 'bomb') score -= 28;
 
-        if (score > bestScore) {
-          bestScore = score;
-          bestTile = candidate;
+          const centerDist = hexDistance(0, 0, candidate.q, candidate.r);
+          score -= centerDist * 1.8;
+          score += (Math.random() - 0.5) * (1.1 - config.botIQ) * 26;
+
+          if (score > bestScore) {
+            bestScore = score;
+            bestTile = candidate;
+          }
         }
       }
+      if (bestTile) break;
     }
+
+    // Если на текущем ярусе вокруг все соты выбиты — смотрим на ярус НИЖЕ и направляемся к островку!
+    if (!bestTile && currentLayerIdx < state.layers.length - 1) {
+      const lowerLayer = state.layers[currentLayerIdx + 1];
+      let bestLowerTile = null;
+      let maxLowerCluster = -1;
+      for (let dq = -3; dq <= 3; dq++) {
+        for (let dr = Math.max(-3, -dq - 3); dr <= Math.min(3, -dq + 3); dr++) {
+          const cand = lowerLayer.map.get(`${curAx.q + dq},${curAx.r + dr}`);
+          if (cand && cand.status === 'solid') {
+            let nCnt = 0;
+            for (const [nq, nr] of [[1,0],[-1,0],[0,1],[0,-1],[1,-1],[-1,1]]) {
+              const nb = lowerLayer.map.get(`${cand.q + nq},${cand.r + nr}`);
+              if (nb && nb.status === 'solid') nCnt++;
+            }
+            if (nCnt > maxLowerCluster) {
+              maxLowerCluster = nCnt;
+              bestLowerTile = cand;
+            }
+          }
+        }
+      }
+      if (bestLowerTile) bestTile = bestLowerTile;
+    }
+
     bot.aiTargetTile = bestTile;
   }
 
@@ -3289,18 +3411,29 @@ function updateBotAI3D(bot, dt, config) {
     const dz = bot.aiTargetTile.z - bot.z;
     const dist = Math.hypot(dx, dz);
 
-    if (dist > 0.35) {
+    if (dist > 0.25) {
       bot.facing = Math.atan2(dx, dz);
-      const baseSpeed = 6.5 * (bot.buffs.speed > 0 ? 1.35 : 1.0);
+
+      // Тактика Fall Guys: если сота еще целая и безопасная, фасолька медленно держит позицию
+      const isSafeTile = curTile && curTile.status === 'solid' && dist < HEX_RADIUS * 0.9;
+      const speedMult = isSafeTile ? 0.35 : 1.0;
+      const baseSpeed = 7.0 * speedMult * (bot.buffs.speed > 0 ? 1.35 : 1.0);
+
       const desiredVx = (dx / dist) * baseSpeed;
       const desiredVz = (dz / dist) * baseSpeed;
 
-      bot.vx += (desiredVx - bot.vx) * Math.min(1, dt * 8);
-      bot.vz += (desiredVz - bot.vz) * Math.min(1, dt * 8);
+      bot.vx += (desiredVx - bot.vx) * Math.min(1, dt * 9);
+      bot.vz += (desiredVz - bot.vz) * Math.min(1, dt * 9);
 
-      if (bot.onGround && (dist > HEX_RADIUS * 1.85 || !curTile || curTile.status === 'falling' || curTile.status === 'waiting')) {
-        if (Math.random() < 0.38 + config.botIQ * 0.55) {
+      // Прыжок при переходе на следующую соту или при разрушении текущей соты
+      if (bot.onGround && (dist > HEX_RADIUS * 1.3 || !curTile || curTile.status === 'falling' || (curTile.status === 'stepped' && curTile.timer < config.stepHoldTime * 0.45))) {
+        if (Math.random() < 0.45 + config.botIQ * 0.52) {
           bot.jump();
+        }
+      } else if (!bot.onGround && dist > 2.6 && bot.vy < 0 && bot.diveCooldown <= 0) {
+        // Нырок рыбкой вперёд при длинном прыжке
+        if (Math.random() < config.botIQ * 0.6) {
+          bot.dive();
         }
       }
     }
@@ -3541,8 +3674,9 @@ function updateWorld3D(dt, nowSec) {
       const supportTile = findSupportingTileOnLayer(layer, actor.x, actor.z, actor.radius);
       const surfaceY = supportTile ? (layer.yHeight + supportTile.offsetY) : layer.yHeight;
 
-      // Проверяем пересечение верхней плоскости соты (с запасом сверху и снизу, чтобы никогда не проскочить сквозь полигон)
-      if (supportTile && actor.vy <= 0 && prevY >= surfaceY - 0.65 && actor.y <= surfaceY + 0.25) {
+      // Непрерывный Sweep по траектории от prevY к actor.y (никто никогда не проваливается сквозь полигон!)
+      const passedSurface = (prevY >= surfaceY - 0.22 && actor.y <= surfaceY + 0.32 && actor.y >= surfaceY - 1.5);
+      if (supportTile && actor.vy <= 0 && passedSurface) {
         if (!wasOnGround && actor.vy < -4.5) {
           actor.squash = Math.min(0.32, Math.abs(actor.vy) / 42);
         }
@@ -3830,35 +3964,116 @@ function onPlayerEliminated() {
   }
 }
 
+// ==================== ЭФФЕКТЫ КОНФЕТТИ И ПРАЗДНОВАНИЯ ФИНИША ====================
+function launchScreenConfetti(type = 'champion') {
+  const container = document.createElement('div');
+  container.className = 'confetti-container';
+  Object.assign(container.style, {
+    position: 'fixed',
+    inset: '0',
+    pointerEvents: 'none',
+    zIndex: '9998',
+    overflow: 'hidden'
+  });
+  document.body.appendChild(container);
+
+  const colors = type === 'champion'
+    ? ['#ffe600', '#ffd700', '#ff2a85', '#00e5ff', '#ffffff', '#ff9100']
+    : ['#00e5ff', '#7b35d1', '#ffe600', '#ff2a85', '#00e676', '#ffffff'];
+
+  for (let i = 0; i < 40; i++) {
+    const piece = document.createElement('div');
+    const color = colors[i % colors.length];
+    const left = Math.random() * 100;
+    const size = 9 + Math.random() * 12;
+    const duration = 1.9 + Math.random() * 1.3;
+    const delay = Math.random() * 0.35;
+    const rot = Math.random() * 360;
+
+    Object.assign(piece.style, {
+      position: 'absolute',
+      left: `${left}%`,
+      top: '-25px',
+      width: `${size}px`,
+      height: `${size * 0.62}px`,
+      backgroundColor: color,
+      borderRadius: '3px',
+      transform: `rotate(${rot}deg)`,
+      animation: `fallConfetti ${duration}s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${delay}s forwards`,
+      boxShadow: `0 0 8px ${color}`
+    });
+    container.appendChild(piece);
+  }
+
+  setTimeout(() => container.remove(), 3600);
+}
+
+function showCelebrationOverlay({ type = 'champion', icon = '👑', ribbon = '', title = '', subtitle = '', duration = 3.0, onComplete = null } = {}) {
+  const overlay = document.getElementById('winner-banner-overlay');
+  const card = document.getElementById('winner-plashka-card');
+  const iconEl = document.getElementById('winner-crown-anim');
+  const ribbonEl = document.getElementById('winner-plashka-ribbon');
+  const nameEl = document.getElementById('winner-plashka-name');
+  const subEl = document.getElementById('winner-plashka-sub');
+
+  if (card) {
+    card.className = `winner-plashka is-${type}`;
+  }
+  if (iconEl) iconEl.textContent = icon;
+  if (ribbonEl) ribbonEl.textContent = ribbon;
+  if (nameEl) nameEl.textContent = title;
+  if (subEl) subEl.textContent = subtitle;
+
+  overlay.classList.remove('hidden');
+  sfx.play(type === 'eliminated' ? 'elim' : 'win');
+
+  // Запуск 3D-фейерверка вокруг персонажа
+  const actor = state.player || state.matchWinner;
+  const px = actor ? actor.x : 0;
+  const py = actor ? actor.y + 1.5 : 5;
+  const pz = actor ? actor.z : 0;
+  const cols = type === 'champion'
+    ? [0xffe600, 0xffd700, 0xff9100, 0xff2a85, 0xffffff]
+    : [0x00e5ff, 0x7b35d1, 0xff2a85, 0x00e676, 0xffffff];
+
+  for (let i = 0; i < 40; i++) {
+    spawnParticles3D(px + (Math.random() - 0.5) * 3.5, py + Math.random() * 2, pz + (Math.random() - 0.5) * 3.5, cols[i % cols.length], 2);
+  }
+
+  // Запуск экранного праздничного конфетти
+  launchScreenConfetti(type);
+
+  if (state.celebrationTimeout) clearTimeout(state.celebrationTimeout);
+  state.celebrationTimeout = setTimeout(() => {
+    state.celebrationTimeout = null;
+    overlay.classList.add('hidden');
+    if (onComplete) onComplete();
+  }, duration * 1000);
+}
+
 function triggerWinnerCelebration(winner) {
   if (state.phase === 'celebrating' || state.phase === 'gameover') return;
   state.phase = 'celebrating';
-  state.celebrationTimer = 2.8;
+  state.celebrationTimer = 3.6;
   state.matchWinner = winner;
 
   document.getElementById('spectator-bar').classList.add('hidden');
 
-  const overlay = document.getElementById('winner-banner-overlay');
-  const ribbon = document.getElementById('winner-plashka-ribbon');
-  const nameEl = document.getElementById('winner-plashka-name');
-  const subEl = document.getElementById('winner-plashka-sub');
-
   const isPlayerWin = winner && winner.isPlayer;
-  ribbon.textContent = isPlayerWin ? '🎉 ВЫ ПОБЕДИЛИ В 3D-ШОУ! 🎉' : '🏁 ФИНАЛ РАУНДА ОКОНЧЕН!';
-  nameEl.textContent = winner ? winner.name : 'Ничья';
-  subEl.textContent = isPlayerWin
-    ? 'Вы перепрыгали всех соперников и забрали Золотую Корону!'
-    : 'становится последним выжившим и забирает Корону!';
 
-  overlay.classList.remove('hidden');
-  sfx.play('win');
-
-  if (winner) {
-    const cols = [0xffe600, 0x00e5ff, 0xff2a85, 0x00e676, 0xffffff];
-    for (let i = 0; i < 35; i++) {
-      spawnParticles3D(winner.x, winner.y + 1.5, winner.z, cols[i % cols.length], 2);
+  showCelebrationOverlay({
+    type: 'champion',
+    icon: '👑',
+    ribbon: isPlayerWin ? '🏆 ПОБЕДИТЕЛЬ ТЕЛЕШОУ' : '🏁 ФИНАЛ ОКОНЧЕН',
+    title: 'ЧЕМПИОН!',
+    subtitle: isPlayerWin
+      ? 'ПОБЕДА В ШОУ! ЗОЛОТАЯ КОРОНА ВАША! 👑'
+      : `${winner ? winner.name : 'Бот'} становится чемпионом и забирает Корону! 👑`,
+    duration: 3.4,
+    onComplete: () => {
+      showFinalResultsModal();
     }
-  }
+  });
 }
 
 function showFinalResultsModal() {

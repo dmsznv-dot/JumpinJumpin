@@ -52,11 +52,12 @@ export function hitWall(surface, actor, previousZ) {
 }
 export function botDecision(course, actor) {
   const id = Number(String(actor.id || '').replace(/\D/g,'')) || 0;
-  const elite = id === 0;
+  const isChampion = id === 0;
+  const elite = id < 4;
   const speedup = speedMultiplier(course.time);
   const current = sampleSurface(course, actor.x, actor.z);
   const drift = current ? current.ring.speed * speedup * Math.sqrt(Math.max(0,RADIUS*RADIUS-actor.z*actor.z)) : 0;
-  const targetZ = elite ? 0 : Math.sin(course.time*.12 + id*1.31)*1.1;
+  const targetZ = isChampion ? 0 : Math.sin(course.time*.12 + id*1.31)*1.1;
   const vz = Math.max(-6.4,Math.min(6.4,-drift + (targetZ-actor.z)*1.6));
   const options = [-1,0,1].map(step => {
     const x = Math.max(-RING_WIDTH*2.3, Math.min(RING_WIDTH*2.3, actor.x+step*RING_WIDTH*.72));
@@ -65,9 +66,9 @@ export function botDecision(course, actor) {
       const predicted = {rings:course.rings.map(r=>({...r,angle:r.angle+r.speed*speedup*future}))};
       const z=actor.z+(vz+drift)*Math.min(future,.7);
       const surface=sampleSurface(predicted,x,z);
-      if(!surface) score-=12; else {
-        score+=3;
-        if(Math.abs(surface.wallAngle-surface.angle)<.18)score-=3;
+      if(!surface) score-=14; else {
+        score+=4;
+        if(Math.abs(surface.wallAngle-surface.angle)<.22) score-=6;
       }
     }
     if(step===0)score+=elite?2:1;
@@ -75,9 +76,9 @@ export function botDecision(course, actor) {
     return {step,x,score};
   });
   const best=options.reduce((a,b)=>b.score>a.score?b:a);
-  const vx=best.step?Math.sign(best.x-actor.x)*(elite?6:5):0;
-  const wallNear=!!current && Math.abs(current.wallAngle-current.angle)<.18;
-  const hopDue=!elite && course.time>=(actor.rollNextJump ?? (6+id*.4));
+  const vx=best.step?Math.sign(best.x-actor.x)*(elite?6.2:5.2):0;
+  const wallNear=!!current && Math.abs(current.wallAngle-current.angle)<.20;
+  const hopDue=!isChampion && course.time>=(actor.rollNextJump ?? (6+id*.4));
   const jump=actor.onGround && (wallNear || (hopDue && current && Math.abs(actor.z)<RADIUS*.3));
   if(jump)actor.rollNextJump=course.time+8+(id%4);
   return {vx,vz,jump};

@@ -37,7 +37,7 @@ export function updateRace(course, actors, dt, elapsed, limit = 210) {
     actor.y += actor.vy * dt;
     const surface = surfaceAt(course, actor.x, actor.z);
     actor.onGround = false;
-    if (surface && actor.vy <= 0 && oldY >= -0.3 && actor.y <= 0) {
+    if (surface && actor.vy <= 0 && oldY >= -0.65 && actor.y <= 0.15 && actor.y >= -1.2) {
       actor.y = 0; actor.vy = 0; actor.onGround = true; actor.jumpCount = 0;
     }
     if (actor.raceBeamCooldown <= 0) {

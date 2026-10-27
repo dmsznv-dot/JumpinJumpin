@@ -25,6 +25,10 @@ export function createCourseVisuals(THREE, course) {
   box(.7, 6, .7, pink, -8, 3, COURSE.finish.z);
   box(.7, 6, .7, pink, 8, 3, COURSE.finish.z);
   box(16.7, .8, .7, pink, 0, 6, COURSE.finish.z);
+  // Support posts and backboard for the FINISH marquee
+  box(.6, 2.2, .6, pink, -4, 7.1, COURSE.finish.z);
+  box(.6, 2.2, .6, pink, 4, 7.1, COURSE.finish.z);
+  box(8.6, 2.3, .4, pink, 0, 7.45, COURSE.finish.z);
   for (let i=0; i<12; i++) box(1.3,.06,.8,i%2 ? purple : white, -7.15+i*1.3,.04,COURSE.finish.z);
 
   // A bright marquee and floating confetti make the finish readable from afar.
@@ -37,11 +41,17 @@ export function createCourseVisuals(THREE, course) {
   ctx.font = 'bold 150px sans-serif'; ctx.fillText('FINISH!', 512, 132);
   const signTexture = new THREE.CanvasTexture(signCanvas);
   signTexture.colorSpace = THREE.SRGBColorSpace;
-  const signMat = new THREE.MeshBasicMaterial({ map: signTexture, side: THREE.FrontSide });
+  const signMat = new THREE.MeshBasicMaterial({
+    map: signTexture,
+    side: THREE.FrontSide,
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -1
+  });
   const sign = new THREE.Mesh(new THREE.PlaneGeometry(8, 2), signMat);
-  sign.position.set(0, 7.45, COURSE.finish.z-.02); sign.rotation.y = Math.PI; root.add(sign);
+  sign.position.set(0, 7.45, COURSE.finish.z - 0.22); sign.rotation.y = Math.PI; root.add(sign);
   const backSign = new THREE.Mesh(new THREE.PlaneGeometry(8, 2), signMat);
-  backSign.position.set(0, 7.45, COURSE.finish.z+.02); root.add(backSign);
+  backSign.position.set(0, 7.45, COURSE.finish.z + 0.22); root.add(backSign);
   const decorations = [];
   const colors = [pink, cyan, yellow, white];
   for (let i = 0; i < 24; i++) {
