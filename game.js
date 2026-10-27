@@ -2389,11 +2389,13 @@ function clearActorsAndFX() {
   state.shockwaves = [];
 }
 
-function startMatch() {
+function startMatch(options = {}) {
   if (state.raceVisuals) { state.raceVisuals.dispose(); state.raceVisuals = null; }
   state.race = null;
   const diffKey = state.diffKey;
-  const config = DIFFICULTIES[diffKey];
+  const config = { ...DIFFICULTIES[diffKey] };
+  if (options.largeField) config.botsCount = Math.max(config.botsCount, 14);
+  if (options.qualifiers) config.botsCount = options.qualifiers.filter(a => !a.isPlayer).length;
   state.config = config;
   state.elapsed = 0;
 
@@ -2459,7 +2461,8 @@ function startMatch() {
   state.camYaw = state.targetCamYaw;
   state.camFocusPos.set(player.x, player.y + 1.2, player.z);
 
-  const botNames = generateFunnyBotNames(config.botsCount);
+  const qualifiedBots = options.qualifiers?.filter(a => !a.isPlayer) || null;
+  const botNames = qualifiedBots ? qualifiedBots.map(a => a.name) : generateFunnyBotNames(config.botsCount);
   for (let i = 0; i < config.botsCount; i++) {
     const angle = ((i + 1) / totalActors) * Math.PI * 2;
     const ringDist = HEX_RADIUS * (config.gridRadius * 1.15);
@@ -2468,9 +2471,9 @@ function startMatch() {
     const axial = worldXZToAxial(bx, bz);
     const bTile = topLayer.map.get(`${axial.q},${axial.r}`) || spawnRing[(i * 2) % spawnRing.length];
 
-    const botSkin = SKINS[(i + 1) % SKINS.length];
+    const botSkin = qualifiedBots ? qualifiedBots[i].skin : SKINS[(i + 1) % SKINS.length];
     const bot = new Actor3D(
-      `bot_${i}`,
+      qualifiedBots ? qualifiedBots[i].id : `bot_${i}`,
       botNames[i],
       false,
       botSkin,
@@ -2495,8 +2498,10 @@ function startMatch() {
 }
 
 // ==================== BIG FANS: TEST COURSE ====================
-function startBigFans() {
-  startMatch();
+function startBigFans(mode = 'single') {
+  state.lastMode = mode;
+  startMatch({largeField: mode === 'championship'});
+  state.showMode = mode;
   stadiumPillars.forEach(pillar => { pillar.visible = false; });
   // The race has a single ground height and its own arena and rules.
   arenaGroup.clear();
@@ -2520,7 +2525,7 @@ function startBigFans() {
   state.targetCamYaw = Math.PI;
   state.camYaw = Math.PI;
   state.camFocusPos.set(state.player.x, 1.3, state.player.z);
-  document.getElementById('countdown-badge').textContent = 'BIG FANS • ТЕСТОВЫЙ ЗАБЕГ';
+  document.getElementById('countdown-badge').textContent = state.showMode === 'championship' ? 'BIG FANS • РАУНД 1' : 'BIG FANS';
   document.getElementById('countdown-text').textContent = '3';
   document.getElementById('countdown-sub').textContent = 'Доберитесь до финиша через вращающиеся платформы!';
   updateRaceHUD();
@@ -2528,17 +2533,26 @@ function startBigFans() {
 function updateRaceHUD() {
   const finished = state.actors.filter(a => a.raceFinished).length;
   const quota = Math.max(1, Math.ceil(state.actors.length * .7));
-  document.getElementById('hud-mode-label').textContent = 'BIG FANS • ТЕСТ';
+  document.getElementById('hud-mode-label').textContent = state.showMode === 'championship' ? 'BIG FANS • РАУНД 1' : 'BIG FANS';
   document.getElementById('hud-alive').textContent = `${finished} / ${quota}`;
   document.getElementById('hud-layer').textContent = `${state.player.checkpoint} / 3`;
   document.getElementById('hud-timer').textContent = formatTime(state.elapsed);
 }
 function finishRace(result) {
+  const qualifiers = result.finished.slice(0, result.quota);
+  const playerQualified = qualifiers.includes(state.player);
+  if (state.showMode === 'championship' && playerQualified) {
+    state.showMode = 'championship_final';
+    startMatch({ qualifiers });
+    document.getElementById('countdown-badge').textContent = `ФИНАЛ HEX-A-GONE • ${qualifiers.length} УЧАСТНИКОВ`;
+    document.getElementById('countdown-sub').textContent = 'Прошедшие выходят в финал!';
+    return;
+  }
   state.phase = 'gameover';
   const p = state.player;
   const place = result.finished.indexOf(p) + 1;
-  const passed = place > 0 && place <= result.quota;
-  document.getElementById('result-ribbon').textContent = 'BIG FANS • ТЕСТОВЫЙ ЗАБЕГ';
+  const passed = playerQualified;
+  document.getElementById('result-ribbon').textContent = state.showMode === 'championship' ? 'BIG FANS • РАУНД 1' : 'BIG FANS';
   document.getElementById('result-title').textContent = passed ? `ВЫ ПРОШЛИ! МЕСТО #${place}` : 'ЗАБЕГ ОКОНЧЕН';
   document.getElementById('result-subtitle').textContent = passed ? 'Вы достигли финиша в числе прошедших!' : 'Квота заполнена или время закончилось. Попробуйте ещё раз!';
   document.getElementById('spot-winner-name').textContent = result.finished[0]?.name || 'Финиширующих нет';
@@ -2546,7 +2560,7 @@ function finishRace(result) {
   document.getElementById('res-place').textContent = place ? `#${place}` : '—';
   document.getElementById('res-time').textContent = formatTime(place ? p.raceFinishTime : state.elapsed);
   document.getElementById('res-tiles').textContent = String(p.checkpoint);
-  document.getElementById('res-score').textContent = 'ТЕСТ';
+  document.getElementById('res-score').textContent = '—';
   const standings = document.getElementById('match-standings');
   standings.replaceChildren();
   result.finished.slice(0, 10).forEach((actor, index) => {
@@ -3733,8 +3747,9 @@ function isPatternUnlocked(pat) {
 }
 
 function isCostumeUnlocked(cos) {
-  // Test branch: preview every outfit without changing saved unlocks.
-  return true;
+  if (cos.unlockType === 'free') return true;
+  if (cos.unlockType === 'crowns' && saveData.crowns >= cos.cost) return true;
+  return saveData.unlockedCostumes.includes(cos.id);
 }
 
 function getUnlockBadgeText(item, unlocked) {
@@ -4239,14 +4254,17 @@ document.getElementById('btn-random-nick').addEventListener('click', () => {
   saveGameData();
 });
 
+document.getElementById('btn-level-select').addEventListener('click', () => document.getElementById('level-choices').classList.toggle('hidden'));
+document.getElementById('btn-championship').addEventListener('click', () => startBigFans('championship'));
 document.getElementById('btn-start-match').addEventListener('click', () => {
+  state.lastMode = 'hex'; state.showMode = 'single';
   saveData.playerName = nameInput.value.trim() || 'СуперФасолька';
   saveGameData();
   startMatch();
 });
 
-document.getElementById('btn-play-again').addEventListener('click', () => state.race ? startBigFans() : startMatch());
-document.getElementById('btn-big-fans').addEventListener('click', startBigFans);
+document.getElementById('btn-play-again').addEventListener('click', () => state.lastMode === 'hex' ? startMatch() : startBigFans(state.lastMode || 'single'));
+document.getElementById('btn-big-fans').addEventListener('click', () => startBigFans('single'));
 document.getElementById('btn-result-settings').addEventListener('click', openStartModal);
 document.getElementById('btn-menu').addEventListener('click', openStartModal);
 document.getElementById('btn-sound').addEventListener('click', toggleSound);
