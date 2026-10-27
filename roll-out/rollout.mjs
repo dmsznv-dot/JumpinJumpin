@@ -51,26 +51,34 @@ export function hitWall(surface, actor, previousZ) {
   return true;
 }
 export function botDecision(course, actor) {
-  // Look ahead on the rotating ring; move across to a safer neighbour when a gap approaches.
-  const speedup = speedMultiplier(course.time);
-  const probe = {rings:course.rings.map(r => ({...r,angle:r.angle+r.speed*speedup*1.1}))};
-  const candidates = [-1,0,1].map(step => {
-    const x = Math.max(-RING_WIDTH*2.35, Math.min(RING_WIDTH*2.35, actor.x + step*RING_WIDTH*.8));
-    const f = sampleSurface(probe,x,actor.z);
-    return {step,x,score:f ? 3-Math.abs(f.wallAngle)*.1 : -5};
-  });
   const id = Number(String(actor.id || '').replace(/\D/g,'')) || 0;
-  // Change lanes periodically; retain a safe current surface if the next lane has a gap.
-  const preferred = Math.sin(course.time*.32 + id*1.7) > 0 ? 2 : 0;
-  const selected = candidates[preferred].score > 0 ? candidates[preferred]
-    : candidates[1].score > 0 ? candidates[1] : candidates.reduce((a,b) => b.score>a.score ? b:a);
-  const vx = selected.step ? Math.sign(selected.x-actor.x)*4.2 : 0;
-  const targetZ = Math.sin(course.time*.22 + id*1.31)*2.3;
-  const vz = Math.max(-4,Math.min(4,(targetZ-actor.z)*1.4));
-  const currentSurface = sampleSurface(course,actor.x,actor.z);
-  const wallNear = !!currentSurface && Math.abs(currentSurface.wallAngle-currentSurface.angle)<.20;
-  const hopDue = course.time >= (actor.rollNextJump ?? (4 + id*.37));
-  const jump = actor.onGround && (wallNear || (hopDue && !!currentSurface && Math.abs(actor.z)<RADIUS*.5));
-  if (jump) actor.rollNextJump = course.time + 5 + (id%4);
+  const elite = id === 0;
+  const speedup = speedMultiplier(course.time);
+  const current = sampleSurface(course, actor.x, actor.z);
+  const drift = current ? current.ring.speed * speedup * Math.sqrt(Math.max(0,RADIUS*RADIUS-actor.z*actor.z)) : 0;
+  const targetZ = elite ? 0 : Math.sin(course.time*.12 + id*1.31)*1.1;
+  const vz = Math.max(-6.4,Math.min(6.4,-drift + (targetZ-actor.z)*1.6));
+  const options = [-1,0,1].map(step => {
+    const x = Math.max(-RING_WIDTH*2.3, Math.min(RING_WIDTH*2.3, actor.x+step*RING_WIDTH*.72));
+    let score=0;
+    for(const future of (elite ? [.4,1,1.8,2.6] : [.4,1,1.6])) {
+      const predicted = {rings:course.rings.map(r=>({...r,angle:r.angle+r.speed*speedup*future}))};
+      const z=actor.z+(vz+drift)*Math.min(future,.7);
+      const surface=sampleSurface(predicted,x,z);
+      if(!surface) score-=12; else {
+        score+=3;
+        if(Math.abs(surface.wallAngle-surface.angle)<.18)score-=3;
+      }
+    }
+    if(step===0)score+=elite?2:1;
+    if(Math.abs(x)>RING_WIDTH*2.1)score-=1;
+    return {step,x,score};
+  });
+  const best=options.reduce((a,b)=>b.score>a.score?b:a);
+  const vx=best.step?Math.sign(best.x-actor.x)*(elite?6:5):0;
+  const wallNear=!!current && Math.abs(current.wallAngle-current.angle)<.18;
+  const hopDue=!elite && course.time>=(actor.rollNextJump ?? (6+id*.4));
+  const jump=actor.onGround && (wallNear || (hopDue && current && Math.abs(actor.z)<RADIUS*.3));
+  if(jump)actor.rollNextJump=course.time+8+(id%4);
   return {vx,vz,jump};
 }

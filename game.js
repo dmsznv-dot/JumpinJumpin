@@ -251,11 +251,17 @@ class SoundFX {
   constructor() {
     this.ctx = null;
     this.muted = false;
+    this.volume = .5;
+    this.effectsGain = null;
   }
   init() {
     if (!this.ctx) {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (AudioCtx) this.ctx = new AudioCtx();
+    }
+    if (this.ctx && !this.effectsGain) {
+      this.effectsGain = this.ctx.createGain(); this.effectsGain.gain.value = this.volume;
+      this.effectsGain.connect(this.ctx.destination);
     }
     if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
   }
@@ -268,7 +274,7 @@ class SoundFX {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.effectsGain);
 
     if (type === 'step') {
       osc.type = 'sine';
@@ -399,6 +405,8 @@ class FestivalMusicEngine {
     this.timerId = null;
     this.masterGain = null;
     this.noiseBuffer = null;
+    this.volume = .5;
+    this.track = 0;
   }
 
   ensureContext() {
@@ -412,7 +420,7 @@ class FestivalMusicEngine {
       comp.connect(ctx.destination);
 
       this.masterGain = ctx.createGain();
-      this.masterGain.gain.setValueAtTime(this.muted ? 0 : 0.28, ctx.currentTime);
+      this.masterGain.gain.setValueAtTime(this.muted ? 0 : 0.28 * this.volume, ctx.currentTime);
       this.masterGain.connect(comp);
 
       // Буфер белого шума для хай-хэтов и фестивального хлопка (Clap/Snare)
@@ -433,6 +441,13 @@ class FestivalMusicEngine {
     this.timerId = setInterval(() => this.scheduler(), 25);
   }
 
+  selectTrack() { this.track = Math.floor(Math.random()*4); this.step = 0; }
+
+  setVolume(value) {
+    this.volume = Math.max(0, Math.min(1, value));
+    if (this.masterGain && sfx.ctx) this.masterGain.gain.setTargetAtTime(this.muted ? 0 : .28*this.volume, sfx.ctx.currentTime, .04);
+  }
+
   setMode(newMode) {
     if (this.mode !== newMode) {
       this.mode = newMode;
@@ -444,7 +459,7 @@ class FestivalMusicEngine {
     this.muted = !this.muted;
     const ctx = this.ensureContext();
     if (ctx && this.masterGain) {
-      this.masterGain.gain.setTargetAtTime(this.muted ? 0 : 0.28, ctx.currentTime, 0.05);
+      this.masterGain.gain.setTargetAtTime(this.muted ? 0 : 0.28 * this.volume, ctx.currentTime, 0.05);
     }
     if (!this.isPlaying && !this.muted) this.start();
     return this.muted;
@@ -623,6 +638,23 @@ class FestivalMusicEngine {
     const bpm = this.mode === 'arena' ? 136 : 126;
     const stepDur = (60 / bpm) / 4;
 
+    if (this.mode === 'arena' && this.track > 0) {
+      // Three original match themes, each with its own hook, bass and chord cycle.
+      const themes = [null,
+        { bass:[48,53,57,55], chords:[[60,64,67],[65,69,72],[69,72,76],[67,71,74]], lead:[[72,76,79,76,81,79,76,74],[77,81,84,81,79,77,76,72],[81,84,88,84,83,81,79,76],[79,83,86,84,81,79,76,74]] },
+        { bass:[50,55,53,57], chords:[[62,65,69],[67,71,74],[65,69,72],[69,72,76]], lead:[[74,77,81,77,74,81,84,81],[79,83,86,83,81,79,77,74],[77,81,84,81,77,76,74,72],[81,84,88,86,84,81,79,77]] },
+        { bass:[53,58,55,60], chords:[[65,69,72],[70,74,77],[67,71,74],[72,76,79]], lead:[[77,81,84,89,84,81,79,77],[82,86,89,86,84,82,81,77],[79,83,86,83,79,81,83,86],[84,88,91,89,86,84,81,79]] }
+      ];
+      const theme=themes[this.track];
+      if(inBar%4===0)this.playKick(ctx,t,.9);
+      if(inBar===4||inBar===12)this.playSnareClap(ctx,t);
+      if(inBar%2===1)this.playHiHat(ctx,t,inBar===15);
+      if(inBar%2===0)this.playFunkBass(ctx,t,theme.bass[bar]+(inBar%8===4?12:0),stepDur*1.5);
+      if(inBar===0||inBar===8)this.playMarimbaChord(ctx,t,theme.chords[bar],stepDur*3);
+      if(inBar%2===0)this.playBrassLead(ctx,t,theme.lead[bar][inBar/2],stepDur*1.65);
+      if(inBar===0 && bar===0)this.playFestivalWhistle(ctx,t);
+      return;
+    }
     if (this.mode === 'lobby') {
       // ===== ФЕСТИВАЛЬНОЕ ЛОББИ (Bouncy Funk-Pop Groove в Фа-мажоре / Ре-миноре) =====
       if (inBar % 4 === 0) this.playKick(ctx, t, 0.85);
@@ -712,7 +744,7 @@ class FestivalMusicEngine {
     const stepDur = (60 / bpm) / 4;
 
     while (this.nextNoteTime < ctx.currentTime + 0.12) {
-      if (!this.muted && !sfx.muted) {
+      if (!this.muted) {
         this.scheduleStep(ctx, this.step, this.nextNoteTime);
       }
       this.nextNoteTime += stepDur;
@@ -787,6 +819,8 @@ function loadSaveData() {
 
   const defaults = {
     playerName: 'СуперФасолька',
+    musicVolume: .5,
+    effectsVolume: .5,
     skinIndex: 0,
     eyeCount: 2, // 2 = два отдельных глаза в маске Миньона, 1 = один большой глаз-циклоп Миньона
     selectedColorId: 'c_pink_yellow',
@@ -836,6 +870,8 @@ function saveGameData() {
 }
 
 let saveData = loadSaveData();
+sfx.volume = Number.isFinite(saveData.effectsVolume) ? Math.max(0,Math.min(1,saveData.effectsVolume)) : .5;
+music.volume = Number.isFinite(saveData.musicVolume) ? Math.max(0,Math.min(1,saveData.musicVolume)) : .5;
 
 // ==================== ИНИЦИАЛИЗАЦИЯ ЧЕСТНОЙ 3D СЦЕНЫ (THREE.JS) ====================
 const canvas = document.getElementById('game-canvas');
@@ -2431,6 +2467,7 @@ function startMatch(options = {}) {
   // Включаем 3D-арену, фон телешоу и переключаем фестивальный синтезатор на драйвовый ритм шоу (136 BPM)!
   music.start();
   music.setMode('arena');
+  music.selectTrack();
   lobbyGroup.visible = false;
   stadiumGroup.visible = true;
   stadiumPillars.forEach(pillar => { pillar.visible = true; });
@@ -4364,6 +4401,18 @@ document.getElementById('btn-random-nick').addEventListener('click', () => {
   saveData.playerName = randomName;
   saveGameData();
 });
+
+for (const [id, key] of [['volume-music','musicVolume'],['volume-effects','effectsVolume']]) {
+  const slider=document.getElementById(id), label=document.getElementById(id+'-value');
+  const update = () => {
+    const value=Math.max(0,Math.min(100,Number(slider.value))); label.textContent=`${value}%`;
+    saveData[key]=value/100;
+    if(key==='musicVolume') music.setVolume(value/100);
+    else { sfx.volume=value/100; if(sfx.effectsGain && sfx.ctx) sfx.effectsGain.gain.setTargetAtTime(sfx.volume,sfx.ctx.currentTime,.04); }
+  };
+  slider.value=String(Math.round(saveData[key]*100)); update();
+  slider.addEventListener('input',update); slider.addEventListener('change',saveGameData);
+}
 
 document.getElementById('btn-level-select').addEventListener('click', () => document.getElementById('level-choices').classList.toggle('hidden'));
 document.getElementById('btn-championship').addEventListener('click', () => startBigFans('championship'));

@@ -210,6 +210,12 @@
         <div class="settings-card">
           <h2 class="settings-title">⚙️ НАСТРОЙКИ ШОУ И СЛОЖНОСТИ АРЕНЫ</h2>
           <p class="settings-sub">Выберите параметры башни, количество ботов и чувствительность 3D-камеры</p>
+          <div class="section-block" style="margin-top:12px">
+            <label class="section-label" for="volume-music">🎵 МУЗЫКА: <span id="volume-music-value">50%</span></label>
+            <input id="volume-music" type="range" min="0" max="100" step="1" value="50" style="width:100%" aria-label="Громкость музыки">
+            <label class="section-label" for="volume-effects">🔊 ЭФФЕКТЫ: <span id="volume-effects-value">50%</span></label>
+            <input id="volume-effects" type="range" min="0" max="100" step="1" value="50" style="width:100%" aria-label="Громкость эффектов">
+          </div>
 
           <div class="section-block" style="margin-top:12px">
             <label class="section-label">ВЫБЕРИТЕ СЛОЖНОСТЬ И ТЕМП РЕГЕНЕРАЦИИ СОТ:</label>
