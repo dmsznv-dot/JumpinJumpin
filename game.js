@@ -19,6 +19,8 @@ import { createCourseVisuals } from './big-fans/visuals.mjs';
 import { initializeRacer, updateRace } from './big-fans/race.mjs';
 import { createRollout, advanceRollout, sampleSurface, carryRacer, hitWall, botDecision, RING_WIDTH } from './roll-out/rollout.mjs';
 import { createRolloutVisuals } from './roll-out/visuals.mjs';
+import { createCourse as createSlimeCourse, advanceCourse as advanceSlimeCourse, surface as slimeSurface, courseY as slimeCourseY, slimeY as risingSlimeY, obstaclesAt as slimeObstacles, botDecision as slimeBotDecision, LENGTH as SLIME_LENGTH, LIMIT as SLIME_LIMIT } from './slime-climb/course.mjs';
+import { createVisuals as createSlimeVisuals } from './slime-climb/visuals.mjs';
 
 // ==================== 1. КОНФИГУРАЦИЯ СЛОЖНОСТИ И УСКОРЕННЫЙ РЕГЕН ====================
 const DIFFICULTIES = {
@@ -2428,6 +2430,8 @@ function clearActorsAndFX() {
 }
 
 function startMatch(options = {}) {
+  if (state.slimeVisuals) { state.slimeVisuals.dispose(); state.slimeVisuals = null; }
+  state.slimeCourse = null;
   if (state.rolloutVisuals) { state.rolloutVisuals.dispose(); state.rolloutVisuals = null; }
   state.rollout = null;
   if (slimeSeaMesh) { slimeSeaMesh.material.color.setHex(0xff2a85); slimeSeaMesh.material.emissive.setHex(0xc80055); }
@@ -2701,9 +2705,7 @@ function updateRolloutHUD() {
 function finishRollOut() {
   const survivors=state.actors.filter(a=>a.alive);
   if (state.showMode==='championship_rollout' && state.player.alive) {
-    state.showMode='championship_final'; startMatch({qualifiers:survivors});
-    document.getElementById('countdown-badge').textContent=`ФИНАЛ HEX-A-GONE • ${survivors.length} УЧАСТНИКОВ`;
-    document.getElementById('countdown-sub').textContent='Прошедшие выходят в финал!';
+    startSlimeClimb('championship_slime',survivors);
     return;
   }
   state.phase='gameover';
@@ -2763,6 +2765,92 @@ function updateRollOut(dt) {
   for(const a of alive)a.bumpCooldown=Math.max(0,a.bumpCooldown-dt);
   updateFX(dt);updateThirdPersonCamera(dt);update3DNameplates();updateRolloutHUD();
   if(alive.length<=state.rolloutQuota || state.elapsed>=150)finishRollOut();
+}
+
+// ==================== SLIME CLIMB TEST RACE ====================
+function startSlimeClimb(mode='single_slime', qualifiers=null) {
+  if(mode==='single_slime') state.lastMode=mode;
+  startMatch(qualifiers?{qualifiers}:{largeField:true});
+  state.showMode=mode; state.slimeCourse=createSlimeCourse();
+  arenaGroup.clear(); stadiumGroup.visible=false;
+  state.slimeVisuals=createSlimeVisuals(THREE,state.slimeCourse);arenaGroup.add(state.slimeVisuals.root);state.slimeVisuals.update();
+  state.layers=[{index:0,yHeight:0,list:[],map:new Map()}];
+  state.actors.forEach((a,i)=>{a.x=((i%5)-2)*2.2;a.z=-4+Math.floor(i/5)*2;a.y=0;a.vx=a.vy=a.vz=a.knockVx=a.knockVz=0;a.onGround=true;a.climbFinished=false;a.climbHitCooldown=0;a.facing=0;a.visualFacing=0;});
+  state.phase='countdown';state.countdownTimer=3.2;state.elapsed=0;state.camYaw=state.targetCamYaw=Math.PI;
+  state.camFocusPos.set(state.player.x,1.2,state.player.z);
+  document.querySelector('.brand-pill .pill-title').textContent='SLIME CLIMB';
+  document.querySelector('.layer-pill .pill-label').textContent='ФИНИШ';
+  document.getElementById('countdown-badge').textContent=mode==='championship_slime'?'SLIME CLIMB • РАУНД 3':'SLIME CLIMB • ТЕСТ';
+  document.getElementById('countdown-text').textContent='3';
+  document.getElementById('countdown-sub').textContent='Поднимайтесь к финишу раньше слизи!';
+  updateSlimeHUD();
+}
+function updateSlimeHUD(){
+ const finished=state.actors.filter(a=>a.climbFinished).length,active=state.actors.filter(a=>a.alive&&!a.climbFinished).length;
+ document.getElementById('hud-mode-label').textContent='SLIME CLIMB • ГОНКА';
+ document.getElementById('hud-alive').textContent=`${active} / ${state.actors.length}`;
+ document.getElementById('hud-layer').textContent=`${finished} финиш`;
+ document.getElementById('hud-timer').textContent=formatTime(Math.max(0,SLIME_LIMIT-state.elapsed));
+}
+function finishSlimeClimb(){
+ const finished=state.actors.filter(a=>a.climbFinished).sort((a,b)=>a.climbTime-b.climbTime);
+ if(state.showMode==='championship_slime' && state.player.climbFinished){
+   state.showMode='championship_final';startMatch({qualifiers:finished});
+   document.getElementById('countdown-badge').textContent=`ФИНАЛ HEX-A-GONE • ${finished.length} УЧАСТНИКОВ`;
+   document.getElementById('countdown-sub').textContent='Финишировавшие выходят в финал!';return;
+ }
+ state.phase='gameover';document.getElementById('spectator-bar').classList.add('hidden');
+ const place=finished.indexOf(state.player)+1;
+ document.getElementById('result-ribbon').textContent='SLIME CLIMB • ГОНКА';
+ document.getElementById('result-title').textContent=place?`ФИНИШ! МЕСТО #${place}`:'ВЫ ВЫБЫЛИ';
+ document.getElementById('result-subtitle').textContent=`Добрались до финиша: ${finished.length} из ${state.actors.length}`;
+ document.getElementById('spot-winner-name').textContent=finished[0]?.name || 'Финиширующих нет';
+ document.getElementById('spot-winner-meta').textContent=finished[0]?formatTime(finished[0].climbTime):'Слизь победила';
+ document.getElementById('res-place').textContent=place?`#${place}`:'—';
+ document.getElementById('res-time').textContent=formatTime(state.player.climbTime||state.player.survivalTime);
+ document.getElementById('res-tiles').textContent='—';document.getElementById('res-score').textContent='—';
+ const list=document.getElementById('match-standings');list.replaceChildren();
+ finished.forEach((a,i)=>{const row=document.createElement('div');row.className='standing-row';row.textContent=`#${i+1} ${a.name} — ${formatTime(a.climbTime)}`;list.appendChild(row);});
+ document.getElementById('result-modal').classList.remove('hidden');
+}
+function updateSlimeClimb(dt){
+ state.elapsed+=dt;advanceSlimeCourse(state.slimeCourse,dt);state.slimeVisuals.update();
+ const p=state.player;
+ if(p.alive&&!p.climbFinished&&!p.isDiving){
+  let right=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0), forward=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0);
+  if(joystick.active){right+=joystick.dx;forward-=joystick.dy;}
+  const len=Math.hypot(right,forward);
+  if(len>.05){right/=Math.max(1,len);forward/=Math.max(1,len);const dx=-Math.sin(state.camYaw)*forward+Math.cos(state.camYaw)*right,dz=-Math.cos(state.camYaw)*forward-Math.sin(state.camYaw)*right;p.facing=Math.atan2(dx,dz);const rate=Math.min(1,dt*(p.onGround?11:6));p.vx+=(dx*7.2-p.vx)*rate;p.vz+=(dz*7.2-p.vz)*rate;}
+  else{const friction=Math.max(0,1-dt*(p.onGround?8:2.5));p.vx*=friction;p.vz*=friction;}
+ }
+ const obstacles=slimeObstacles(state.elapsed);
+ for(const a of state.actors){
+  if(!a.alive||a.climbFinished)continue;
+  a.survivalTime=state.elapsed;a.diveCooldown=Math.max(0,a.diveCooldown-dt);a.climbHitCooldown=Math.max(0,a.climbHitCooldown-dt);
+  if(a.isDiving&&(a.diveTimer-=dt)<=0)a.isDiving=false;
+  if(!a.isPlayer){const d=slimeBotDecision(state.slimeCourse,a);const rate=Math.min(1,dt*7);a.vx+=(d.vx-a.vx)*rate;a.vz+=(d.vz-a.vz)*rate;if(d.jump)a.jump();a.facing=Math.atan2(d.vx,d.vz);}
+  const oldY=a.y;a.x+=(a.vx+a.knockVx)*dt;a.z+=(a.vz+a.knockVz)*dt;
+  if(a.onGround&&a.z>=77&&a.z<97)a.z-=2.3*dt;
+  a.knockVx*=Math.max(0,1-dt*4);a.knockVz*=Math.max(0,1-dt*4);a.vy-=30*dt;a.y+=a.vy*dt;
+  const floor=slimeSurface(a.x,a.z);a.onGround=false;
+  if(floor!==null&&a.vy<=0&&oldY>=floor-.8&&a.y<=floor+.12){a.y=floor;a.vy=0;a.onGround=true;a.jumpCount=0;}
+  if(a.climbHitCooldown<=0)for(const o of obstacles){
+    if(Math.abs(a.y-slimeCourseY(o.z))>2)continue;
+    const dx=a.x-o.x,dz=a.z-o.z,d=Math.hypot(dx,dz),radius=o.radius+a.radius*.55;
+    if(d<radius&&d>.001){const nx=dx/d,nz=dz/d;a.x+=nx*(radius-d);a.z+=nz*(radius-d);a.knockVx=nx*(o.type==='hammer'?8:5);a.knockVz=nz*(o.type==='ball'?8:5);a.vy=3.2;a.onGround=false;a.climbHitCooldown=.5;a.squash=.2;break;}
+  }
+  a.rig.blobShadow.visible=floor!==null&&a.y>=floor;if(a.rig.blobShadow.visible)a.rig.blobShadow.position.y=floor-a.y+.03;
+  if(a.z>=SLIME_LENGTH&&Math.abs(a.x)<7&&a.y>=slimeCourseY(SLIME_LENGTH)-1){a.climbFinished=true;a.climbTime=state.elapsed;a.vx=a.vz=0;if(!a.isPlayer){a.rig.root.visible=false;a.labelEl.style.display='none';}}
+  else if(a.y<=risingSlimeY(state.elapsed)||a.y< -20){a.alive=false;a.rig.root.visible=false;a.labelEl.style.display='none';state.eliminationOrder.push(a);sfx.play('elim');if(a.isPlayer)onPlayerEliminated();}
+ }
+ const active=state.actors.filter(a=>a.alive&&!a.climbFinished);
+ for(let i=0;i<active.length;i++)for(let j=i+1;j<active.length;j++){
+  const a=active[i],b=active[j];if(Math.abs(a.y-b.y)>1.8)continue;const dx=b.x-a.x,dz=b.z-a.z,d=Math.hypot(dx,dz),min=(a.radius+b.radius)*.8;
+  if(d>1e-4&&d<min){const nx=dx/d,nz=dz/d,off=(min-d)*.5;a.x-=nx*off;a.z-=nz*off;b.x+=nx*off;b.z+=nz*off;if(a.bumpCooldown<=0&&b.bumpCooldown<=0){a.knockVx-=nx*1.5;a.knockVz-=nz*1.5;b.knockVx+=nx*1.5;b.knockVz+=nz*1.5;a.bumpCooldown=b.bumpCooldown=.25;}}
+ }
+ for(const a of active)a.bumpCooldown=Math.max(0,a.bumpCooldown-dt);
+ updateFX(dt);updateThirdPersonCamera(dt);update3DNameplates();updateSlimeHUD();
+ if(!active.length||state.elapsed>=SLIME_LIMIT)finishSlimeClimb();
 }
 
 // ==================== 3D БОНУСЫ, ЧАСТИЦЫ И УДАРНЫЕ ВОЛНЫ ====================
@@ -3252,6 +3340,7 @@ function updateWorld3D(dt, nowSec) {
     return;
   }
 
+  if (state.slimeCourse) { updateSlimeClimb(dt * (state.player && !state.player.alive ? state.spectateSpeed : 1)); return; }
   if (state.rollout) { updateRollOut(dt * (state.player && !state.player.alive ? state.spectateSpeed : 1)); return; }
   if (state.race) { updateBigFans(dt); return; }
 
@@ -3574,7 +3663,7 @@ function updateThirdPersonCamera(dt, forcedTarget = null) {
     // По горизонтали следим быстро, а по вертикали во время прыжка плавно, чтобы камера не дёргалась вверх под потолок
     const targetX = focusActor.x;
     const targetZ = focusActor.z;
-    const baseLayerY = state.layers[focusActor.currentLayer]
+    const baseLayerY = state.slimeCourse ? focusActor.y : state.layers[focusActor.currentLayer]
       ? state.layers[focusActor.currentLayer].yHeight
       : focusActor.y;
     const jumpDeltaY = Math.max(-4, Math.min(3.2, focusActor.y - baseLayerY));
@@ -4282,6 +4371,8 @@ function openStartModal() {
   document.getElementById('race-finish-notice')?.remove();
   if (state.raceVisuals) { state.raceVisuals.dispose(); state.raceVisuals = null; }
   if (state.rolloutVisuals) { state.rolloutVisuals.dispose(); state.rolloutVisuals = null; }
+  if (state.slimeVisuals) { state.slimeVisuals.dispose(); state.slimeVisuals = null; }
+  state.slimeCourse = null;
   state.rollout = null;
   state.race = null;
   state.phase = 'menu';
@@ -4423,9 +4514,10 @@ document.getElementById('btn-start-match').addEventListener('click', () => {
   startMatch();
 });
 
-document.getElementById('btn-play-again').addEventListener('click', () => state.lastMode === 'hex' ? startMatch() : state.lastMode === 'single_rollout' ? startRollOut() : startBigFans(state.lastMode || 'single'));
+document.getElementById('btn-play-again').addEventListener('click', () => state.lastMode === 'hex' ? startMatch() : state.lastMode === 'single_rollout' ? startRollOut() : state.lastMode === 'single_slime' ? startSlimeClimb() : startBigFans(state.lastMode || 'single'));
 document.getElementById('btn-big-fans').addEventListener('click', () => startBigFans('single'));
 document.getElementById('btn-roll-out').addEventListener('click', () => startRollOut());
+document.getElementById('btn-slime-climb').addEventListener('click', () => startSlimeClimb());
 document.getElementById('btn-result-settings').addEventListener('click', openStartModal);
 document.getElementById('btn-menu').addEventListener('click', openStartModal);
 document.getElementById('btn-sound').addEventListener('click', toggleSound);
@@ -4462,7 +4554,7 @@ document.getElementById('btn-spec-fast').addEventListener('click', (e) => {
 
 document.getElementById('btn-spec-skip').addEventListener('click', () => {
   const aliveList = state.actors.filter(a => a.alive);
-  if (state.rollout) finishRollOut(); else triggerWinnerCelebration(aliveList[0] || state.player);
+  if (state.slimeCourse) finishSlimeClimb(); else if (state.rollout) finishRollOut(); else triggerWinnerCelebration(aliveList[0] || state.player);
 });
 
 window.addEventListener('resize', () => {
