@@ -2394,6 +2394,7 @@ function clearActorsAndFX() {
 function startMatch(options = {}) {
   if (state.rolloutVisuals) { state.rolloutVisuals.dispose(); state.rolloutVisuals = null; }
   state.rollout = null;
+  if (slimeSeaMesh) { slimeSeaMesh.material.color.setHex(0xff2a85); slimeSeaMesh.material.emissive.setHex(0xc80055); }
   document.querySelector('.brand-pill .pill-title').textContent='HEX-A-GONE 3D';
   document.querySelector('.layer-pill .pill-label').textContent='ЯРУС';
   if (state.raceVisuals) { state.raceVisuals.dispose(); state.raceVisuals = null; }
@@ -2509,6 +2510,7 @@ function startBigFans(mode = 'single') {
   startMatch({largeField: mode === 'championship'});
   state.showMode = mode;
   stadiumPillars.forEach(pillar => { pillar.visible = false; });
+  slimeSeaMesh.material.color.setHex(0x151c42); slimeSeaMesh.material.emissive.setHex(0x090d25);
   // The race has a single ground height and its own arena and rules.
   arenaGroup.clear();
   state.layers = [{ index: 0, yHeight: 0, list: [], map: new Map() }];
@@ -2631,6 +2633,7 @@ function startRollOut(mode = 'single_rollout', qualifiers = null) {
   document.querySelector('.brand-pill .pill-title').textContent='ROLL OUT';
   document.querySelector('.layer-pill .pill-label').textContent='КВАЛИФИКАЦИЯ';
   stadiumPillars.forEach(pillar => { pillar.visible = false; });
+  slimeSeaMesh.material.color.setHex(0x151c42); slimeSeaMesh.material.emissive.setHex(0x090d25);
   arenaGroup.clear();
   state.layers = [{ index:0, yHeight:0, list:[], map:new Map() }];
   state.rollout = createRollout();
@@ -2640,7 +2643,7 @@ function startRollOut(mode = 'single_rollout', qualifiers = null) {
   state.actors.forEach((actor,i) => {
     actor.x = (((i + 2) % 5)-2)*RING_WIDTH;
     actor.z = (Math.floor(i/5)-1)*1.25;
-    actor.y = sampleSurface(state.rollout,actor.x,actor.z)?.y ?? 0;
+    actor.y = sampleSurface(state.rollout,actor.x,actor.z)?.y ?? 0; actor.rollNextJump = 4 + i*.37;
     actor.vx=actor.vy=actor.vz=actor.knockVx=actor.knockVz=0;
     actor.onGround=true; actor.currentLayer=0; actor.facing=0; actor.visualFacing=0;
   });
@@ -2718,7 +2721,7 @@ function updateRollOut(dt) {
     const a=alive[i],b=alive[j];if(Math.abs(a.y-b.y)>1.8)continue;
     const dx=b.x-a.x,dz=b.z-a.z,d=Math.hypot(dx,dz),min=(a.radius+b.radius)*.8;
     if(d>1e-4 && d<min){const nx=dx/d,nz=dz/d,off=(min-d)*.5;a.x-=nx*off;a.z-=nz*off;b.x+=nx*off;b.z+=nz*off;
-      if(a.bumpCooldown<=0 && b.bumpCooldown<=0){a.knockVx-=nx*1.2;a.knockVz-=nz*1.2;b.knockVx+=nx*1.2;b.knockVz+=nz*1.2;a.bumpCooldown=b.bumpCooldown=.25;}}
+      if(a.bumpCooldown<=0 && b.bumpCooldown<=0){a.knockVx-=nx*1.6;a.knockVz-=nz*1.6;b.knockVx+=nx*1.6;b.knockVz+=nz*1.6;a.bumpCooldown=b.bumpCooldown=.25;}}
   }
   for(const a of alive)a.bumpCooldown=Math.max(0,a.bumpCooldown-dt);
   updateFX(dt);updateThirdPersonCamera(dt);update3DNameplates();updateRolloutHUD();

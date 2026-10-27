@@ -8,23 +8,32 @@ export function createRolloutVisuals(THREE, course) {
  const groups=course.rings.map((ring,i)=>{
   const group=new THREE.Group();group.position.set(ring.x,-RADIUS,0);root.add(group);
   for(let s=0;s<SECTORS;s++) {
-   if(s===ring.gap)continue;
-   const count=8, verts=[],idx=[];
+   if(s===ring.gap || s===(ring.gap+1)%SECTORS)continue;
+   // Thick shell with inner surface and closed sides exposes the cut-out depth.
+   const count=8, verts=[],idx=[], inner=RADIUS-.8;
    for(let j=0;j<=count;j++){
-    const a=(s+j/count)*Math.PI*2/SECTORS;
-    for(const x of [-RING_WIDTH/2+.03,RING_WIDTH/2-.03])verts.push(x,RADIUS*Math.cos(a),RADIUS*Math.sin(a));
+    const a=(s+j/count)*Math.PI*2/SECTORS, c=Math.cos(a), q=Math.sin(a);
+    verts.push(-RING_WIDTH/2+.03,RADIUS*c,RADIUS*q, RING_WIDTH/2-.03,RADIUS*c,RADIUS*q,
+      -RING_WIDTH/2+.03,inner*c,inner*q, RING_WIDTH/2-.03,inner*c,inner*q);
    }
-   for(let j=0;j<count;j++){let k=j*2;idx.push(k,k+1,k+2,k+1,k+3,k+2);}
+   for(let j=0;j<count;j++){let k=j*4,n=k+4;
+    idx.push(k,k+1,n,k+1,n+1,n, k+2,n+2,k+3,k+3,n+2,n+3,
+      k,n,k+2,k+2,n,n+2, k+1,k+3,n+1,k+3,n+3,n+1);}
+   idx.push(0,2,1,1,2,3);let e=count*4;idx.push(e,e+1,e+2,e+1,e+3,e+2);
    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));geo.setIndex(idx);geo.computeVertexNormals();
    const m=new THREE.Mesh(geo,mats[i]);m.receiveShadow=true;group.add(m);
+   // Pale trim only on solid sections, so it never bridges a hole.
+   for(const x of [-RING_WIDTH/2+.08,RING_WIDTH/2-.08]){
+    const trim=new THREE.Mesh(new THREE.TorusGeometry(RADIUS,.065,6,8,Math.PI*2/SECTORS),edgeMat);
+    trim.rotation.y=Math.PI/2;trim.rotation.x=Math.PI/2;trim.position.x=x;
+    // Torus arc is easier to orient around the drum using a parent.
+    const holder=new THREE.Group();holder.rotation.x=s*Math.PI*2/SECTORS;holder.add(trim);group.add(holder);
+   }
   }
   const a=(ring.wall+.5)*Math.PI*2/SECTORS;
   const wall=new THREE.Mesh(new THREE.BoxGeometry(RING_WIDTH*.9,1.8,.48),wallMat);
   wall.position.set(0,(RADIUS+.9)*Math.cos(a),(RADIUS+.9)*Math.sin(a)); wall.rotation.x=a;wall.castShadow=true;group.add(wall);
-  for(const x of [-RING_WIDTH/2+.06,RING_WIDTH/2-.06]){
-   const edge=new THREE.Mesh(new THREE.TorusGeometry(RADIUS,.075,8,64),edgeMat);
-   edge.rotation.y=Math.PI/2;edge.position.x=x;group.add(edge);
-  }
+
   return group;
  });
  return {root,update(){course.rings.forEach((r,i)=>{groups[i].rotation.x=r.angle;});},dispose(){root.traverse(o=>o.geometry?.dispose());[...mats,wallMat,edgeMat].forEach(m=>m.dispose());}};
