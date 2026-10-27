@@ -21,6 +21,8 @@ import { createRollout, advanceRollout, sampleSurface, carryRacer, hitWall, botD
 import { createRolloutVisuals } from './roll-out/visuals.mjs';
 import { createCourse as createSlimeCourse, advanceCourse as advanceSlimeCourse, surface as slimeSurface, courseY as slimeCourseY, slimeY as risingSlimeY, obstaclesAt as slimeObstacles, obstacleContact as slimeObstacleContact, botDecision as slimeBotDecision, LENGTH as SLIME_LENGTH, LIMIT as SLIME_LIMIT } from './slime-climb/course.mjs';
 import { createVisuals as createSlimeVisuals } from './slime-climb/visuals.mjs';
+import { createShowdown, advanceShowdown, sampleSurface as showdownSurface, checkSweeperHit as showdownSweeperHit, botDecision as showdownBotDecision, LIMIT as SHOWDOWN_LIMIT } from './jump-showdown/showdown.mjs';
+import { createShowdownVisuals } from './jump-showdown/visuals.mjs';
 
 // ==================== 1. КОНФИГУРАЦИЯ СЛОЖНОСТИ И УСКОРЕННЫЙ РЕГЕН ====================
 const DIFFICULTIES = {
@@ -2437,6 +2439,8 @@ function clearActorsAndFX() {
 }
 
 function startMatch(options = {}) {
+  if (state.showdownVisuals) { state.showdownVisuals.dispose(); state.showdownVisuals = null; }
+  state.showdown = null;
   if (state.slimeVisuals) { state.slimeVisuals.dispose(); state.slimeVisuals = null; }
   state.slimeCourse = null;
   if (state.rolloutVisuals) { state.rolloutVisuals.dispose(); state.rolloutVisuals = null; }
@@ -2844,12 +2848,10 @@ function finishSlimeClimb(){
      icon: '🏆',
      ribbon: 'РАУНД 3 ПРОЙДЕН!',
      title: 'КВАЛИФИЦИРОВАН!',
-     subtitle: 'ТЫ В ГРАНД-ФИНАЛЕ! Переход к борьбе за Корону...',
+     subtitle: 'ТЫ В ГРАНД-ФИНАЛЕ! Переход в Jump Showdown...',
      duration: 2.6,
      onComplete: () => {
-       state.showMode='championship_final';startMatch({qualifiers:finished});
-       document.getElementById('countdown-badge').textContent=`ГРАНД-ФИНАЛ HEX-A-GONE • ${finished.length} УЧАСТНИКОВ`;
-       document.getElementById('countdown-sub').textContent='Борьба за Золотую Корону!';
+       startJumpShowdown('championship_showdown', finished);
      }
    });
    return;
@@ -3014,6 +3016,200 @@ function updateSlimeClimb(dt){
  for(const a of active)a.bumpCooldown=Math.max(0,a.bumpCooldown-dt);
  updateFX(dt);updateThirdPersonCamera(dt);update3DNameplates();updateSlimeHUD();
  if(!active.length||state.elapsed>=SLIME_LIMIT)finishSlimeClimb();
+}
+
+// ==================== JUMP SHOWDOWN: GRAND FINAL ====================
+function startJumpShowdown(mode = 'single_showdown', qualifiers = null) {
+  if (mode === 'single_showdown') state.lastMode = mode;
+  startMatch(qualifiers ? { qualifiers } : { largeField: true });
+  state.showMode = mode;
+  document.querySelector('.brand-pill .pill-title').textContent = 'JUMP SHOWDOWN';
+  document.querySelector('.layer-pill .pill-label').textContent = 'ФИНАЛ';
+  stadiumPillars.forEach(pillar => { pillar.visible = true; });
+  slimeSeaMesh.material.color.setHex(0xff2a85);
+  slimeSeaMesh.material.emissive.setHex(0xc80055);
+
+  arenaGroup.clear();
+  stadiumGroup.visible = false;
+  state.layers = [{ index: 0, yHeight: 0, list: [], map: new Map() }];
+
+  state.showdown = createShowdown();
+  state.showdownVisuals = createShowdownVisuals(THREE, state.showdown);
+  arenaGroup.add(state.showdownVisuals.root);
+  state.showdownVisuals.update();
+
+  state.actors.forEach((actor, i) => {
+    const secIdx = i % 8;
+    const midAngle = state.showdown.sectors[secIdx].angleMid;
+    const r = 8.5 + (Math.floor(i / 8) % 2) * 2.5;
+    actor.x = Math.cos(midAngle) * r;
+    actor.z = Math.sin(midAngle) * r;
+    actor.y = 0;
+    actor.vx = actor.vy = actor.vz = actor.knockVx = actor.knockVz = 0;
+    actor.onGround = true;
+    actor.currentLayer = 0;
+    actor.facing = midAngle + Math.PI;
+    actor.visualFacing = actor.facing;
+    actor.sweeperHitCooldown = 0;
+  });
+
+  state.phase = 'countdown';
+  state.countdownTimer = 3.2;
+  state.elapsed = 0;
+  state.camYaw = state.targetCamYaw = state.player.facing + Math.PI;
+  state.camFocusPos.set(state.player.x, 1.2, state.player.z);
+
+  document.getElementById('countdown-badge').textContent = mode === 'championship_showdown' ? 'JUMP SHOWDOWN • ГРАНД-ФИНАЛ' : 'JUMP SHOWDOWN • ФИНАЛ';
+  document.getElementById('countdown-text').textContent = '3';
+  document.getElementById('countdown-sub').textContent = 'Перепрыгивайте валики и не оставайтесь на падающих секциях!';
+  updateShowdownHUD();
+}
+
+function updateShowdownHUD() {
+  const active = state.actors.filter(a => a.alive).length;
+  const remainingSectors = state.showdown ? state.showdown.sectors.filter(s => s.state !== 'dropped').length : 8;
+  document.getElementById('hud-mode-label').textContent = 'JUMP SHOWDOWN • ФИНАЛ';
+  document.getElementById('hud-alive').textContent = `${active} / ${state.actors.length}`;
+  document.getElementById('hud-layer').textContent = `${remainingSectors} секторов`;
+  document.getElementById('hud-timer').textContent = formatTime(state.elapsed);
+}
+
+function updateJumpShowdown(dt) {
+  state.elapsed += dt;
+  advanceShowdown(state.showdown, dt);
+  state.showdownVisuals.update();
+
+  const p = state.player;
+  if (p && p.alive && !p.isDiving) {
+    let right = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
+    let forward = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
+    if (joystick.active) { right += joystick.dx; forward -= joystick.dy; }
+    const len = Math.hypot(right, forward);
+    if (len > 0.05) {
+      right /= Math.max(1, len); forward /= Math.max(1, len);
+      const dx = -Math.sin(state.camYaw) * forward + Math.cos(state.camYaw) * right;
+      const dz = -Math.cos(state.camYaw) * forward - Math.sin(state.camYaw) * right;
+      p.facing = Math.atan2(dx, dz);
+      const rate = Math.min(1, dt * (p.onGround ? 11 : 6));
+      p.vx += (dx * 7.2 - p.vx) * rate;
+      p.vz += (dz * 7.2 - p.vz) * rate;
+    } else {
+      const friction = Math.max(0, 1 - dt * (p.onGround ? 10 : 2.5));
+      p.vx *= friction;
+      p.vz *= friction;
+    }
+  }
+
+  for (const a of state.actors) {
+    if (!a.alive) continue;
+    a.survivalTime = state.elapsed;
+    a.diveCooldown = Math.max(0, a.diveCooldown - dt);
+    a.sweeperHitCooldown = Math.max(0, (a.sweeperHitCooldown || 0) - dt);
+    if (a.isDiving && (a.diveTimer -= dt) <= 0) a.isDiving = false;
+
+    if (!a.isPlayer) {
+      const d = showdownBotDecision(state.showdown, a);
+      const rate = Math.min(1, dt * 8);
+      a.vx += (d.vx - a.vx) * rate;
+      a.vz += (d.vz - a.vz) * rate;
+      if (d.jump) a.jump();
+      if (Math.hypot(d.vx, d.vz) > 0.1) a.facing = Math.atan2(d.vx, d.vz);
+    }
+
+    const oldY = a.y;
+    a.x += (a.vx + a.knockVx) * dt;
+    a.z += (a.vz + a.knockVz) * dt;
+    a.knockVx *= Math.max(0, 1 - dt * 4.5);
+    a.knockVz *= Math.max(0, 1 - dt * 4.5);
+    a.vy -= 30 * dt;
+    a.y += a.vy * dt;
+
+    // Floor surface collision (with gap detection)
+    const surf = showdownSurface(state.showdown, a.x, a.z);
+    a.onGround = false;
+    if (surf && a.vy <= 0 && oldY >= surf.y - 0.75 && a.y <= surf.y + 0.35) {
+      a.y = surf.y;
+      a.vy = 0;
+      a.onGround = true;
+      a.jumpCount = 0;
+    } else if (surf && oldY >= surf.y - 0.75 && a.y < surf.y) {
+      a.y = surf.y;
+      a.vy = 0;
+      a.onGround = true;
+      a.jumpCount = 0;
+    }
+
+    // Sweeper collision check
+    if (a.sweeperHitCooldown <= 0) {
+      const hit = showdownSweeperHit(state.showdown, a);
+      if (hit) {
+        a.knockVx = hit.knockVx;
+        a.knockVz = hit.knockVz;
+        a.vy = Math.max(a.vy, hit.vy);
+        a.onGround = false;
+        a.squash = hit.squash;
+        a.sweeperHitCooldown = 0.35;
+        sfx.play('hit');
+        spawnParticles3D(a.x, a.y + 0.8, a.z, hit.bar === 'low' ? 0x00e676 : 0x2979ff, 12);
+      }
+    }
+
+    // Shadow projection
+    a.rig.blobShadow.visible = surf !== null && a.y >= surf.y;
+    if (a.rig.blobShadow.visible) {
+      a.rig.blobShadow.position.y = (surf.y - a.y) + 0.03;
+    }
+
+    // Fall into slime ocean
+    if (a.y < -14.0) {
+      a.alive = false;
+      a.rig.root.visible = false;
+      a.labelEl.style.display = 'none';
+      state.eliminationOrder.push(a);
+      sfx.play('elim');
+      spawnParticles3D(a.x, -14.0 + 0.5, a.z, 0xff2a85, 20);
+      if (a.isPlayer) onPlayerEliminated();
+    }
+  }
+
+  // Beans bump physics
+  const alive = state.actors.filter(a => a.alive);
+  for (let i = 0; i < alive.length; i++) {
+    for (let j = i + 1; j < alive.length; j++) {
+      const a = alive[i], b = alive[j];
+      if (Math.abs(a.y - b.y) > 1.8) continue;
+      const dx = b.x - a.x, dz = b.z - a.z;
+      const dist = Math.hypot(dx, dz);
+      const minDist = (a.radius + b.radius) * 0.85;
+      if (dist > 1e-4 && dist < minDist) {
+        const nx = dx / dist, nz = dz / dist;
+        const off = (minDist - dist) * 0.5;
+        a.x -= nx * off; a.z -= nz * off;
+        b.x += nx * off; b.z += nz * off;
+        if (a.bumpCooldown <= 0 && b.bumpCooldown <= 0) {
+          a.knockVx -= nx * 1.8; a.knockVz -= nz * 1.8;
+          b.knockVx += nx * 1.8; b.knockVz += nz * 1.8;
+          a.bumpCooldown = b.bumpCooldown = 0.25;
+        }
+      }
+    }
+  }
+  for (const a of alive) a.bumpCooldown = Math.max(0, a.bumpCooldown - dt);
+
+  updateFX(dt);
+  updateThirdPersonCamera(dt);
+  update3DNameplates();
+  updateShowdownHUD();
+
+  // Jump Showdown is a FINAL: when <= 1 alive or time reaches LIMIT, end round!
+  if (alive.length <= 1 || state.elapsed >= SHOWDOWN_LIMIT) {
+    finishJumpShowdown(alive[0] || state.eliminationOrder[state.eliminationOrder.length - 1]);
+  }
+}
+
+function finishJumpShowdown(winner) {
+  state.matchWinner = winner;
+  triggerWinnerCelebration(winner);
 }
 
 // ==================== 3D БОНУСЫ, ЧАСТИЦЫ И УДАРНЫЕ ВОЛНЫ ====================
@@ -3548,6 +3744,7 @@ function updateWorld3D(dt, nowSec) {
     return;
   }
 
+  if (state.showdown) { updateJumpShowdown(dt * (state.player && !state.player.alive ? state.spectateSpeed : 1)); return; }
   if (state.slimeCourse) { updateSlimeClimb(dt * (state.player && !state.player.alive ? state.spectateSpeed : 1)); return; }
   if (state.rollout) { updateRollOut(dt * (state.player && !state.player.alive ? state.spectateSpeed : 1)); return; }
   if (state.race) { updateBigFans(dt); return; }
@@ -4804,10 +5001,11 @@ document.getElementById('btn-start-match').addEventListener('click', () => {
   startMatch();
 });
 
-document.getElementById('btn-play-again').addEventListener('click', () => state.lastMode === 'hex' ? startMatch() : state.lastMode === 'single_rollout' ? startRollOut() : state.lastMode === 'single_slime' ? startSlimeClimb() : startBigFans(state.lastMode || 'single'));
+document.getElementById('btn-play-again').addEventListener('click', () => state.lastMode === 'hex' ? startMatch() : state.lastMode === 'single_rollout' ? startRollOut() : state.lastMode === 'single_slime' ? startSlimeClimb() : state.lastMode === 'single_showdown' ? startJumpShowdown() : startBigFans(state.lastMode || 'single'));
 document.getElementById('btn-big-fans').addEventListener('click', () => startBigFans('single'));
 document.getElementById('btn-roll-out').addEventListener('click', () => startRollOut());
 document.getElementById('btn-slime-climb').addEventListener('click', () => startSlimeClimb());
+document.getElementById('btn-jump-showdown')?.addEventListener('click', () => startJumpShowdown());
 document.getElementById('btn-result-settings').addEventListener('click', openStartModal);
 document.getElementById('btn-menu').addEventListener('click', openStartModal);
 document.getElementById('btn-sound').addEventListener('click', toggleSound);
@@ -4844,7 +5042,7 @@ document.getElementById('btn-spec-fast').addEventListener('click', (e) => {
 
 document.getElementById('btn-spec-skip').addEventListener('click', () => {
   const aliveList = state.actors.filter(a => a.alive);
-  if (state.slimeCourse) finishSlimeClimb(); else if (state.rollout) finishRollOut(); else triggerWinnerCelebration(aliveList[0] || state.player);
+  if (state.showdown) finishJumpShowdown(aliveList[0] || state.player); else if (state.slimeCourse) finishSlimeClimb(); else if (state.rollout) finishRollOut(); else triggerWinnerCelebration(aliveList[0] || state.player);
 });
 
 window.addEventListener('resize', () => {
