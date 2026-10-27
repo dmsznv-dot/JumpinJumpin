@@ -18,14 +18,14 @@
           <span class="pill-icon">⬡</span>
           <div class="pill-info">
             <span class="pill-title">HEX-A-FALL</span>
-            <span class="pill-sub" id="hud-mode-label">Обычная арена</span>
+            <span class="pill-sub" id="hud-mode-label">Классика шоу</span>
           </div>
         </div>
         <div class="pill-card alive-pill" title="Оставшиеся участники на арене">
           <span class="pill-icon">🏃</span>
           <div class="pill-info">
             <span class="pill-label">В ИГРЕ</span>
-            <span class="pill-val" id="hud-alive">12 / 12</span>
+            <span class="pill-val" id="hud-alive">10 / 10</span>
           </div>
         </div>
         <div class="pill-card layer-pill" title="Текущий ярус игрока">
@@ -48,12 +48,14 @@
       </div>
 
       <div class="hud-right">
-        <div class="pill-card score-pill" title="Очки в текущем матче">
-          <span class="pill-icon">⭐</span>
-          <div class="pill-info">
-            <span class="pill-label">ОЧКИ</span>
-            <span class="pill-val" id="hud-score">0</span>
+        <div class="pill-card cam-pill" title="Управлять камерой: Зажать мышь и тянуть / Q и E / Колёсико">
+          <button class="cam-ctrl-btn" id="btn-cam-left" title="Повернуть камеру влево (Q)">↺</button>
+          <div class="pill-info" style="text-align:center">
+            <span class="pill-label">КАМЕРА</span>
+            <span class="pill-val" id="hud-zoom-val" style="font-size:12px; color:#ffe600">Близко</span>
           </div>
+          <button class="cam-ctrl-btn" id="btn-cam-right" title="Повернуть камеру вправо (E)">↻</button>
+          <button class="cam-ctrl-btn" id="btn-cam-zoom" title="Сменить дистанцию камеры (Z / Колёсико)">🔍</button>
         </div>
         <div class="pill-card crown-pill" title="Всего кубков победы">
           <span class="pill-icon">👑</span>
@@ -64,17 +66,17 @@
         </div>
         <button class="icon-btn" id="btn-leaderboard" title="Таблица лидеров (Tab)">🏆</button>
         <button class="icon-btn" id="btn-sound" title="Звук Вкл/Выкл (M)">🔊</button>
-        <button class="icon-btn" id="btn-menu" title="Настройки и Меню (Esc)">⚙️</button>
+        <button class="icon-btn" id="btn-menu" title="Настройки и Скины (Esc)">⚙️</button>
       </div>
     </header>
 
-    <!-- Active Power-ups Bar (Left / Top-Center overlay) -->
+    <!-- Active Power-ups Bar -->
     <div class="active-buffs" id="active-buffs"></div>
 
-    <!-- Killfeed / Event Feed (Top Right below HUD) -->
+    <!-- Killfeed / Event Feed -->
     <div class="killfeed" id="killfeed"></div>
 
-    <!-- Bottom Action HUD (Jump, Dive/Push, Camera Angle, Controls Hint) -->
+    <!-- Bottom Action HUD -->
     <footer class="hud-bottom">
       <!-- Virtual Joystick Zone for Touch/Mouse Drag -->
       <div class="joystick-zone" id="joystick-zone">
@@ -84,7 +86,7 @@
         <span class="joystick-hint">WASD / Стрелки / Стик</span>
       </div>
 
-      <!-- Center Stamina & Dash Status -->
+      <!-- Center Ability & Camera Hint -->
       <div class="player-bars">
         <div class="ability-slots">
           <div class="ability-chip" id="chip-jump">
@@ -92,13 +94,13 @@
             <span class="ability-name">Прыжок</span>
           </div>
           <div class="ability-chip" id="chip-dive">
-            <span class="key-hint">SHIFT / E</span>
-            <span class="ability-name">Рывок / Толчок</span>
+            <span class="key-hint">SHIFT / ПКМ</span>
+            <span class="ability-name">Нырок / Толчок</span>
             <div class="cooldown-fill" id="cd-dive"></div>
           </div>
-          <div class="ability-chip" id="chip-cam" title="Повернуть камеру (Q / R)">
-            <span class="key-hint">Q / R</span>
-            <span class="ability-name">Камера</span>
+          <div class="ability-chip" id="chip-cam" title="Крутить камеру мышью (зажать ЛКМ) или Q / E">
+            <span class="key-hint">МЫШЬ / Q E</span>
+            <span class="ability-name">Крутить камеру</span>
           </div>
         </div>
       </div>
@@ -107,7 +109,7 @@
       <div class="touch-actions">
         <button class="action-btn dive-btn" id="btn-touch-dive">
           <span class="act-icon">💨</span>
-          <span class="act-text">РЫВОК</span>
+          <span class="act-text">НЫРОК</span>
         </button>
         <button class="action-btn jump-btn" id="btn-touch-jump">
           <span class="act-icon">🚀</span>
@@ -118,73 +120,99 @@
 
     <!-- Countdown Overlay (3, 2, 1, GO!) -->
     <div class="countdown-overlay hidden" id="countdown-overlay">
-      <div class="countdown-text" id="countdown-text">3</div>
-      <div class="countdown-sub" id="countdown-sub">Приготовьтесь! Плитки под ногами проваливаются!</div>
+      <div class="countdown-card">
+        <div class="countdown-badge" id="countdown-badge">ПРИГОТОВЬТЕСЬ К СТАРТУ!</div>
+        <div class="countdown-text" id="countdown-text">3</div>
+        <div class="countdown-sub" id="countdown-sub">Крутите камеру мышью или клавишами Q / E</div>
+      </div>
+    </div>
+
+    <!-- Winner Banner Overlay (Dramatic Finish Plashka before full modal) -->
+    <div class="winner-banner-overlay hidden" id="winner-banner-overlay">
+      <div class="winner-plashka">
+        <div class="winner-crown-anim">👑</div>
+        <div class="winner-ribbon" id="winner-plashka-ribbon">РАУНД ОКОНЧЕН!</div>
+        <h2 class="winner-name-big" id="winner-plashka-name">Пельмешек_3000</h2>
+        <p class="winner-sub-big" id="winner-plashka-sub">забирает Корону победителя!</p>
+      </div>
     </div>
 
     <!-- Spectator Banner (when player falls before bots) -->
     <div class="spectator-bar hidden" id="spectator-bar">
       <div class="spec-info">
-        <span class="spec-badge">🎥 РЕЖИМ НАБЛЮДЕНИЯ</span>
-        <span id="spec-target-name">Вы выбыли! Смотрим за ботами...</span>
+        <span class="spec-badge">🎥 НАБЛЮДЕНИЕ</span>
+        <span id="spec-target-name">Вы упали! Смотрим за выжившими...</span>
       </div>
       <div class="spec-actions">
+        <button class="fg-btn small-btn" id="btn-spec-next">🔄 Другой игрок</button>
         <button class="fg-btn small-btn" id="btn-spec-fast">⏩ Ускорить x2</button>
-        <button class="fg-btn primary-btn small-btn" id="btn-spec-skip">К результатам ➔</button>
+        <button class="fg-btn primary-btn small-btn" id="btn-spec-skip">Завершить раунд ➔</button>
       </div>
     </div>
 
-    <!-- Main Start / Settings Modal -->
+    <!-- Main Start / Wardrobe / Settings Modal -->
     <div class="modal-backdrop" id="start-modal">
       <div class="fg-modal">
-        <div class="modal-ribbon">ШОУ НА ВЫЖИВАНИЕ</div>
+        <div class="modal-ribbon">ШОУ ФАСОЛИНОК НА ВЫЖИВАНИЕ</div>
         <h1 class="modal-title">ГЕКСА-ГОНКА <span>3D</span></h1>
         <p class="modal-desc">
-          Бегай по многоярусным шестиугольным сотам! Каждая плитка под ногами проваливается и восстанавливается лишь через несколько секунд. Переживи всех ботов и возьми Корону!
+          Прыгай по шестиугольным сотам! Наступишь — сота сменит цвет, плавно упадёт вниз и исчезнет, а затем восстановится строго в порядке очереди разрушения.
         </p>
 
         <!-- Difficulty Selector -->
         <div class="section-block">
-          <label class="section-label">ВЫБЕРИТЕ СЛОЖНОСТЬ И РЕЖИМ АРЕНЫ:</label>
+          <label class="section-label">1. ВЫБЕРИТЕ ТЕМП И СЛОЖНОСТЬ АРЕНЫ:</label>
           <div class="difficulty-grid" id="difficulty-grid">
             <button class="diff-card" data-diff="easy">
               <div class="diff-icon">🐣</div>
-              <div class="diff-name">Разминка</div>
-              <div class="diff-meta">8 ботов • Медленный обвал • Быстрый реген (4с)</div>
+              <div class="diff-name">Чилл-Разминка</div>
+              <div class="diff-meta">7 ботов • Долгая пауза до падения (1.4с) • Реген по очереди (7с)</div>
             </button>
             <button class="diff-card active" data-diff="normal">
               <div class="diff-icon">🔥</div>
               <div class="diff-name">Классика шоу</div>
-              <div class="diff-meta">11 ботов • 3 яруса • Реген плиток 5.5с • Бонусы</div>
+              <div class="diff-meta">9 ботов • 3 яруса • Падение через 1.05с • Реген по очереди (8.5с)</div>
             </button>
             <button class="diff-card" data-diff="hard">
               <div class="diff-icon">⚡</div>
-              <div class="diff-name">Кибер-хардкор</div>
-              <div class="diff-meta">15 умных ботов • Плитки тают мгновенно • Реген 7.5с</div>
+              <div class="diff-name">Кибер-Финал</div>
+              <div class="diff-meta">11 умных ботов • Падение через 0.75с • Реген по очереди (10с)</div>
             </button>
             <button class="diff-card" data-diff="chaos">
               <div class="diff-icon">💣</div>
               <div class="diff-name">Мега-Хаос</div>
-              <div class="diff-meta">19 ботов • 4 яруса • Взрывные плитки и море бустов</div>
+              <div class="diff-meta">14 ботов • 4 яруса • Батутные и взрывные соты + море бустов</div>
             </button>
           </div>
         </div>
 
-        <!-- Skin / Color customization -->
-        <div class="section-block row-split">
-          <div class="custom-col">
-            <label class="section-label">ВАШ НИКНЕЙМ:</label>
-            <input type="text" id="player-name-input" class="fg-input" maxlength="16" value="Чемпион_01" placeholder="Введите имя...">
+        <!-- Bean Character Wardrobe & Skin Customizer -->
+        <div class="section-block wardrobe-panel">
+          <div class="wardrobe-preview-box">
+            <canvas id="skin-preview-canvas" width="130" height="145"></canvas>
+            <span class="preview-caption" id="skin-preview-title">Королевский Розовый</span>
           </div>
-          <div class="custom-col">
-            <label class="section-label">ЦВЕТ КОСТЮМА И КОРОНА:</label>
-            <div class="skin-picker" id="skin-picker">
-              <button class="skin-swatch active" data-skin="0" style="--c1:#ff3864; --c2:#ffffff" title="Неоновый Розовый">👑</button>
-              <button class="skin-swatch" data-skin="1" style="--c1:#00e5ff; --c2:#ffe600" title="Кибер Циан">⚡</button>
-              <button class="skin-swatch" data-skin="2" style="--c1:#76ff03; --c2:#1a237e" title="Лаймовый Ниндзя">🦖</button>
-              <button class="skin-swatch" data-skin="3" style="--c1:#ff9100; --c2:#4a148c" title="Тигровый Апельсин">🐯</button>
-              <button class="skin-swatch" data-skin="4" style="--c1:#d500f9; --c2:#00e676" title="Галактика">👽</button>
-              <button class="skin-swatch" data-skin="5" style="--c1:#ffd700; --c2:#d32f2f" title="Золотой Рыцарь">🏆</button>
+          <div class="wardrobe-controls">
+            <div>
+              <label class="section-label">2. ВАШ НИКНЕЙМ В ШОУ:</label>
+              <div style="display:flex; gap:8px;">
+                <input type="text" id="player-name-input" class="fg-input" maxlength="18" value="СуперФасолька" placeholder="Введите ник...">
+                <button class="fg-btn secondary-btn small-btn" id="btn-random-nick" title="Сгенерировать смешной ник">🎲 Ник</button>
+              </div>
+            </div>
+
+            <div style="margin-top:10px">
+              <label class="section-label">3. ГАРДЕРОБ ФАСОЛИНКИ (ЦВЕТ + УЗОР + ШЛЯПА):</label>
+              <div class="skin-picker" id="skin-picker">
+                <button class="skin-swatch active" data-skin="0" style="--c1:#ff3864; --c2:#ffe600" title="Королевский Розовый">👑</button>
+                <button class="skin-swatch" data-skin="1" style="--c1:#00e5ff; --c2:#1e40af" title="Кибер-Гонщик">⚡</button>
+                <button class="skin-swatch" data-skin="2" style="--c1:#76ff03; --c2:#1b5e20" title="Дино-Завр">🦖</button>
+                <button class="skin-swatch" data-skin="3" style="--c1:#ff9100; --c2:#3e2723" title="Тигровый Прыгун">🐯</button>
+                <button class="skin-swatch" data-skin="4" style="--c1:#d500f9; --c2:#00e676" title="Космо-Пришелец">👽</button>
+                <button class="skin-swatch" data-skin="5" style="--c1:#ffd700; --c2:#b71c1c" title="Золотой Рыцарь">🏆</button>
+                <button class="skin-swatch" data-skin="6" style="--c1:#ff5252; --c2:#ffffff" title="Повар Пельмешек">🍓</button>
+                <button class="skin-swatch" data-skin="7" style="--c1:#26c6da; --c2:#f8bbd0" title="Акула-Тусовщик">🦈</button>
+              </div>
             </div>
           </div>
         </div>
@@ -193,18 +221,18 @@
         <div class="section-block">
           <label class="section-label">БОНУСЫ И УСИЛЕНИЯ НА ПОЛЕ:</label>
           <div class="powerups-legend">
-            <div class="pu-item"><span class="pu-badge" style="background:#00e5ff">⚡</span><div><strong>Турбо-ботинки</strong><small>+45% к скорости бега</small></div></div>
+            <div class="pu-item"><span class="pu-badge" style="background:#00e5ff">⚡</span><div><strong>Турбо-кеды</strong><small>+35% к скорости бега</small></div></div>
             <div class="pu-item"><span class="pu-badge" style="background:#b388ff">🪽</span><div><strong>Грави-перья</strong><small>Двойной высокий прыжок</small></div></div>
-            <div class="pu-item"><span class="pu-badge" style="background:#69f0ae">👻</span><div><strong>Призрачный шаг</strong><small>Не рушит соты 4 сек</small></div></div>
-            <div class="pu-item"><span class="pu-badge" style="background:#ff5252">💥</span><div><strong>Ударная волна</strong><small>Расталкивает врагов и рушит соты</small></div></div>
-            <div class="pu-item"><span class="pu-badge" style="background:#ffd740">🛡️</span><div><strong>Батут-спасение</strong><small>Авто-прыжок вверх из пропасти</small></div></div>
-            <div class="pu-item"><span class="pu-badge" style="background:#00e676">🛠️</span><div><strong>Гекса-Строитель</strong><small>Чинит все плитки вокруг вас</small></div></div>
+            <div class="pu-item"><span class="pu-badge" style="background:#69f0ae">👻</span><div><strong>Призрачный шаг</strong><small>Не ломает соты 4.5 сек</small></div></div>
+            <div class="pu-item"><span class="pu-badge" style="background:#ff5252">💥</span><div><strong>Ударная волна</strong><small>Отталкивает ботов вокруг</small></div></div>
+            <div class="pu-item"><span class="pu-badge" style="background:#ffd740">🛡️</span><div><strong>Батут-спасение</strong><small>Спасает при падении вниз</small></div></div>
+            <div class="pu-item"><span class="pu-badge" style="background:#00e676">🛠️</span><div><strong>Гекса-Строитель</strong><small>Чинит соты вокруг вас</small></div></div>
           </div>
         </div>
 
         <div class="modal-footer">
           <button class="fg-btn secondary-btn" id="btn-open-lb-from-start">🏆 Лидерборд</button>
-          <button class="fg-btn primary-btn big-play-btn" id="btn-start-match">🚀 В БОЙ ЗА КОРОНОЙ!</button>
+          <button class="fg-btn primary-btn big-play-btn" id="btn-start-match">🚀 НАЧАТЬ ШОУ (ОТСЧЁТ 3..2..1)!</button>
         </div>
       </div>
     </div>
@@ -212,13 +240,23 @@
     <!-- Round Over / Victory Modal -->
     <div class="modal-backdrop hidden" id="result-modal">
       <div class="fg-modal result-dialog">
-        <div class="modal-ribbon" id="result-ribbon">РАУНД ЗАВЕРШЁН!</div>
+        <div class="modal-ribbon" id="result-ribbon">ИТОГИ ФИНАЛА!</div>
         <h2 class="modal-title" id="result-title">ПОБЕДА! КОРОНА ВАША! 👑</h2>
-        <p class="modal-desc" id="result-subtitle">Вы перепрыгали всех соперников на гекса-арене!</p>
+        <p class="modal-desc" id="result-subtitle">Победитель шоу: СуперФасолька</p>
+
+        <!-- Winner Spotlight Card -->
+        <div class="winner-spotlight" id="winner-spotlight">
+          <canvas id="winner- bean-canvas" width="90" height="100"></canvas>
+          <div class="winner-spot-info">
+            <span class="spot-label">ЧЕМПИОН ЭТОГО РАУНДА:</span>
+            <strong class="spot-name" id="spot-winner-name">СуперФасолька</strong>
+            <span class="spot-meta" id="spot-winner-meta">Выжил на арене и забрал Золотую Корону!</span>
+          </div>
+        </div>
 
         <div class="stats-summary">
           <div class="stat-box">
-            <span class="stat-label">МЕСТО</span>
+            <span class="stat-label">ВАШЕ МЕСТО</span>
             <span class="stat-value" id="res-place">#1</span>
           </div>
           <div class="stat-box">
@@ -226,8 +264,8 @@
             <span class="stat-value" id="res-time">01:12.4</span>
           </div>
           <div class="stat-box">
-            <span class="stat-label">ПЛИТОК СЛОМАНО</span>
-            <span class="stat-value" id="res-tiles">84</span>
+            <span class="stat-label">СОТ НАЖАТО</span>
+            <span class="stat-value" id="res-tiles">42</span>
           </div>
           <div class="stat-box highlight">
             <span class="stat-label">ОЧКИ РАУНДА</span>
@@ -236,14 +274,14 @@
         </div>
 
         <div class="section-block">
-          <label class="section-label">ИТОГИ МАТЧА (ТОП УЧАСТНИКОВ):</label>
+          <label class="section-label">ТАБЛИЦА МАТЧА (КТО НА КАКОМ МЕСТЕ):</label>
           <div class="match-standings" id="match-standings"></div>
         </div>
 
         <div class="modal-footer">
-          <button class="fg-btn secondary-btn" id="btn-result-settings">⚙️ Сменить сложность</button>
+          <button class="fg-btn secondary-btn" id="btn-result-settings">👕 Гардероб / Сложность</button>
           <button class="fg-btn secondary-btn" id="btn-result-lb">🏆 Лидерборд</button>
-          <button class="fg-btn primary-btn big-play-btn" id="btn-play-again">🔄 ИГРАТЬ СНОВА!</button>
+          <button class="fg-btn primary-btn big-play-btn" id="btn-play-again">🔄 СЫГРАТЬ ЕЩЁ РАЗ!</button>
         </div>
       </div>
     </div>
@@ -265,9 +303,9 @@
               <tr>
                 <th>#</th>
                 <th>Участник</th>
-                <th>Ранг</th>
+                <th>Титул</th>
                 <th>👑 Кубки</th>
-                <th>⏱️ Лучшее время</th>
+                <th>⏱️ Выживание</th>
                 <th>⭐ Очки</th>
               </tr>
             </thead>
@@ -280,7 +318,7 @@
         </div>
 
         <div class="modal-footer">
-          <button class="fg-btn primary-btn" id="btn-close-lb">Вернуться в игру</button>
+          <button class="fg-btn primary-btn" id="btn-close-lb">Вернуться</button>
         </div>
       </div>
     </div>
