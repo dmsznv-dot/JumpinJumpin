@@ -2775,7 +2775,7 @@ function startSlimeClimb(mode='single_slime', qualifiers=null) {
   arenaGroup.clear(); stadiumGroup.visible=false;
   state.slimeVisuals=createSlimeVisuals(THREE,state.slimeCourse);arenaGroup.add(state.slimeVisuals.root);state.slimeVisuals.update();
   state.layers=[{index:0,yHeight:0,list:[],map:new Map()}];
-  state.actors.forEach((a,i)=>{a.x=((i%5)-2)*2.2;a.z=-4+Math.floor(i/5)*2;a.y=0;a.vx=a.vy=a.vz=a.knockVx=a.knockVz=0;a.onGround=true;a.climbFinished=false;a.climbHitCooldown=0;a.facing=0;a.visualFacing=0;});
+  state.actors.forEach((a,i)=>{a.x=((i%5)-2)*2.2;a.z=-4+Math.floor(i/5)*2;a.y=0;a.vx=a.vy=a.vz=a.knockVx=a.knockVz=0;a.onGround=true;a.climbFinished=false;a.climbHitCooldown=0;a.facing=0;a.visualFacing=0;a.wpIdx=0;});
   state.phase='countdown';state.countdownTimer=3.2;state.elapsed=0;state.camYaw=state.targetCamYaw=Math.PI;
   state.camFocusPos.set(state.player.x,1.2,state.player.z);
   document.querySelector('.brand-pill .pill-title').textContent='SLIME CLIMB';
@@ -2814,7 +2814,7 @@ function finishSlimeClimb(){
  document.getElementById('result-modal').classList.remove('hidden');
 }
 function updateSlimeClimb(dt){
- state.elapsed+=dt;advanceSlimeCourse(state.slimeCourse,dt);state.slimeVisuals.update();
+ state.elapsed+=dt;advanceSlimeCourse(state.slimeCourse,dt,state.actors);state.slimeVisuals.update();
  const p=state.player;
  if(p.alive&&!p.climbFinished&&!p.isDiving){
   let right=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0), forward=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0);
@@ -2823,24 +2823,32 @@ function updateSlimeClimb(dt){
   if(len>.05){right/=Math.max(1,len);forward/=Math.max(1,len);const dx=-Math.sin(state.camYaw)*forward+Math.cos(state.camYaw)*right,dz=-Math.cos(state.camYaw)*forward-Math.sin(state.camYaw)*right;p.facing=Math.atan2(dx,dz);const rate=Math.min(1,dt*(p.onGround?11:6));p.vx+=(dx*7.2-p.vx)*rate;p.vz+=(dz*7.2-p.vz)*rate;}
   else{const friction=Math.max(0,1-dt*(p.onGround?8:2.5));p.vx*=friction;p.vz*=friction;}
  }
- const obstacles=slimeObstacles(state.elapsed);
+ const obstacles=slimeObstacles(state.elapsed,state.slimeCourse);
  for(const a of state.actors){
   if(!a.alive||a.climbFinished)continue;
   a.survivalTime=state.elapsed;a.diveCooldown=Math.max(0,a.diveCooldown-dt);a.climbHitCooldown=Math.max(0,a.climbHitCooldown-dt);
   if(a.isDiving&&(a.diveTimer-=dt)<=0)a.isDiving=false;
-  if(!a.isPlayer){const d=slimeBotDecision(state.slimeCourse,a);const rate=Math.min(1,dt*7);a.vx+=(d.vx-a.vx)*rate;a.vz+=(d.vz-a.vz)*rate;if(d.jump)a.jump();a.facing=Math.atan2(d.vx,d.vz);}
+  if(!a.isPlayer){const d=slimeBotDecision(state.slimeCourse,a);const rate=Math.min(1,dt*8);a.vx+=(d.vx-a.vx)*rate;a.vz+=(d.vz-a.vz)*rate;if(d.jump)a.jump();a.facing=Math.atan2(d.vx,d.vz);}
   const oldY=a.y;a.x+=(a.vx+a.knockVx)*dt;a.z+=(a.vz+a.knockVz)*dt;
-  if(a.onGround&&a.z>=77&&a.z<97)a.z-=2.3*dt;
+  // Conveyor belt zone on Floor 3 (drags backward if on belt)
+  if(a.onGround&&a.y>=14.0&&a.y<=17.5&&a.x>=-12.5&&a.x<=-3.0){a.x+=2.4*dt;a.z-=1.4*dt;}
   a.knockVx*=Math.max(0,1-dt*4);a.knockVz*=Math.max(0,1-dt*4);a.vy-=30*dt;a.y+=a.vy*dt;
-  const floor=slimeSurface(a.x,a.z);a.onGround=false;
-  if(floor!==null&&a.vy<=0&&oldY>=floor-.8&&a.y<=floor+.12){a.y=floor;a.vy=0;a.onGround=true;a.jumpCount=0;}
+  const floor=slimeSurface(a.x,a.z,a.y);a.onGround=false;
+  if(floor!==null&&a.vy<=0&&oldY>=floor-1.5&&a.y<=floor+0.35){a.y=floor;a.vy=0;a.onGround=true;a.jumpCount=0;}
+  else if(floor!==null&&oldY>=floor-1.5&&a.y<floor){a.y=floor;a.vy=0;a.onGround=true;a.jumpCount=0;}
   if(a.climbHitCooldown<=0)for(const o of obstacles){
-    if(Math.abs(a.y-slimeCourseY(o.z))>2)continue;
+    const obsY=o.y!==undefined?o.y:slimeCourseY(o.z);
+    if(Math.abs(a.y-obsY)>2.6)continue;
     const {dx,dz}=slimeObstacleContact(o,a.x,a.z),d=Math.hypot(dx,dz),radius=o.radius+a.radius*.55;
-    if(d<radius&&d>.001){const nx=dx/d,nz=dz/d;a.x+=nx*(radius-d);a.z+=nz*(radius-d);a.knockVx=nx*(o.type==='hammer'?8:5);a.knockVz=nz*(o.type==='ball'?8:5);a.vy=3.2;a.onGround=false;a.climbHitCooldown=.5;a.squash=.2;break;}
+    if(d<radius&&d>.001){
+      const nx=dx/d,nz=dz/d;a.x+=nx*(radius-d);a.z+=nz*(radius-d);
+      if(o.isGiant){a.knockVx=nx*14;a.knockVz=nz*14;a.vy=4.5;}
+      else{a.knockVx=nx*(o.type==='hammer'?8.5:o.type==='pusher'?9:5.5);a.knockVz=nz*(o.type==='ball'?8:o.type==='pusher'?9:5.5);a.vy=3.2;}
+      a.onGround=false;a.climbHitCooldown=.5;a.squash=.2;break;
+    }
   }
   a.rig.blobShadow.visible=floor!==null&&a.y>=floor;if(a.rig.blobShadow.visible)a.rig.blobShadow.position.y=floor-a.y+.03;
-  if(a.z>=SLIME_LENGTH&&Math.abs(a.x)<7&&a.y>=slimeCourseY(SLIME_LENGTH)-1){a.climbFinished=true;a.climbTime=state.elapsed;a.vx=a.vz=0;if(!a.isPlayer){a.rig.root.visible=false;a.labelEl.style.display='none';}}
+  if(a.z>=120&&Math.abs(a.x)<8.5&&a.y>=25.0){a.climbFinished=true;a.climbTime=state.elapsed;a.vx=a.vz=0;if(!a.isPlayer){a.rig.root.visible=false;a.labelEl.style.display='none';}}
   else if(a.y<=risingSlimeY(state.elapsed)||a.y< -20){a.alive=false;a.rig.root.visible=false;a.labelEl.style.display='none';state.eliminationOrder.push(a);sfx.play('elim');if(a.isPlayer)onPlayerEliminated();}
  }
  const active=state.actors.filter(a=>a.alive&&!a.climbFinished);
