@@ -37,9 +37,11 @@ export function createCourseVisuals(THREE, course) {
   ctx.font = 'bold 150px sans-serif'; ctx.fillText('FINISH!', 512, 132);
   const signTexture = new THREE.CanvasTexture(signCanvas);
   signTexture.colorSpace = THREE.SRGBColorSpace;
-  const signMat = new THREE.MeshBasicMaterial({ map: signTexture, side: THREE.DoubleSide });
+  const signMat = new THREE.MeshBasicMaterial({ map: signTexture, side: THREE.FrontSide });
   const sign = new THREE.Mesh(new THREE.PlaneGeometry(8, 2), signMat);
-  sign.position.set(0, 7.45, COURSE.finish.z); root.add(sign);
+  sign.position.set(0, 7.45, COURSE.finish.z-.02); sign.rotation.y = Math.PI; root.add(sign);
+  const backSign = new THREE.Mesh(new THREE.PlaneGeometry(8, 2), signMat);
+  backSign.position.set(0, 7.45, COURSE.finish.z+.02); root.add(backSign);
   const decorations = [];
   const colors = [pink, cyan, yellow, white];
   for (let i = 0; i < 24; i++) {
@@ -47,9 +49,10 @@ export function createCourseVisuals(THREE, course) {
     const piece = box(.20, .34, .12, colors[i % colors.length], Math.cos(a)*radius, 5+(i%5)*.7, COURSE.finish.z+Math.sin(a)*1.5);
     decorations.push({mesh:piece, baseY:piece.position.y, phase:i*.8});
   }
+  const bulbMat = new THREE.MeshStandardMaterial({color:0x756948, emissive:0x000000, roughness:.5});
   for (const side of [-1, 1]) {
     for (let i=0; i<5; i++) {
-      const bulb = new THREE.Mesh(new THREE.SphereGeometry(.2,12,8), i%2 ? yellow : white);
+      const bulb = new THREE.Mesh(new THREE.SphereGeometry(.2,12,8), bulbMat);
       bulb.position.set(side*8, .8+i*1.1, COURSE.finish.z-.42); root.add(bulb);
     }
   }
@@ -81,6 +84,7 @@ export function createCourseVisuals(THREE, course) {
   });
   return {
     root,
+    celebrateFinish() { bulbMat.color.setHex(0xffed91); bulbMat.emissive.setHex(0xffbd12); bulbMat.emissiveIntensity = 2; },
     update() {
       decorations.forEach(({mesh, baseY, phase}) => {
         mesh.position.y = baseY + Math.sin(course.time*1.6+phase)*.28;
@@ -93,7 +97,7 @@ export function createCourseVisuals(THREE, course) {
     },
     dispose() {
       root.traverse(obj => { if (obj.geometry) obj.geometry.dispose(); });
-      [pink,cyan,yellow,purple,white,signMat].forEach(m => m.dispose());
+      [pink,cyan,yellow,purple,white,signMat,bulbMat].forEach(m => m.dispose());
       signTexture.dispose();
     }
   };

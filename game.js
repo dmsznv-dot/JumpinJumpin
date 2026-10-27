@@ -1781,7 +1781,8 @@ function createBean3DMesh(skin) {
     costumeGroup.add(leftBun, rightBun);
 
     // Верхушка сосиски на голове
-    const topDog = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.42, 0.28, 18), sausageMat);
+    const topDog = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), sausageMat);
+    topDog.scale.set(.40,.22,.40);
     topDog.position.y = -0.02;
     hatGroup.add(topDog);
 
@@ -1818,14 +1819,17 @@ function createBean3DMesh(skin) {
     costumeGroup.add(epL, epR);
 
     // Полы капитанского камзола и широкий кожаный ремень с золотой пряжкой (Низ)
-    const coatSkirt = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.72, 0.42, 24, 1, true), coatMat);
-    coatSkirt.position.y = 0.85;
-    costumeGroup.add(coatSkirt);
+    // Short rounded coat panels leave the legs and belt visible.
+    for (const side of [-1, 1]) {
+      const panel = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), coatMat);
+      panel.scale.set(.19,.32,.16); panel.position.set(side*.44,1.05,.40);
+      costumeGroup.add(panel);
+    }
 
-    const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.66, 0.66, 0.14, 24), darkMat);
+    const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.625, 0.625, 0.09, 32, 1, true), darkMat);
     belt.position.y = 0.88;
     const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.20, 0.10), goldMat);
-    buckle.position.set(0, 0.88, 0.64);
+    buckle.position.set(0, 0.88, 0.625);
     costumeGroup.add(belt, buckle);
   } else if (cType === 'chicken') {
     // 🐓 БОЕВОЙ ПЕТУШОК (ВЕРХ: красный гребешок + жёлтый клюв + крылышки | НИЗ: пуховые штанишки + хвост + оранжевые лапки)
@@ -1915,7 +1919,8 @@ function createBean3DMesh(skin) {
     hatGroup.add(hornL, hornR);
 
     // Детализированная маска демона Они (Мэнгу) на нижней половине лица с белыми клыками
-    const mengu = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.24, 0.26), armorMat);
+    const mengu = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), armorMat);
+    mengu.scale.set(.31,.14,.14);
     mengu.position.set(0, 1.08, 0.56);
     const fangL = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.13, 6), whiteMat);
     fangL.position.set(-0.18, 1.16, 0.68);
@@ -1929,8 +1934,11 @@ function createBean3DMesh(skin) {
     const sodeR = sodeL.clone();
     sodeR.position.x = 0.72;
 
-    const armorSkirt = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.76, 0.38, 8), armorMat);
-    armorSkirt.position.y = 0.74;
+    const armorSkirt = new THREE.Group();
+    for (const side of [-1, 1]) {
+      const plate = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), armorMat);
+      plate.scale.set(.23,.20,.12); plate.position.set(side*.33,.76,.48); armorSkirt.add(plate);
+    }
     const goldBelt = new THREE.Mesh(new THREE.CylinderGeometry(0.66, 0.66, 0.10, 24), goldMat);
     goldBelt.position.y = 0.90;
     costumeGroup.add(sodeL, sodeR, armorSkirt, goldBelt);
@@ -1950,7 +1958,8 @@ function createBean3DMesh(skin) {
     hatGroup.add(brim, cone, hatBand);
 
     // Пышная белоснежная 3D-борода под очками Миньона
-    const beardMain = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.62, 14), whiteMat);
+    const beardMain = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), whiteMat);
+    beardMain.scale.set(.32,.34,.14);
     beardMain.rotation.x = Math.PI;
     beardMain.position.set(0, 0.92, 0.56);
     costumeGroup.add(beardMain);
@@ -1982,13 +1991,11 @@ function createBean3DMesh(skin) {
     visorBar.position.set(0, 1.49, 0.60);
     costumeGroup.add(visorBar);
 
-    // Гавайская юбочка из листьев вокруг пояса (Низ)
-    for (let k = 0; k < 12; k++) {
-      const a = (k / 12) * Math.PI * 2;
-      const frond = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.42, 5), leafMat);
-      frond.rotation.x = Math.PI;
-      frond.position.set(Math.cos(a) * 0.64, 0.72, Math.sin(a) * 0.64);
-      costumeGroup.add(frond);
+    // Small leaf accents on the waistband keep the legs visible.
+    for (let k = 0; k < 5; k++) {
+      const frond = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), leafMat);
+      frond.scale.set(.06,.13,.035); frond.rotation.z=(k-2)*.14;
+      frond.position.set((k-2)*.13,.76,.59); costumeGroup.add(frond);
     }
   } else if (cType === 'king' || cType === 'crown') {
     // 👑 ИМПЕРАТОР КОРОНЫ (ВЕРХ: большая золотая корона с рубинами + горностаевый воротник + мантия | НИЗ: царский кушак)
@@ -2495,6 +2502,8 @@ function startBigFans() {
   arenaGroup.clear();
   state.layers = [{ index: 0, yHeight: 0, list: [], map: new Map() }];
   state.race = createCourseState();
+  state.raceFinishNotice = 0;
+  document.getElementById('race-finish-notice')?.remove();
   state.raceVisuals = createCourseVisuals(THREE, state.race);
   arenaGroup.add(state.raceVisuals.root);
   state.raceVisuals.update();
@@ -2571,14 +2580,30 @@ function updateBigFans(dt) {
     actor.diveCooldown = Math.max(0, actor.diveCooldown-dt);
     if (actor.isDiving && (actor.diveTimer -= dt) <= 0) actor.isDiving = false;
   }
+  const playerFinishedBefore = p.raceFinished;
   const result = updateRace(state.race, state.actors, dt, state.elapsed);
+  if (!playerFinishedBefore && p.raceFinished) {
+    const place = result.finished.indexOf(p) + 1;
+    state.raceVisuals.celebrateFinish();
+    sfx.play('win');
+    state.raceFinishNotice = 3;
+    const notice = document.createElement('div');
+    notice.id = 'race-finish-notice'; notice.setAttribute('role', 'status');
+    notice.textContent = `🏁 ФИНИШ! ТЫ ПРИШЁЛ #${place}`;
+    Object.assign(notice.style, {position:'fixed',top:'22%',left:'50%',transform:'translateX(-50%)',zIndex:'10000',background:'#7b35d1',color:'#fff',border:'4px solid #ffe600',borderRadius:'22px',padding:'18px 30px',font:'900 clamp(20px,4vw,40px) sans-serif',boxShadow:'0 8px 0 #351468',textAlign:'center',whiteSpace:'nowrap'});
+    document.body.appendChild(notice);
+  }
+  if (state.raceFinishNotice > 0) {
+    state.raceFinishNotice = Math.max(0, state.raceFinishNotice - dt);
+    if (!state.raceFinishNotice) document.getElementById('race-finish-notice')?.remove();
+  }
   state.raceVisuals.update();
   for (const actor of state.actors) {
     actor.rig.blobShadow.visible = actor.onGround;
     if (actor.raceFinished && !actor.isPlayer) { actor.rig.root.visible = false; actor.labelEl.style.display = 'none'; }
   }
   updateFX(dt); updateThirdPersonCamera(dt); update3DNameplates(); updateRaceHUD();
-  if (result.done) finishRace(result);
+  if (result.done && state.raceFinishNotice <= 0) finishRace(result);
 }
 
 // ==================== 3D БОНУСЫ, ЧАСТИЦЫ И УДАРНЫЕ ВОЛНЫ ====================
@@ -3708,9 +3733,8 @@ function isPatternUnlocked(pat) {
 }
 
 function isCostumeUnlocked(cos) {
-  if (cos.unlockType === 'free') return true;
-  if (cos.unlockType === 'crowns' && saveData.crowns >= cos.cost) return true;
-  return saveData.unlockedCostumes.includes(cos.id);
+  // Test branch: preview every outfit without changing saved unlocks.
+  return true;
 }
 
 function getUnlockBadgeText(item, unlocked) {
@@ -4094,6 +4118,7 @@ function openLeaderboard() {
 }
 
 function openStartModal() {
+  document.getElementById('race-finish-notice')?.remove();
   if (state.raceVisuals) { state.raceVisuals.dispose(); state.raceVisuals = null; }
   state.race = null;
   state.phase = 'menu';
