@@ -15,13 +15,13 @@ export function resetBotRoute(actor) {
 export function botRaceDecision(course, actor) {
   if (!Number.isInteger(actor.raceWaypoint)) resetBotRoute(actor);
   let target = ROUTE[actor.raceWaypoint];
-  if (Math.hypot(target.x-actor.x, target.z-actor.z) < 2.3 && actor.raceWaypoint < ROUTE.length - 1) {
+  if (Math.hypot(target.x-actor.x, target.z-actor.z) < 2 && actor.raceWaypoint < ROUTE.length - 1) {
     actor.raceWaypoint++; target = ROUTE[actor.raceWaypoint];
   }
   const dx = target.x-actor.x, dz = target.z-actor.z;
   const d = Math.hypot(dx,dz) || 1;
   const dirX = dx/d, dirZ = dz/d;
-  const lookahead = surfaceAt(course, actor.x + dirX*.65, actor.z + dirZ*.65);
+  const lookahead = surfaceAt(course, actor.x + dirX*.3, actor.z + dirZ*.3);
   const imminentBeam = course.fans.some(f => beamHit(f, { ...actor, x:actor.x+dirX, z:actor.z+dirZ }));
   return { x: dirX, z: dirZ, jump: actor.onGround && (!lookahead || imminentBeam) };
 }
