@@ -83,17 +83,62 @@ const LAYER_THEMES = [
   { name: 'Изумрудное Дно',     top: 0x00e676, rim: 0x008c44, steppedTop: 0xff2a85, steppedRim: 0x880e4f }
 ];
 
-// Костюмы 3D-фасолинок
+// ==================== КАТАЛОГ ЦВЕТОВЫХ ПАЛИТР И КОСТЮМОВ (ЛОББИ И МАГАЗИН FALL GUYS) ====================
+const COLOR_PALETTES = [
+  { id: 'c_pink_yellow', title: 'Розовый Фламинго',  c1: 0xff2a85, c2: 0xffe600, css1: '#ff2a85', css2: '#ffe600', rarity: 'ОБЫЧНЫЙ',    unlockType: 'free',   cost: 0 },
+  { id: 'c_cyan_blue',   title: 'Неоновая Лазурь',   c1: 0x00e5ff, c2: 0x1e40af, css1: '#00e5ff', css2: '#1e40af', rarity: 'ОБЫЧНЫЙ',    unlockType: 'free',   cost: 0 },
+  { id: 'c_lime_choco',  title: 'Мятный Пончик',     c1: 0x00e676, c2: 0x3e2723, css1: '#00e676', css2: '#3e2723', rarity: 'ОБЫЧНЫЙ',    unlockType: 'free',   cost: 0 },
+  { id: 'c_orange_cyan', title: 'Светофор Тусовки',  c1: 0xff9100, c2: 0x00e5ff, css1: '#ff9100', css2: '#00e5ff', rarity: 'РЕДКИЙ',     unlockType: 'ad',     cost: 0 },
+  { id: 'c_purple_lime', title: 'Кибер-Виноград',    c1: 0xd500f9, c2: 0x76ff03, css1: '#d500f9', css2: '#76ff03', rarity: 'РЕДКИЙ',     unlockType: 'ad',     cost: 0 },
+  { id: 'c_red_white',   title: 'Клубничный Крем',   c1: 0xff1744, c2: 0xffffff, css1: '#ff1744', css2: '#ffffff', rarity: 'РЕДКИЙ',     unlockType: 'kudos',  cost: 400 },
+  { id: 'c_aqua_pink',   title: 'Сахарная Вата',     c1: 0x26c6da, c2: 0xf8bbd0, css1: '#26c6da', css2: '#f8bbd0', rarity: 'ЭПИЧЕСКИЙ',  unlockType: 'kudos',  cost: 800 },
+  { id: 'c_gold_ruby',   title: 'Королевское Золото',c1: 0xffd700, c2: 0xb71c1c, css1: '#ffd700', css2: '#b71c1c', rarity: 'ЛЕГЕНДА',    unlockType: 'crowns', cost: 1 }
+];
+
+const COSTUME_ITEMS = [
+  { id: 'hat_none',    title: 'Классическая Фасоль', icon: '🙂', hat: 'none',    rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
+  { id: 'hat_ears',    title: 'Ушки Тигрёнка',       icon: '🐯', hat: 'ears',    rarity: 'ОБЫЧНЫЙ',   unlockType: 'ad',     cost: 0 },
+  { id: 'hat_chef',    title: 'Повар Пельмешек',     icon: '🍓', hat: 'chef',    rarity: 'РЕДКИЙ',    unlockType: 'ad',     cost: 0 },
+  { id: 'hat_dino',    title: 'Дино-Гребень',        icon: '🦖', hat: 'dino',    rarity: 'РЕДКИЙ',    unlockType: 'ad',     cost: 0 },
+  { id: 'hat_horns',   title: 'Кибер-Рожки',         icon: '⚡', hat: 'horns',   rarity: 'РЕДКИЙ',    unlockType: 'kudos',  cost: 600 },
+  { id: 'hat_fin',     title: 'Акула Тусовщик',      icon: '🦈', hat: 'fin',     rarity: 'ЭПИЧЕСКИЙ', unlockType: 'crowns', cost: 1 },
+  { id: 'hat_antenna', title: 'Космо-Пришелец',      icon: '👽', hat: 'antenna', rarity: 'ЭПИЧЕСКИЙ', unlockType: 'crowns', cost: 2 },
+  { id: 'hat_crown',   title: 'Золотая Корона',      icon: '👑', hat: 'crown',   rarity: 'ЛЕГЕНДА',   unlockType: 'crowns', cost: 3 }
+];
+
+const SEASON_TIERS = [
+  { level: 1, xpReq: 0,    title: 'Старт Сезона',       icon: '🎨', rewardText: 'Базовые цвета' },
+  { level: 2, xpReq: 300,  title: 'Бонус Лавров',       icon: '🟣', rewardText: '+300 Лавров' },
+  { level: 3, xpReq: 700,  title: 'Светофор Тусовки',   icon: '🟧', rewardText: 'Цвет фасольки' },
+  { level: 4, xpReq: 1200, title: 'Дино-Гребень',       icon: '🦖', rewardText: 'Костюм Дино' },
+  { level: 5, xpReq: 1800, title: 'Кубок Чемпиона',     icon: '👑', rewardText: '+1 Корона' },
+  { level: 6, xpReq: 2500, title: 'Акула Тусовщик',     icon: '🦈', rewardText: 'Эпик Костюм' },
+  { level: 7, xpReq: 3500, title: 'Золотая Корона',     icon: '🏆', rewardText: 'Легенда Шоу' }
+];
+
+// Совместимый массив SKINS для генерации разнообразных ботов на арене
 const SKINS = [
-  { id: 0, title: 'Королевский Розовый', icon: '👑', c1: 0xff3864, c2: 0xffe600, hat: 'crown' },
+  { id: 0, title: 'Королевский Розовый', icon: '👑', c1: 0xff2a85, c2: 0xffe600, hat: 'crown' },
   { id: 1, title: 'Кибер-Гонщик',        icon: '⚡', c1: 0x00e5ff, c2: 0x1e40af, hat: 'horns' },
-  { id: 2, title: 'Дино-Завр',           icon: '🦖', c1: 0x76ff03, c2: 0x1b5e20, hat: 'dino' },
-  { id: 3, title: 'Тигровый Прыгун',     icon: '🐯', c1: 0xff9100, c2: 0x3e2723, hat: 'ears' },
-  { id: 4, title: 'Космо-Пришелец',      icon: '👽', c1: 0xd500f9, c2: 0x00e676, hat: 'antenna' },
+  { id: 2, title: 'Дино-Завр',           icon: '🦖', c1: 0x00e676, c2: 0x3e2723, hat: 'dino' },
+  { id: 3, title: 'Тигровый Прыгун',     icon: '🐯', c1: 0xff9100, c2: 0x00e5ff, hat: 'ears' },
+  { id: 4, title: 'Космо-Пришелец',      icon: '👽', c1: 0xd500f9, c2: 0x76ff03, hat: 'antenna' },
   { id: 5, title: 'Золотой Рыцарь',      icon: '🏆', c1: 0xffd700, c2: 0xb71c1c, hat: 'crown' },
-  { id: 6, title: 'Повар Пельмешек',     icon: '🍓', c1: 0xff5252, c2: 0xffffff, hat: 'chef' },
+  { id: 6, title: 'Повар Пельмешек',     icon: '🍓', c1: 0xff1744, c2: 0xffffff, hat: 'chef' },
   { id: 7, title: 'Акула-Тусовщик',      icon: '🦈', c1: 0x26c6da, c2: 0xf8bbd0, hat: 'fin' }
 ];
+
+function getPlayerComposedSkin() {
+  const col = COLOR_PALETTES.find(c => c.id === saveData.selectedColorId) || COLOR_PALETTES[0];
+  const cos = COSTUME_ITEMS.find(h => h.id === saveData.selectedCostumeId) || COSTUME_ITEMS[0];
+  return {
+    title: `${col.title} • ${cos.title}`,
+    icon: cos.icon,
+    c1: col.c1,
+    c2: col.c2,
+    hat: cos.hat
+  };
+}
 
 // Типы бонусов
 const POWERUP_TYPES = [
@@ -319,18 +364,26 @@ function hexDistance(q1, r1, q2, r2) {
 }
 
 // ==================== СОХРАНЕНИЯ И ЛИДЕРБОРД ====================
-const STORAGE_KEY = 'hex_fall_guys_save_v3';
+const STORAGE_KEY = 'hex_fall_guys_save_v4';
 
 function loadSaveData() {
+  let data = null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('hex_fall_guys_save_v3');
+    if (raw) data = JSON.parse(raw);
   } catch (e) {}
-  return {
+
+  const defaults = {
     playerName: 'СуперФасолька',
     skinIndex: 0,
+    selectedColorId: 'c_lime_choco',
+    selectedCostumeId: 'hat_none',
+    unlockedColors: ['c_pink_yellow', 'c_cyan_blue', 'c_lime_choco'],
+    unlockedCostumes: ['hat_none'],
     difficulty: 'normal',
     crowns: 0,
+    kudos: 350,
+    seasonXP: 120,
     totalScore: 0,
     matchesPlayed: 0,
     bestSurvivalSec: 0,
@@ -350,6 +403,14 @@ function loadSaveData() {
       { name: 'Упругий_Кабачок', crowns: 1, bestTime: 46.0, score: 2100 }
     ]
   };
+
+  if (!data) return defaults;
+  return {
+    ...defaults,
+    ...data,
+    unlockedColors: Array.isArray(data.unlockedColors) ? data.unlockedColors : defaults.unlockedColors,
+    unlockedCostumes: Array.isArray(data.unlockedCostumes) ? data.unlockedCostumes : defaults.unlockedCostumes
+  };
 }
 
 function saveGameData() {
@@ -367,6 +428,7 @@ const labelsLayer = document.getElementById('labels-layer');
 const renderer = new THREE.WebGLRenderer({
   canvas,
   antialias: true,
+  alpha: true, // прозрачный фон в Лобби, чтобы были видны анимированные круги Fall Guys!
   powerPreference: 'high-performance'
 });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -377,8 +439,7 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.12;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x180e3a);
-scene.fog = new THREE.FogExp2(0x180e3a, 0.0065);
+scene.background = null; // в Лобби прозрачный, в матче включаем 0x180e3a
 
 const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.5, 320);
 
@@ -412,10 +473,12 @@ const stadiumGroup = new THREE.Group();
 const arenaGroup = new THREE.Group();
 const actorsGroup = new THREE.Group();
 const fxGroup = new THREE.Group();
+const lobbyGroup = new THREE.Group(); // 3D-пьедестал и фасолинка крупным планом в главном меню!
 scene.add(stadiumGroup);
 scene.add(arenaGroup);
 scene.add(actorsGroup);
 scene.add(fxGroup);
+scene.add(lobbyGroup);
 
 // ==================== ПОДГРУЗКА CC0 3D-АССЕТОВ (.GLB KENNEY) ====================
 const gltfLoader = new GLTFLoader();
@@ -550,6 +613,112 @@ function decorateStadiumWithClouds() {
     stadiumGroup.add(cloud);
     stadiumClouds.push({ mesh: cloud, baseAngle: ang, dist, speed: 0.03 + (i % 3) * 0.015 });
   }
+}
+
+// ==================== 3D ПЬЕДЕСТАЛ И ФАСОЛИНКА КРУПНЫМ ПЛАНОМ В ГЛАВНОМ МЕНЮ ====================
+let lobbyBeanRig = null;
+let lobbyPodiumGroup = null;
+let lobbyActiveTab = 'play';
+let lobbyBeanYaw = 0;
+let lobbyTargetBeanYaw = 0;
+
+function buildLobbyPedestalScene() {
+  lobbyGroup.clear();
+  lobbyPodiumGroup = new THREE.Group();
+  lobbyGroup.add(lobbyPodiumGroup);
+
+  // Мягкая розовая подушка пьедестала (как на скриншотах Fall Guys!)
+  const cushionGeo = new THREE.CylinderGeometry(1.18, 1.15, 0.38, 36);
+  const cushionMat = new THREE.MeshStandardMaterial({
+    color: 0xff2ae5,
+    roughness: 0.25,
+    metalness: 0.08
+  });
+  const cushion = new THREE.Mesh(cushionGeo, cushionMat);
+  cushion.position.y = -0.19;
+  cushion.receiveShadow = true;
+  lobbyPodiumGroup.add(cushion);
+
+  // Верхний глянцевый бортик подушки
+  const torusRim = new THREE.Mesh(
+    new THREE.TorusGeometry(1.14, 0.075, 16, 42),
+    new THREE.MeshStandardMaterial({ color: 0xff66f0, roughness: 0.2 })
+  );
+  torusRim.rotation.x = Math.PI / 2;
+  torusRim.position.y = -0.02;
+  lobbyPodiumGroup.add(torusRim);
+
+  // Фиолетовая колонна под подушкой
+  const baseCol = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.06, 1.12, 2.2, 32),
+    new THREE.MeshStandardMaterial({ color: 0x7b1fa2, roughness: 0.4 })
+  );
+  baseCol.position.y = -1.45;
+  lobbyPodiumGroup.add(baseCol);
+
+  // Золотое кольцо вокруг колонны пьедестала
+  const goldBand = new THREE.Mesh(
+    new THREE.TorusGeometry(1.10, 0.06, 12, 36),
+    new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.6, roughness: 0.25 })
+  );
+  goldBand.rotation.x = Math.PI / 2;
+  goldBand.position.y = -0.42;
+  lobbyPodiumGroup.add(goldBand);
+
+  rebuildLobbyBeanModel();
+}
+
+function rebuildLobbyBeanModel() {
+  if (!lobbyPodiumGroup) return;
+  if (lobbyBeanRig) {
+    lobbyPodiumGroup.remove(lobbyBeanRig.root);
+  }
+  const skin = getPlayerComposedSkin();
+  lobbyBeanRig = createBean3DMesh(skin);
+  lobbyBeanRig.root.position.set(0, 0, 0);
+  lobbyPodiumGroup.add(lobbyBeanRig.root);
+}
+
+function updateLobby3D(dt, nowSec) {
+  if (!lobbyPodiumGroup || !lobbyBeanRig) return;
+
+  // Плавное вращение фасолинки на пьедестале
+  lobbyBeanYaw += (lobbyTargetBeanYaw - lobbyBeanYaw) * Math.min(1, dt * 10);
+  lobbyBeanRig.bodyPivot.rotation.y = lobbyBeanYaw;
+
+  // Живая анимация дыхания и приветственного помахивания на пьедестале
+  const breath = Math.sin(nowSec * 3.0);
+  lobbyBeanRig.bodyPivot.position.y = breath * 0.035;
+  lobbyBeanRig.bodyPivot.rotation.z = Math.sin(nowSec * 1.5) * 0.035;
+  lobbyBeanRig.leftArm.rotation.x = Math.sin(nowSec * 2.5) * 0.18;
+  lobbyBeanRig.rightArm.rotation.x = -Math.sin(nowSec * 2.5) * 0.18;
+
+  // В зависимости от открытой вкладки Лобби пьедестал плавно смещается:
+  // - В 'play' — строго по центру
+  // - В 'custom' — слева (x = -1.35), чтобы справа помещалась панель цветов и костюмов (как на скрине 4)
+  // - В 'season' — справа (x = 1.25), чтобы слева была карточка сезона (как на скрине 2)
+  // - В 'shop' и 'settings' — скрываем 3D-пьедестал, чтобы не перекрывал витрину магазина
+  let targetX = 0;
+  let targetY = 0;
+  let visible = true;
+
+  if (lobbyActiveTab === 'custom') {
+    targetX = -1.35;
+    targetY = -0.05;
+  } else if (lobbyActiveTab === 'season') {
+    targetX = 1.25;
+    targetY = 0.05;
+  } else if (lobbyActiveTab === 'shop' || lobbyActiveTab === 'settings') {
+    visible = false;
+  }
+
+  lobbyGroup.visible = visible;
+  lobbyPodiumGroup.position.x += (targetX - lobbyPodiumGroup.position.x) * Math.min(1, dt * 8);
+  lobbyPodiumGroup.position.y += (targetY - lobbyPodiumGroup.position.y) * Math.min(1, dt * 8);
+
+  // Камера крупным планом смотрит прямо на пьедестал
+  camera.position.set(0, 1.25, 4.45);
+  camera.lookAt(0, 0.95, 0);
 }
 
 // ==================== ОБЩИЕ 3D-ГЕОМЕТРИИ ДЛЯ ГЕКСА-ПЛИТОК ====================
@@ -1328,10 +1497,22 @@ function startMatch() {
   document.getElementById('event-banner').classList.add('hidden');
   document.getElementById('spectator-bar').classList.add('hidden');
   document.getElementById('winner-banner-overlay').classList.add('hidden');
-  document.getElementById('start-modal').classList.add('hidden');
+  document.getElementById('lobby-ui').classList.add('hidden');
+  document.getElementById('lobby-bg').classList.add('hidden');
+  document.getElementById('ingame-hud-top').classList.remove('hidden');
+  document.getElementById('ingame-hud-bottom').classList.remove('hidden');
   document.getElementById('result-modal').classList.add('hidden');
   document.getElementById('lb-modal').classList.add('hidden');
   document.getElementById('killfeed').innerHTML = '';
+
+  // Включаем 3D-арену и фон телешоу
+  lobbyGroup.visible = false;
+  stadiumGroup.visible = true;
+  arenaGroup.visible = true;
+  actorsGroup.visible = true;
+  fxGroup.visible = true;
+  scene.background = new THREE.Color(0x180e3a);
+  scene.fog = new THREE.FogExp2(0x180e3a, 0.0065);
 
   clearActorsAndFX();
   buildArena3D(config);
@@ -1342,7 +1523,7 @@ function startMatch() {
     t => hexDistance(0, 0, t.q, t.r) >= 2 && hexDistance(0, 0, t.q, t.r) <= config.gridRadius - 1
   );
 
-  const playerSkin = SKINS[saveData.skinIndex % SKINS.length];
+  const playerSkin = getPlayerComposedSkin();
   const pTile = spawnRing[0] || topLayer.list[0];
   const player = new Actor3D(
     'player',
@@ -1562,7 +1743,20 @@ function cycleCamPreset() {
 }
 
 window.addEventListener('keydown', (e) => {
+  if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
   keys[e.code] = true;
+  if (state.phase === 'menu') {
+    const order = ['play', 'custom', 'season', 'shop', 'settings'];
+    if (e.code === 'KeyQ') {
+      const idx = (order.indexOf(lobbyActiveTab) - 1 + order.length) % order.length;
+      switchLobbyTab(order[idx]);
+      return;
+    } else if (e.code === 'KeyE') {
+      const idx = (order.indexOf(lobbyActiveTab) + 1) % order.length;
+      switchLobbyTab(order[idx]);
+      return;
+    }
+  }
   if (state.phase === 'playing') {
     if (e.code === 'Space') {
       e.preventDefault();
@@ -1598,6 +1792,11 @@ canvas.addEventListener('pointermove', (e) => {
   const dy = e.clientY - camDrag.lastY;
   camDrag.lastX = e.clientX;
   camDrag.lastY = e.clientY;
+
+  if (state.phase === 'menu') {
+    lobbyTargetBeanYaw += dx * 0.014;
+    return;
+  }
 
   state.targetCamYaw -= dx * 0.0075;
   state.camPitchOffset = Math.max(-3.5, Math.min(6.0, state.camPitchOffset + dy * 0.03));
@@ -2280,6 +2479,8 @@ function showFinalResultsModal() {
 
   const finalScore = Math.round(p.score);
   saveData.totalScore += finalScore;
+  saveData.kudos = (saveData.kudos || 0) + Math.max(80, Math.round(finalScore * 0.35));
+  saveData.seasonXP = (saveData.seasonXP || 0) + Math.max(60, Math.round(finalScore * 0.25));
   saveData.matchesPlayed += 1;
   if (p.survivalTime > saveData.bestSurvivalSec) saveData.bestSurvivalSec = p.survivalTime;
 
@@ -2289,6 +2490,7 @@ function showFinalResultsModal() {
 
   saveGameData();
   updateHUD();
+  renderAllLobbyPanels();
 
   document.getElementById('result-ribbon').textContent = isVictory ? 'ЧЕМПИОН ШОУ!' : 'ИТОГИ ФИНАЛА';
   document.getElementById('result-title').textContent = isVictory
@@ -2306,7 +2508,7 @@ function showFinalResultsModal() {
   document.getElementById('res-place').textContent = `#${playerPlace}`;
   document.getElementById('res-time').textContent = formatTime(p.survivalTime);
   document.getElementById('res-tiles').textContent = String(p.tilesBroken);
-  document.getElementById('res-score').textContent = `+${finalScore}`;
+  document.getElementById('res-score').textContent = `+${Math.max(80, Math.round(finalScore * 0.35))} 🟣`;
 
   const standingsEl = document.getElementById('match-standings');
   standingsEl.innerHTML = '';
@@ -2324,7 +2526,7 @@ function showFinalResultsModal() {
   document.getElementById('result-modal').classList.remove('hidden');
 }
 
-// ==================== ОБНОВЛЕНИЕ HUD И ЛИДЕРБОРДА ====================
+// ==================== ОБНОВЛЕНИЕ HUD, ЛОББИ, ГАРДЕРОБА И МАГАЗИНА ====================
 function formatTime(sec) {
   const mins = Math.floor(sec / 60);
   const rem = sec % 60;
@@ -2345,6 +2547,29 @@ function updateHUD() {
   document.getElementById('hud-layer').textContent = `${curLayer} / ${state.config.layersCount}`;
   document.getElementById('hud-timer').textContent = formatTime(state.elapsed);
   document.getElementById('hud-crowns').textContent = String(saveData.crowns);
+
+  // Валюты в шапке Лобби
+  document.getElementById('lobby-crowns').textContent = String(saveData.crowns || 0);
+  document.getElementById('lobby-kudos').textContent = String(saveData.kudos || 0);
+  document.getElementById('lobby-rank-title').textContent = getRankTitle(saveData.crowns);
+  document.getElementById('home-mode-name').textContent = state.config.name;
+
+  // Уровень и шкала славы сезона
+  const xp = saveData.seasonXP || 0;
+  let curLvl = 1;
+  let nextXp = 500;
+  for (const t of SEASON_TIERS) {
+    if (xp >= t.xpReq) {
+      curLvl = t.level;
+    } else {
+      nextXp = t.xpReq;
+      break;
+    }
+  }
+  if (curLvl >= 7) nextXp = 3500;
+  document.getElementById('lobby-lvl-badge').textContent = String(curLvl);
+  document.getElementById('lobby-xp-text').textContent = `${xp} / ${nextXp}`;
+  document.getElementById('lobby-xp-fill').style.width = `${Math.min(100, (xp / nextXp) * 100)}%`;
 
   const cdDiveEl = document.getElementById('cd-dive');
   if (p && p.diveCooldown > 0) {
@@ -2386,6 +2611,285 @@ function getRankTitle(crowns) {
   return '🐣 Новичок Шоу';
 }
 
+// Симуляция просмотра Rewarded-рекламы Яндекс Игр (3 секунды) для получения базовых скинов или +500 Лавров
+function watchRewardedAd(rewardTitle, onComplete) {
+  const modal = document.getElementById('ad-modal');
+  const titleEl = document.getElementById('ad-modal-title');
+  const timerEl = document.getElementById('ad-timer-circle');
+  modal.classList.remove('hidden');
+  titleEl.textContent = rewardTitle;
+  let rem = 3;
+  timerEl.textContent = String(rem);
+  sfx.play('count');
+
+  const iv = setInterval(() => {
+    rem--;
+    if (rem > 0) {
+      timerEl.textContent = String(rem);
+      sfx.play('count');
+    } else {
+      clearInterval(iv);
+      modal.classList.add('hidden');
+      sfx.play('win');
+      onComplete();
+    }
+  }, 850);
+}
+
+// Проверка доступности цвета или костюма
+function isColorUnlocked(col) {
+  if (col.unlockType === 'free') return true;
+  if (col.unlockType === 'crowns' && saveData.crowns >= col.cost) return true;
+  return saveData.unlockedColors.includes(col.id);
+}
+
+function isCostumeUnlocked(cos) {
+  if (cos.unlockType === 'free') return true;
+  if (cos.unlockType === 'crowns' && saveData.crowns >= cos.cost) return true;
+  return saveData.unlockedCostumes.includes(cos.id);
+}
+
+function getUnlockBadgeText(item, unlocked) {
+  if (unlocked) return '✓ Открыто';
+  if (item.unlockType === 'ad') return '📺 За рекламу';
+  if (item.unlockType === 'crowns') return `👑 Нужна ${item.cost} победа`;
+  if (item.unlockType === 'kudos') return `🟣 ${item.cost} Лавров`;
+  return 'Закрыто';
+}
+
+function handleSelectOrUnlockColor(col) {
+  if (isColorUnlocked(col)) {
+    saveData.selectedColorId = col.id;
+    saveGameData();
+    sfx.play('step');
+    rebuildLobbyBeanModel();
+    renderAllLobbyPanels();
+    return;
+  }
+
+  if (col.unlockType === 'ad') {
+    watchRewardedAd(`ОТКРЫВАЕМ ЦВЕТ: ${col.title}`, () => {
+      if (!saveData.unlockedColors.includes(col.id)) saveData.unlockedColors.push(col.id);
+      saveData.selectedColorId = col.id;
+      saveGameData();
+      rebuildLobbyBeanModel();
+      renderAllLobbyPanels();
+    });
+  } else if (col.unlockType === 'kudos') {
+    if ((saveData.kudos || 0) >= col.cost) {
+      saveData.kudos -= col.cost;
+      saveData.unlockedColors.push(col.id);
+      saveData.selectedColorId = col.id;
+      saveGameData();
+      sfx.play('powerup');
+      rebuildLobbyBeanModel();
+      renderAllLobbyPanels();
+    } else {
+      sfx.play('elim');
+    }
+  } else {
+    sfx.play('elim');
+  }
+}
+
+function handleSelectOrUnlockCostume(cos) {
+  if (isCostumeUnlocked(cos)) {
+    saveData.selectedCostumeId = cos.id;
+    saveGameData();
+    sfx.play('step');
+    rebuildLobbyBeanModel();
+    renderAllLobbyPanels();
+    return;
+  }
+
+  if (cos.unlockType === 'ad') {
+    watchRewardedAd(`ОТКРЫВАЕМ КОСТЮМ: ${cos.title}`, () => {
+      if (!saveData.unlockedCostumes.includes(cos.id)) saveData.unlockedCostumes.push(cos.id);
+      saveData.selectedCostumeId = cos.id;
+      saveGameData();
+      rebuildLobbyBeanModel();
+      renderAllLobbyPanels();
+    });
+  } else if (cos.unlockType === 'kudos') {
+    if ((saveData.kudos || 0) >= cos.cost) {
+      saveData.kudos -= cos.cost;
+      saveData.unlockedCostumes.push(cos.id);
+      saveData.selectedCostumeId = cos.id;
+      saveGameData();
+      sfx.play('powerup');
+      rebuildLobbyBeanModel();
+      renderAllLobbyPanels();
+    } else {
+      sfx.play('elim');
+    }
+  } else {
+    sfx.play('elim');
+  }
+}
+
+function renderAllLobbyPanels() {
+  updateHUD();
+
+  // 1. Сетка цветов в Гардеробе (Диагональные двухцветные квадраты как на скриншоте 4)
+  const colGrid = document.getElementById('custom-colors-grid');
+  if (colGrid) {
+    colGrid.innerHTML = '';
+    COLOR_PALETTES.forEach(col => {
+      const unlocked = isColorUnlocked(col);
+      const isSelected = saveData.selectedColorId === col.id;
+      const btn = document.createElement('div');
+      btn.className = 'fg-color-tile' + (isSelected ? ' active' : '');
+      btn.style.setProperty('--c1', col.css1);
+      btn.style.setProperty('--c2', col.css2);
+      btn.innerHTML = `
+        ${isSelected ? '<div class="tile-check-badge">✓</div>' : ''}
+        ${!unlocked ? `<div class="tile-lock-tag">${getUnlockBadgeText(col, false)}</div>` : ''}
+      `;
+      btn.addEventListener('click', () => {
+        document.getElementById('custom-selected-title').textContent = col.title;
+        document.getElementById('custom-selected-rarity').textContent = col.rarity;
+        handleSelectOrUnlockColor(col);
+      });
+      colGrid.appendChild(btn);
+    });
+  }
+
+  // 2. Сетка костюмов/шляп в Гардеробе (за победы и за рекламу)
+  const cosGrid = document.getElementById('custom-costumes-grid');
+  if (cosGrid) {
+    cosGrid.innerHTML = '';
+    COSTUME_ITEMS.forEach(cos => {
+      const unlocked = isCostumeUnlocked(cos);
+      const isSelected = saveData.selectedCostumeId === cos.id;
+      const card = document.createElement('div');
+      card.className = 'fg-costume-card' + (isSelected ? ' active' : '');
+      card.innerHTML = `
+        ${isSelected ? '<div class="tile-check-badge">✓</div>' : ''}
+        <div class="costume-icon-big">${cos.icon}</div>
+        <div class="costume-card-name">${cos.title}</div>
+        <div class="tile-lock-tag" style="${unlocked ? 'background:#00c853; color:#fff' : ''}">
+          ${getUnlockBadgeText(cos, unlocked)}
+        </div>
+      `;
+      card.addEventListener('click', () => {
+        document.getElementById('custom-selected-title').textContent = cos.title;
+        document.getElementById('custom-selected-rarity').textContent = cos.rarity;
+        handleSelectOrUnlockCostume(cos);
+      });
+      cosGrid.appendChild(card);
+    });
+  }
+
+  // 3. Шкала Сезона (Скриншот 2)
+  const trackRow = document.getElementById('season-track-row');
+  if (trackRow) {
+    trackRow.innerHTML = '';
+    const xp = saveData.seasonXP || 0;
+    SEASON_TIERS.forEach(tier => {
+      const reached = xp >= tier.xpReq;
+      const box = document.createElement('div');
+      box.className = 'season-tier-box' + (reached ? ' unlocked' : '');
+      box.innerHTML = `
+        <div class="tier-num-hex">${tier.level}</div>
+        <div class="tier-reward-icon">${tier.icon}</div>
+        <div class="tier-reward-name">${tier.rewardText}</div>
+        <div style="font-size:10px; margin-top:3px; color:#ffe600">${reached ? '✓ ПОЛУЧЕНО' : `${tier.xpReq} XP`}</div>
+      `;
+      box.addEventListener('click', () => {
+        document.getElementById('season-featured-title').textContent = tier.title.toUpperCase();
+      });
+      trackRow.appendChild(box);
+    });
+  }
+
+  // 4. Витрина Магазина (Скриншот 3: эксклюзив за победы + базовые за рекламу)
+  const featRow = document.getElementById('shop-featured-row');
+  if (featRow) {
+    featRow.innerHTML = '';
+    const featuredCostumes = COSTUME_ITEMS.filter(c => c.unlockType === 'crowns');
+    featuredCostumes.forEach(cos => {
+      const unlocked = isCostumeUnlocked(cos);
+      const card = document.createElement('div');
+      card.className = 'fg-shop-card';
+      card.innerHTML = `
+        <div class="shop-card-top">${cos.rarity} • КОСТЮМ</div>
+        <div class="shop-card-body">
+          <div class="shop-preview-swatch" style="background:linear-gradient(135deg,#ff2a85,#7c4dff)">${cos.icon}</div>
+          <strong style="font-size:14px">${cos.title}</strong>
+        </div>
+        <div class="shop-price-bar">${unlocked ? '✅ В ГАРДЕРОБЕ (НАДЕТЬ)' : `👑 За ${cos.cost} побед(ы)`}</div>
+      `;
+      card.addEventListener('click', () => handleSelectOrUnlockCostume(cos));
+      featRow.appendChild(card);
+    });
+  }
+
+  const regRow = document.getElementById('shop-regular-row');
+  if (regRow) {
+    regRow.innerHTML = '';
+    const adAndKudosItems = [
+      ...COSTUME_ITEMS.filter(c => c.unlockType === 'ad' || c.unlockType === 'kudos').slice(0, 2),
+      ...COLOR_PALETTES.filter(c => c.unlockType === 'ad' || c.unlockType === 'kudos').slice(0, 2)
+    ];
+    adAndKudosItems.forEach(item => {
+      const isColor = Boolean(item.css1);
+      const unlocked = isColor ? isColorUnlocked(item) : isCostumeUnlocked(item);
+      const card = document.createElement('div');
+      card.className = 'fg-shop-card';
+      const swatchStyle = isColor
+        ? `background:linear-gradient(135deg, ${item.css1} 50%, ${item.css2} 50%)`
+        : `background:linear-gradient(135deg, #00acc1, #00e676)`;
+      card.innerHTML = `
+        <div class="shop-card-top ${item.unlockType === 'ad' ? 'rare' : 'common'}">${item.rarity}</div>
+        <div class="shop-card-body">
+          <div class="shop-preview-swatch" style="${swatchStyle}">${item.icon || '🎨'}</div>
+          <strong style="font-size:13px">${item.title}</strong>
+        </div>
+        <div class="shop-price-bar">${getUnlockBadgeText(item, unlocked)}</div>
+      `;
+      card.addEventListener('click', () => {
+        if (isColor) handleSelectOrUnlockColor(item);
+        else handleSelectOrUnlockCostume(item);
+      });
+      regRow.appendChild(card);
+    });
+  }
+}
+
+function switchLobbyTab(tabId) {
+  lobbyActiveTab = tabId;
+  document.querySelectorAll('.fg-nav-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tabId);
+  });
+
+  const panes = ['play', 'custom', 'season', 'shop', 'settings'];
+  panes.forEach(p => {
+    const el = document.getElementById(`pane-${p}`);
+    if (el) el.classList.toggle('hidden', p !== tabId);
+  });
+
+  const titles = {
+    play: 'ГЛАВНАЯ (ЛОББИ)',
+    custom: 'ГАРДЕРОБ ФАСОЛЬКИ',
+    season: 'СЕЗОН 1 • НАГРАДЫ',
+    shop: 'МАГАЗИН ШОУ',
+    settings: 'НАСТРОЙКИ АРЕНЫ'
+  };
+  document.getElementById('lobby-screen-title').textContent = titles[tabId] || 'ЛОББИ';
+
+  // Меняем цветовую тему анимированного фона с концентрическими кругами (как в Fall Guys)
+  const bg = document.getElementById('lobby-bg');
+  bg.className = 'lobby-bg ' + (
+    tabId === 'play' ? 'theme-yellow' :
+    tabId === 'custom' ? 'theme-cyan' :
+    tabId === 'season' ? 'theme-blue' :
+    tabId === 'shop' ? 'theme-blue' : 'theme-purple'
+  );
+
+  sfx.play('step');
+  renderAllLobbyPanels();
+}
+
 function openLeaderboard() {
   const tbody = document.getElementById('lb-tbody');
   const combined = [
@@ -2409,7 +2913,7 @@ function openLeaderboard() {
       <td>${getRankTitle(entry.crowns)}</td>
       <td>👑 ${entry.crowns}</td>
       <td>${formatTime(entry.bestTime)}</td>
-      <td>⭐ ${entry.score}</td>
+      <td>🟣 ${entry.score}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -2437,39 +2941,82 @@ function openLeaderboard() {
 
 function openStartModal() {
   state.phase = 'menu';
+  clearActorsAndFX();
+
+  // Включаем 3D-пьедестал Лобби и прозрачный фон для концентрических кругов
+  scene.background = null;
+  scene.fog = null;
+  stadiumGroup.visible = false;
+  arenaGroup.visible = false;
+  actorsGroup.visible = false;
+  fxGroup.visible = false;
+  lobbyGroup.visible = true;
+  rebuildLobbyBeanModel();
+
   document.getElementById('countdown-overlay').classList.add('hidden');
   document.getElementById('winner-banner-overlay').classList.add('hidden');
   document.getElementById('spectator-bar').classList.add('hidden');
-  document.getElementById('start-modal').classList.remove('hidden');
+  document.getElementById('ingame-hud-top').classList.add('hidden');
+  document.getElementById('ingame-hud-bottom').classList.add('hidden');
   document.getElementById('result-modal').classList.add('hidden');
   document.getElementById('lb-modal').classList.add('hidden');
+
+  document.getElementById('lobby-bg').classList.remove('hidden');
+  document.getElementById('lobby-ui').classList.remove('hidden');
+  switchLobbyTab('play');
 }
 
 function toggleSound() {
   sfx.muted = !sfx.muted;
-  document.getElementById('btn-sound').textContent = sfx.muted ? '🔇' : '🔊';
+  const icon = sfx.muted ? '🔇' : '🔊';
+  document.getElementById('btn-sound').textContent = icon;
+  document.getElementById('btn-lobby-sound').textContent = icon;
 }
 
 // ==================== ПРИВЯЗКА UI СОБЫТИЙ ====================
-document.querySelectorAll('.diff-card').forEach(card => {
-  card.addEventListener('click', () => {
-    document.querySelectorAll('.diff-card').forEach(c => c.classList.remove('active'));
-    card.classList.add('active');
-    state.diffKey = card.dataset.diff;
-    saveData.difficulty = state.diffKey;
-    saveGameData();
+document.querySelectorAll('.fg-nav-tab').forEach(btn => {
+  btn.addEventListener('click', () => switchLobbyTab(btn.dataset.tab));
+});
+
+document.getElementById('season-widget-click').addEventListener('click', () => switchLobbyTab('season'));
+
+document.querySelectorAll('.c-subtab').forEach(sub => {
+  sub.addEventListener('click', () => {
+    document.querySelectorAll('.c-subtab').forEach(s => s.classList.remove('active'));
+    sub.classList.add('active');
+    const isColors = sub.dataset.subtab === 'colors';
+    document.getElementById('custom-colors-grid').classList.toggle('hidden', !isColors);
+    document.getElementById('custom-costumes-grid').classList.toggle('hidden', isColors);
   });
 });
 
-document.querySelectorAll('.skin-swatch').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.skin-swatch').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    saveData.skinIndex = Number(btn.dataset.skin) || 0;
-    const skinObj = SKINS[saveData.skinIndex % SKINS.length];
-    document.getElementById('skin-preview-title').textContent = skinObj.title;
-    document.getElementById('preview-bean-icon').textContent = skinObj.icon;
+function setDifficultyKey(diffKey) {
+  state.diffKey = diffKey;
+  state.config = DIFFICULTIES[diffKey];
+  saveData.difficulty = diffKey;
+  saveGameData();
+
+  document.querySelectorAll('.diff-card').forEach(c => {
+    c.classList.toggle('active', c.dataset.diff === diffKey);
+  });
+  document.querySelectorAll('.qm-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.diff === diffKey);
+  });
+  updateHUD();
+}
+
+document.querySelectorAll('.diff-card').forEach(card => {
+  card.addEventListener('click', () => setDifficultyKey(card.dataset.diff));
+});
+document.querySelectorAll('.qm-pill').forEach(pill => {
+  pill.addEventListener('click', () => setDifficultyKey(pill.dataset.diff));
+});
+
+document.getElementById('btn-watch-ad-kudos').addEventListener('click', () => {
+  watchRewardedAd('БОНУС ШОУ: +500 ЛАВРОВ 🟣', () => {
+    saveData.kudos = (saveData.kudos || 0) + 500;
     saveGameData();
+    renderAllLobbyPanels();
   });
 });
 
@@ -2497,9 +3044,10 @@ document.getElementById('btn-play-again').addEventListener('click', startMatch);
 document.getElementById('btn-result-settings').addEventListener('click', openStartModal);
 document.getElementById('btn-menu').addEventListener('click', openStartModal);
 document.getElementById('btn-sound').addEventListener('click', toggleSound);
+document.getElementById('btn-lobby-sound').addEventListener('click', toggleSound);
 
 document.getElementById('btn-leaderboard').addEventListener('click', openLeaderboard);
-document.getElementById('btn-open-lb-from-start').addEventListener('click', openLeaderboard);
+document.getElementById('btn-lobby-lb').addEventListener('click', openLeaderboard);
 document.getElementById('btn-result-lb').addEventListener('click', openLeaderboard);
 document.getElementById('btn-close-lb').addEventListener('click', () => {
   document.getElementById('lb-modal').classList.add('hidden');
@@ -2539,8 +3087,8 @@ window.addEventListener('resize', () => {
 // ==================== СТАРТ И ГЛАВНЫЙ 3D ЦИКЛ ====================
 buildStadiumEnvironment();
 loadCC0Assets();
-buildArena3D(state.config);
-updateHUD();
+buildLobbyPedestalScene();
+openStartModal();
 
 let lastTime = performance.now();
 function animate(now) {
@@ -2549,12 +3097,7 @@ function animate(now) {
   const nowSec = now * 0.001;
 
   if (state.phase === 'menu') {
-    // Панорамный облёт 3D-башни в главном меню
-    const menuAng = nowSec * 0.25;
-    const topY = state.layers[0] ? state.layers[0].yHeight : 20;
-    camera.position.set(Math.sin(menuAng) * 34, topY + 12, Math.cos(menuAng) * 34);
-    camera.lookAt(0, topY * 0.45, 0);
-    if (slimeSeaMesh) slimeSeaMesh.position.y = -16 + Math.sin(nowSec * 1.8) * 0.25;
+    updateLobby3D(dt, nowSec);
   } else {
     updateWorld3D(dt, nowSec);
   }

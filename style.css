@@ -1130,6 +1130,937 @@ html, body {
   display: none !important;
 }
 
+/* ==================== FALL GUYS ANIMATED LOBBY BACKGROUND ==================== */
+.lobby-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  transition: background 0.55s ease;
+}
+
+.lobby-bg.theme-yellow {
+  background: radial-gradient(circle at 50% 54%, #ffeb3b 0%, #ffc107 48%, #ff9800 100%);
+}
+
+.lobby-bg.theme-cyan {
+  background: radial-gradient(circle at 32% 54%, #40e0ff 0%, #00b8d4 52%, #00838f 100%);
+}
+
+.lobby-bg.theme-blue {
+  background: radial-gradient(circle at 50% 50%, #29b6f6 0%, #0288d1 55%, #01579b 100%);
+}
+
+.lobby-bg.theme-purple {
+  background: radial-gradient(circle at 50% 50%, #ab47bc 0%, #7b1fa2 55%, #4a148c 100%);
+}
+
+.concentric-rings {
+  position: absolute;
+  width: 220vmax;
+  height: 220vmax;
+  left: 50%;
+  top: 54%;
+  transform: translate(-50%, -50%);
+  background: repeating-radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.16) 0px,
+    rgba(255, 255, 255, 0.16) 44px,
+    rgba(0, 0, 0, 0.04) 44px,
+    rgba(0, 0, 0, 0.04) 88px
+  );
+  animation: pulseConcentric 7s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes pulseConcentric {
+  0% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.06); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+/* ==================== FALL GUYS LOBBY SHELL & TOPBAR ==================== */
+.lobby-ui {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.fg-topbar {
+  height: 54px;
+  background: #14121d;
+  border-bottom: 3px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 22px;
+  pointer-events: auto;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+
+.fg-screen-title {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  color: #ffffff;
+  text-transform: uppercase;
+  font-style: italic;
+}
+
+.fg-topbar-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bumper-hint {
+  background: #2b2738;
+  color: #b8b2d8;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.18);
+}
+
+.fg-nav-tab {
+  width: 50px;
+  height: 36px;
+  border-radius: 9px;
+  border: 2.5px solid #ffffff;
+  background: #29b6f6;
+  color: #ffffff;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: skewX(-8deg);
+  transition: transform 0.14s, background 0.14s, box-shadow 0.14s;
+  box-shadow: 0 3px 0 rgba(0,0,0,0.4);
+}
+
+.fg-nav-tab span {
+  transform: skewX(8deg);
+}
+
+.fg-nav-tab:hover {
+  transform: skewX(-8deg) translateY(-2px);
+}
+
+.fg-nav-tab.active {
+  background: #ff2a85;
+  transform: skewX(-8deg) scale(1.1);
+  box-shadow: 0 0 14px rgba(255, 42, 133, 0.75);
+}
+
+.fg-topbar-currencies {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.currency-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #231f32;
+  border: 2px solid #ffffff;
+  border-radius: 10px;
+  padding: 4px 14px;
+  min-width: 88px;
+  justify-content: space-between;
+  transform: skewX(-6deg);
+}
+
+.cur-icon {
+  font-size: 16px;
+  transform: skewX(6deg);
+}
+
+.cur-val {
+  font-size: 15px;
+  font-weight: 900;
+  color: #ffffff;
+  transform: skewX(6deg);
+}
+
+.top-mini-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  border: 2px solid rgba(255,255,255,0.4);
+  background: #2b2738;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* ==================== LOBBY PANES ==================== */
+.lobby-tab-pane {
+  flex: 1;
+  position: relative;
+  padding: 22px 28px;
+}
+
+/* TAB 1: HOME LOBBY */
+.lobby-left-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  max-width: 280px;
+  pointer-events: auto;
+}
+
+.fg-logo-stack {
+  text-align: center;
+  filter: drop-shadow(0 6px 0 rgba(0,0,0,0.28));
+  transform: rotate(-3deg);
+}
+
+.fg-logo-top {
+  font-size: 46px;
+  font-weight: 900;
+  line-height: 0.92;
+  color: #29b6f6;
+  -webkit-text-stroke: 3px #ffffff;
+  text-shadow: 0 5px 0 #0277bd;
+  letter-spacing: 1px;
+}
+
+.fg-logo-bot {
+  font-size: 44px;
+  font-weight: 900;
+  line-height: 0.95;
+  color: #ff2a85;
+  -webkit-text-stroke: 3px #ffffff;
+  text-shadow: 0 5px 0 #ad1457;
+  letter-spacing: 2px;
+}
+
+.fg-season-tag {
+  margin-top: 4px;
+  background: #ffffff;
+  color: #ff9800;
+  font-weight: 900;
+  font-size: 13px;
+  padding: 2px 12px;
+  border-radius: 99px;
+  display: inline-block;
+  box-shadow: 0 3px 0 rgba(0,0,0,0.2);
+}
+
+.season-progress-widget {
+  width: 100%;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.season-progress-widget:hover {
+  transform: scale(1.03);
+}
+
+.sp-label {
+  font-size: 12px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.35);
+  margin-bottom: 4px;
+  letter-spacing: 0.8px;
+}
+
+.sp-bar-shell {
+  display: flex;
+  align-items: center;
+  background: #1c1926;
+  border: 2.5px solid #ffffff;
+  border-radius: 12px;
+  padding: 4px 10px 4px 4px;
+  gap: 8px;
+  box-shadow: 0 5px 0 rgba(0,0,0,0.3);
+}
+
+.sp-level-hex {
+  width: 34px;
+  height: 34px;
+  background: #ff2a85;
+  border: 2px solid #ffffff;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 16px;
+  color: #fff;
+}
+
+.sp-bar-track {
+  flex: 1;
+  height: 14px;
+  background: #322c42;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1.5px solid #ff2a85;
+}
+
+.sp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffffff, #ff80ab);
+  transition: width 0.3s ease;
+}
+
+.sp-xp-text {
+  font-size: 11px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.quick-mode-selector {
+  background: rgba(20, 18, 29, 0.82);
+  border: 2.5px solid #ffffff;
+  border-radius: 16px;
+  padding: 10px 12px;
+  width: 100%;
+  box-shadow: 0 6px 0 rgba(0,0,0,0.3);
+}
+
+.qm-header {
+  font-size: 11px;
+  font-weight: 800;
+  color: #b8b2d8;
+  margin-bottom: 6px;
+}
+
+.qm-header strong {
+  color: #ffe600;
+}
+
+.qm-pills {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.qm-pill {
+  background: rgba(255,255,255,0.1);
+  border: 1.5px solid rgba(255,255,255,0.25);
+  border-radius: 8px;
+  padding: 5px 8px;
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.qm-pill.active {
+  background: #ff2a85;
+  border-color: #ffffff;
+}
+
+.pedestal-rotate-hint {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20, 18, 29, 0.65);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 5px 16px;
+  border-radius: 99px;
+  border: 1.5px solid rgba(255,255,255,0.35);
+}
+
+/* Bottom-Left Player Nameplate Banner (Screenshot 1) */
+.player-nameplate-card {
+  position: absolute;
+  bottom: 24px;
+  left: 28px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #29b6f6 0%, #0288d1 100%);
+  border: 3px solid #ffffff;
+  border-radius: 14px;
+  padding: 8px 14px;
+  min-width: 255px;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.38);
+  pointer-events: auto;
+}
+
+.pnc-crown {
+  font-size: 26px;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.3));
+}
+
+.pnc-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.pnc-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px dashed rgba(255,255,255,0.5);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 900;
+  outline: none;
+  width: 145px;
+}
+
+.pnc-rank {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #e1f5fe;
+  margin-top: 2px;
+}
+
+.pnc-dice {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 2px solid #fff;
+  background: rgba(0,0,0,0.25);
+  cursor: pointer;
+  font-size: 15px;
+}
+
+/* Bottom-Right GIANT PLAY! Button (Screenshot 1) */
+.play-cta-wrap {
+  position: absolute;
+  bottom: 24px;
+  right: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.play-sub-hint {
+  font-size: 13px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.45);
+}
+
+.fg-giant-play-btn {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(180deg, #ff2a85 0%, #e01168 100%);
+  border: 4px solid #ffffff;
+  border-radius: 18px;
+  padding: 12px 42px 12px 24px;
+  cursor: pointer;
+  transform: skewX(-8deg);
+  box-shadow: 0 8px 0 #1c1926, 0 14px 30px rgba(0,0,0,0.45);
+  transition: transform 0.14s, filter 0.14s;
+}
+
+.fg-giant-play-btn:hover {
+  transform: skewX(-8deg) translateY(-3px) scale(1.03);
+  filter: brightness(1.08);
+}
+
+.fg-giant-play-btn:active {
+  transform: skewX(-8deg) translateY(2px);
+}
+
+.play-key-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #1c1926;
+  color: #00e676;
+  font-weight: 900;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: skewX(8deg);
+  border: 2px solid rgba(255,255,255,0.3);
+}
+
+.play-btn-text {
+  font-size: 40px;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 1.5px;
+  text-shadow: 0 4px 0 #9b0047;
+  transform: skewX(8deg);
+}
+
+/* ==================== TAB 2: CUSTOMISE / OUTFITS (Screenshot 4) ==================== */
+.customise-panel {
+  position: absolute;
+  top: 22px;
+  right: 32px;
+  bottom: 28px;
+  width: min(560px, 54vw);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+.custom-subtabs {
+  display: flex;
+  gap: 8px;
+}
+
+.c-subtab {
+  background: #29b6f6;
+  border: 2.5px solid #ffffff;
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 13px;
+  padding: 7px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  transform: skewX(-8deg);
+  box-shadow: 0 4px 0 rgba(0,0,0,0.3);
+}
+
+.c-subtab.active {
+  background: #ff2a85;
+}
+
+.custom-box {
+  flex: 1;
+  background: rgba(0, 176, 212, 0.88);
+  border: 3.5px solid #ffffff;
+  border-radius: 18px;
+  padding: 16px 20px;
+  box-shadow: 0 10px 0 rgba(0,0,0,0.35);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.custom-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2.5px solid rgba(255,255,255,0.55);
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+}
+
+.custom-box-header h3 {
+  font-size: 22px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 2px 0 rgba(0,0,0,0.25);
+}
+
+.rarity-pill {
+  background: #00e676;
+  color: #0b2e13;
+  font-weight: 900;
+  font-size: 11px;
+  padding: 3px 12px;
+  border-radius: 99px;
+  border: 2px solid #ffffff;
+}
+
+.swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+/* Diagonal 2-tone square tile like Fall Guys Outfits */
+.fg-color-tile {
+  aspect-ratio: 1;
+  border-radius: 14px;
+  border: 3px solid rgba(255,255,255,0.75);
+  background: linear-gradient(135deg, var(--c1) 0%, var(--c1) 50%, var(--c2) 50%, var(--c2) 100%);
+  position: relative;
+  cursor: pointer;
+  box-shadow: 0 5px 0 rgba(0,0,0,0.28);
+  transition: transform 0.14s;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 6px;
+}
+
+.fg-color-tile:hover {
+  transform: translateY(-3px) scale(1.04);
+}
+
+.fg-color-tile.active {
+  border: 4px solid #ffffff;
+  box-shadow: 0 0 0 3px #1c1926, 0 8px 16px rgba(0,0,0,0.4);
+}
+
+.tile-check-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ff7043;
+  border: 2px solid #fff;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tile-lock-tag {
+  background: rgba(20, 18, 29, 0.88);
+  color: #ffe600;
+  font-size: 10.5px;
+  font-weight: 900;
+  padding: 3px 8px;
+  border-radius: 8px;
+  border: 1.5px solid #fff;
+  width: 100%;
+  text-align: center;
+}
+
+.costumes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.fg-costume-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(0,0,0,0.18));
+  border: 3px solid #ffffff;
+  border-radius: 16px;
+  padding: 10px;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  box-shadow: 0 5px 0 rgba(0,0,0,0.28);
+  transition: transform 0.14s;
+}
+
+.fg-costume-card:hover {
+  transform: translateY(-3px);
+}
+
+.fg-costume-card.active {
+  background: linear-gradient(180deg, #ff2a85, #ad1457);
+  box-shadow: 0 0 0 3px #ffe600;
+}
+
+.costume-icon-big {
+  font-size: 36px;
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+
+.costume-card-name {
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+/* ==================== TAB 3: SEASON PASS (Screenshot 2) ==================== */
+.season-info-card {
+  max-width: 420px;
+  background: rgba(41, 182, 246, 0.9);
+  border: 3px solid #ffffff;
+  border-radius: 18px;
+  padding: 16px 20px;
+  box-shadow: 0 8px 0 rgba(0,0,0,0.3);
+  pointer-events: auto;
+  margin-top: 12px;
+}
+
+.sic-badge {
+  display: inline-block;
+  background: #ff2a85;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 3px 10px;
+  border-radius: 99px;
+  border: 1.5px solid #fff;
+  margin-bottom: 6px;
+}
+
+.sic-title {
+  font-size: 32px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 3px 0 rgba(0,0,0,0.25);
+}
+
+.sic-desc {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e1f5fe;
+  margin-top: 4px;
+}
+
+.season-track-row {
+  position: absolute;
+  bottom: 26px;
+  left: 28px;
+  right: 28px;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.season-tier-box {
+  background: #29b6f6;
+  border: 3px solid #ffffff;
+  border-radius: 14px;
+  padding: 14px 8px 10px;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 6px 0 #1c1926;
+  cursor: pointer;
+  transition: transform 0.14s;
+}
+
+.season-tier-box:hover {
+  transform: translateY(-4px);
+}
+
+.season-tier-box.unlocked {
+  background: #ff2a85;
+}
+
+.tier-num-hex {
+  position: absolute;
+  top: -13px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ff2a85;
+  border: 2px solid #ffffff;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 2px 9px;
+  border-radius: 6px;
+}
+
+.tier-reward-icon {
+  font-size: 32px;
+  margin: 4px 0;
+}
+
+.tier-reward-name {
+  font-size: 11px;
+  font-weight: 900;
+  color: #fff;
+}
+
+/* ==================== TAB 4: SHOP (Screenshot 3) ==================== */
+.shop-container {
+  display: grid;
+  grid-template-columns: 1fr 250px;
+  gap: 18px;
+  height: calc(100vh - 105px);
+  pointer-events: auto;
+}
+
+.shop-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.35);
+  border-bottom: 2px solid rgba(255,255,255,0.4);
+  padding-bottom: 4px;
+  margin-bottom: 10px;
+}
+
+.shop-timer {
+  background: #1c1926;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+}
+
+.shop-cards-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.shop-cards-row.regular-row {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.fg-shop-card {
+  background: #4dd0e1;
+  border: 3px solid #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 6px 0 #1c1926;
+  cursor: pointer;
+  transition: transform 0.14s;
+}
+
+.fg-shop-card:hover {
+  transform: translateY(-4px);
+}
+
+.shop-card-top {
+  background: #8e24aa;
+  color: #fff;
+  text-align: center;
+  padding: 6px;
+  font-weight: 900;
+  font-size: 13px;
+  border-bottom: 2px solid #ffffff;
+}
+
+.shop-card-top.common {
+  background: #00acc1;
+}
+
+.shop-card-top.rare {
+  background: #00c853;
+}
+
+.shop-card-body {
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.shop-preview-swatch {
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  border: 3px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+}
+
+.shop-price-bar {
+  background: rgba(255,255,255,0.92);
+  color: #1c1926;
+  font-weight: 900;
+  font-size: 13px;
+  padding: 6px 10px;
+  text-align: center;
+  border-top: 2px solid #fff;
+}
+
+.shop-promo-banner {
+  background: linear-gradient(180deg, #1b3b4b 0%, #0d1f2d 100%);
+  border: 3.5px solid #ffffff;
+  border-radius: 18px;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+  box-shadow: 0 8px 0 #1c1926;
+}
+
+.spb-tag {
+  background: #ff2a85;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 4px 12px;
+  border-radius: 99px;
+}
+
+.spb-icon {
+  font-size: 64px;
+  filter: drop-shadow(0 6px 12px rgba(0, 229, 255, 0.5));
+}
+
+.spb-title {
+  font-size: 22px;
+  font-weight: 900;
+  color: #ffe600;
+}
+
+.spb-desc {
+  font-size: 12px;
+  color: #b8b2d8;
+  line-height: 1.4;
+}
+
+.fg-ad-btn {
+  width: 100%;
+  background: linear-gradient(180deg, #00e676 0%, #00b248 100%);
+  border: 2.5px solid #ffffff;
+  border-radius: 12px;
+  padding: 11px 10px;
+  color: #062814;
+  font-weight: 900;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #006024;
+}
+
+/* TAB 5: SETTINGS CARD */
+.settings-card {
+  max-width: 720px;
+  margin: 10px auto;
+  background: rgba(24, 18, 54, 0.92);
+  border: 3px solid #ffffff;
+  border-radius: 22px;
+  padding: 20px 24px;
+  pointer-events: auto;
+  box-shadow: 0 12px 0 rgba(0,0,0,0.4);
+}
+
+.settings-title {
+  font-size: 24px;
+  font-weight: 900;
+  margin-bottom: 4px;
+}
+
+.settings-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.ad-spinner-ring {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  border: 5px solid #00e5ff;
+  margin: 16px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: 900;
+  color: #ffe600;
+}
+
 @media (max-width: 720px) {
   .difficulty-grid {
     grid-template-columns: repeat(2, 1fr);
