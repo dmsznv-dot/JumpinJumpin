@@ -1600,14 +1600,60 @@ html, body {
 /* ==================== TAB 2: CUSTOMISE / OUTFITS (Screenshot 4) ==================== */
 .customise-panel {
   position: absolute;
-  top: 22px;
+  top: 16px;
   right: 32px;
-  bottom: 28px;
-  width: min(560px, 54vw);
+  bottom: 24px;
+  width: min(580px, 55vw);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   pointer-events: auto;
+}
+
+.eye-mode-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(20, 18, 29, 0.88);
+  border: 2.5px solid #ffffff;
+  border-radius: 14px;
+  padding: 6px 14px;
+  box-shadow: 0 5px 0 rgba(0,0,0,0.3);
+}
+
+.eye-mode-label {
+  font-size: 12px;
+  font-weight: 900;
+  color: #ffe600;
+  letter-spacing: 0.5px;
+}
+
+.eye-mode-btns {
+  display: flex;
+  gap: 6px;
+}
+
+.eye-mode-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 5px 12px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: transform 0.12s, background 0.12s;
+}
+
+.eye-mode-btn:hover {
+  transform: translateY(-1px);
+}
+
+.eye-mode-btn.active {
+  background: linear-gradient(135deg, #ff2a85, #ff9100);
+  border-color: #ffffff;
+  box-shadow: 0 3px 8px rgba(255, 42, 133, 0.5);
 }
 
 .custom-subtabs {

@@ -64,7 +64,8 @@
             <span class="cur-val" id="lobby-kudos">0</span>
           </div>
           <button class="top-mini-btn" id="btn-lobby-lb" title="Таблица лидеров">🏆</button>
-          <button class="top-mini-btn" id="btn-lobby-sound" title="Звук Вкл/Выкл">🔊</button>
+          <button class="top-mini-btn" id="btn-lobby-music" title="Фестивальная музыка Вкл/Выкл">🎵</button>
+          <button class="top-mini-btn" id="btn-lobby-sound" title="Звуки Вкл/Выкл">🔊</button>
         </div>
       </nav>
 
@@ -126,13 +127,23 @@
         </div>
       </section>
 
-      <!-- TAB 2: CUSTOMISE / OUTFITS (Pedestal shifts left, Right Panel shows Colours, Patterns, Costumes) -->
+      <!-- TAB 2: CUSTOMISE / OUTFITS (Pedestal shifts left, Right Panel shows Colours, Patterns, Costumes & Eye Goggles) -->
       <section class="lobby-tab-pane hidden" id="pane-custom">
         <div class="customise-panel">
+          <!-- Minion Goggle Eye Mode Selector (1 Eye or 2 Eyes) -->
+          <div class="eye-mode-bar">
+            <span class="eye-mode-label">🥽 МАСКА-ОЧКИ МИНЬОНА:</span>
+            <div class="eye-mode-btns">
+              <button class="eye-mode-btn active" id="btn-eyes-2" data-eyes="2">👀 Два глаза (Дуо)</button>
+              <button class="eye-mode-btn" id="btn-eyes-1" data-eyes="1">👁️ Один глаз (Циклоп)</button>
+            </div>
+          </div>
+
           <!-- Sub-tabs like Fall Guys: COLOUR | PATTERN | COSTUMES -->
           <div class="custom-subtabs">
-            <button class="c-subtab active" data-subtab="colors">🎨 ЦВЕТ ФАСОЛЬКИ</button>
-            <button class="c-subtab" data-subtab="costumes">👑 КОСТЮМЫ И ШЛЯПЫ</button>
+            <button class="c-subtab active" data-subtab="colors">🎨 ЦВЕТА</button>
+            <button class="c-subtab" data-subtab="patterns">🦓 ПАТТЕРНЫ</button>
+            <button class="c-subtab" data-subtab="costumes">👑 КОСТЮМЫ (ВЕРХ+НИЗ)</button>
           </div>
 
           <div class="custom-box">
@@ -144,7 +155,10 @@
             <!-- Grid of Color Swatches (Diagonal Split Squares like Screenshot 4) -->
             <div class="swatch-grid" id="custom-colors-grid"></div>
 
-            <!-- Grid of Costumes (Free, Watch Ad, or Unlock by Wins/Crowns) -->
+            <!-- Grid of Body Patterns -->
+            <div class="costumes-grid hidden" id="custom-patterns-grid"></div>
+
+            <!-- Grid of Full Costumes (Top + Bottom + Detailed Masks) -->
             <div class="costumes-grid hidden" id="custom-costumes-grid"></div>
           </div>
         </div>
@@ -289,7 +303,8 @@
           </div>
         </div>
         <button class="icon-btn" id="btn-leaderboard" title="Таблица лидеров (Tab)">🏆</button>
-        <button class="icon-btn" id="btn-sound" title="Звук Вкл/Выкл (M)">🔊</button>
+        <button class="icon-btn" id="btn-music" title="Фестивальная музыка Вкл/Выкл">🎵</button>
+        <button class="icon-btn" id="btn-sound" title="Звуки Вкл/Выкл (M)">🔊</button>
         <button class="icon-btn" id="btn-menu" title="Выйти в Лобби (Esc)">🏠</button>
       </div>
     </header>

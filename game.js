@@ -83,60 +83,79 @@ const LAYER_THEMES = [
   { name: 'Изумрудное Дно',     top: 0x00e676, rim: 0x008c44, steppedTop: 0xff2a85, steppedRim: 0x880e4f }
 ];
 
-// ==================== КАТАЛОГ ЦВЕТОВЫХ ПАЛИТР И КОСТЮМОВ (ЛОББИ И МАГАЗИН FALL GUYS) ====================
+// ==================== КАТАЛОГ ЦВЕТОВЫХ ПАЛИТР, ПАТТЕРНОВ И ПОЛНЫХ КОСТЮМОВ (FALL GUYS) ====================
 const COLOR_PALETTES = [
-  { id: 'c_pink_yellow', title: 'Розовый Фламинго',  c1: 0xff2a85, c2: 0xffe600, css1: '#ff2a85', css2: '#ffe600', rarity: 'ОБЫЧНЫЙ',    unlockType: 'free',   cost: 0 },
-  { id: 'c_cyan_blue',   title: 'Неоновая Лазурь',   c1: 0x00e5ff, c2: 0x1e40af, css1: '#00e5ff', css2: '#1e40af', rarity: 'ОБЫЧНЫЙ',    unlockType: 'free',   cost: 0 },
-  { id: 'c_lime_choco',  title: 'Мятный Пончик',     c1: 0x00e676, c2: 0x3e2723, css1: '#00e676', css2: '#3e2723', rarity: 'ОБЫЧНЫЙ',    unlockType: 'free',   cost: 0 },
-  { id: 'c_orange_cyan', title: 'Светофор Тусовки',  c1: 0xff9100, c2: 0x00e5ff, css1: '#ff9100', css2: '#00e5ff', rarity: 'РЕДКИЙ',     unlockType: 'ad',     cost: 0 },
-  { id: 'c_purple_lime', title: 'Кибер-Виноград',    c1: 0xd500f9, c2: 0x76ff03, css1: '#d500f9', css2: '#76ff03', rarity: 'РЕДКИЙ',     unlockType: 'ad',     cost: 0 },
-  { id: 'c_red_white',   title: 'Клубничный Крем',   c1: 0xff1744, c2: 0xffffff, css1: '#ff1744', css2: '#ffffff', rarity: 'РЕДКИЙ',     unlockType: 'kudos',  cost: 400 },
-  { id: 'c_aqua_pink',   title: 'Сахарная Вата',     c1: 0x26c6da, c2: 0xf8bbd0, css1: '#26c6da', css2: '#f8bbd0', rarity: 'ЭПИЧЕСКИЙ',  unlockType: 'kudos',  cost: 800 },
-  { id: 'c_gold_ruby',   title: 'Королевское Золото',c1: 0xffd700, c2: 0xb71c1c, css1: '#ffd700', css2: '#b71c1c', rarity: 'ЛЕГЕНДА',    unlockType: 'crowns', cost: 1 }
+  { id: 'c_pink_yellow', title: 'Розовый Фламинго',   c1: 0xff2a85, c2: 0xffe600, css1: '#ff2a85', css2: '#ffe600', defaultPat: 'pat_belly',     rarity: 'ОБЫЧНЫЙ',    unlockType: 'free',   cost: 0 },
+  { id: 'c_cyan_blue',   title: 'Неоновая Лазурь',    c1: 0x00e5ff, c2: 0x1e40af, css1: '#00e5ff', css2: '#1e40af', defaultPat: 'pat_stripes',   rarity: 'ОБЫЧНЫЙ',    unlockType: 'free',   cost: 0 },
+  { id: 'c_lime_choco',  title: 'Мятный Пончик',      c1: 0x00e676, c2: 0x3e2723, css1: '#00e676', css2: '#3e2723', defaultPat: 'pat_polka',     rarity: 'ОБЫЧНЫЙ',    unlockType: 'free',   cost: 0 },
+  { id: 'c_orange_cyan', title: 'Светофор Тусовки',   c1: 0xff9100, c2: 0x00e5ff, css1: '#ff9100', css2: '#00e5ff', defaultPat: 'pat_flames',    rarity: 'РЕДКИЙ',     unlockType: 'ad',     cost: 0 },
+  { id: 'c_purple_lime', title: 'Кибер-Виноград',     c1: 0xd500f9, c2: 0x76ff03, css1: '#d500f9', css2: '#76ff03', defaultPat: 'pat_lightning', rarity: 'РЕДКИЙ',     unlockType: 'ad',     cost: 0 },
+  { id: 'c_red_white',   title: 'Клубничный Крем',    c1: 0xff1744, c2: 0xffffff, css1: '#ff1744', css2: '#ffffff', defaultPat: 'pat_stars',     rarity: 'РЕДКИЙ',     unlockType: 'kudos',  cost: 400 },
+  { id: 'c_aqua_pink',   title: 'Сахарная Вата',      c1: 0x26c6da, c2: 0xff80ab, css1: '#26c6da', css2: '#ff80ab', defaultPat: 'pat_rings',     rarity: 'ЭПИЧЕСКИЙ',  unlockType: 'kudos',  cost: 800 },
+  { id: 'c_gold_ruby',   title: 'Королевское Золото', c1: 0xffd700, c2: 0xb71c1c, css1: '#ffd700', css2: '#b71c1c', defaultPat: 'pat_diamonds',  rarity: 'ЛЕГЕНДА',    unlockType: 'crowns', cost: 1 }
+];
+
+const PATTERN_ITEMS = [
+  { id: 'pat_belly',     title: 'Пузико Пингвина',    icon: '🐧', pattern: 'belly',     rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
+  { id: 'pat_stripes',   title: 'Тигровые Полосы',    icon: '🐯', pattern: 'stripes',   rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
+  { id: 'pat_polka',     title: 'Конфетти Горошек',   icon: '⚪', pattern: 'polka',     rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
+  { id: 'pat_flames',    title: 'Пламя Турбо-Гонки',  icon: '🔥', pattern: 'flames',    rarity: 'РЕДКИЙ',    unlockType: 'ad',     cost: 0 },
+  { id: 'pat_stars',     title: 'Звёздный Шоумен',    icon: '⭐', pattern: 'stars',     rarity: 'РЕДКИЙ',    unlockType: 'ad',     cost: 0 },
+  { id: 'pat_lightning', title: 'Неоновые Молнии',    icon: '⚡', pattern: 'lightning', rarity: 'РЕДКИЙ',    unlockType: 'kudos',  cost: 450 },
+  { id: 'pat_rings',     title: 'Волны Гипноза',      icon: '🌀', pattern: 'rings',     rarity: 'ЭПИЧЕСКИЙ', unlockType: 'kudos',  cost: 750 },
+  { id: 'pat_diamonds',  title: 'Королевский Арлекин',icon: '♦️', pattern: 'diamonds',  rarity: 'ЛЕГЕНДА',   unlockType: 'crowns', cost: 1 }
 ];
 
 const COSTUME_ITEMS = [
-  { id: 'hat_none',    title: 'Классическая Фасоль', icon: '🙂', hat: 'none',    rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
-  { id: 'hat_ears',    title: 'Ушки Тигрёнка',       icon: '🐯', hat: 'ears',    rarity: 'ОБЫЧНЫЙ',   unlockType: 'ad',     cost: 0 },
-  { id: 'hat_chef',    title: 'Повар Пельмешек',     icon: '🍓', hat: 'chef',    rarity: 'РЕДКИЙ',    unlockType: 'ad',     cost: 0 },
-  { id: 'hat_dino',    title: 'Дино-Гребень',        icon: '🦖', hat: 'dino',    rarity: 'РЕДКИЙ',    unlockType: 'ad',     cost: 0 },
-  { id: 'hat_horns',   title: 'Кибер-Рожки',         icon: '⚡', hat: 'horns',   rarity: 'РЕДКИЙ',    unlockType: 'kudos',  cost: 600 },
-  { id: 'hat_fin',     title: 'Акула Тусовщик',      icon: '🦈', hat: 'fin',     rarity: 'ЭПИЧЕСКИЙ', unlockType: 'crowns', cost: 1 },
-  { id: 'hat_antenna', title: 'Космо-Пришелец',      icon: '👽', hat: 'antenna', rarity: 'ЭПИЧЕСКИЙ', unlockType: 'crowns', cost: 2 },
-  { id: 'hat_crown',   title: 'Золотая Корона',      icon: '👑', hat: 'crown',   rarity: 'ЛЕГЕНДА',   unlockType: 'crowns', cost: 3 }
+  { id: 'hat_none',      title: 'Классическая Фасоль', sub: 'Очки Миньона + Кеды',            icon: '🥽', hat: 'none',      rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
+  { id: 'hat_dino',      title: 'Ти-Рекс Динозавр',    sub: 'Пасть с зубами + Шипы + Хвост',  icon: '🦖', hat: 'dino',      rarity: 'РЕДКИЙ',    unlockType: 'ad',     cost: 0 },
+  { id: 'hat_hotdog',    title: 'Сочный Хот-Дог',      sub: 'Булочка + Горчица + Шорты',      icon: '🌭', hat: 'hotdog',    rarity: 'РЕДКИЙ',    unlockType: 'ad',     cost: 0 },
+  { id: 'hat_pirate',    title: 'Капитан Пират',       sub: 'Треуголка + Камзол + Ремень',    icon: '🏴‍☠️', hat: 'pirate',    rarity: 'РЕДКИЙ',    unlockType: 'ad',     cost: 0 },
+  { id: 'hat_chicken',   title: 'Боевой Петушок',      sub: 'Гребешок + Клюв + Крылья + Хвост',icon: '🐓', hat: 'chicken',   rarity: 'РЕДКИЙ',    unlockType: 'kudos',  cost: 450 },
+  { id: 'hat_astronaut', title: 'Звёздный Астронавт',  sub: 'Купол-шлем + Джетпак + Скафандр',icon: '👩‍🚀', hat: 'astronaut', rarity: 'ЭПИЧЕСКИЙ', unlockType: 'kudos',  cost: 750 },
+  { id: 'hat_samurai',   title: 'Кибер-Самурай',       sub: 'Шлем Кабуто + Маска Они + Броня',icon: '👹', hat: 'samurai',   rarity: 'ЭПИЧЕСКИЙ', unlockType: 'crowns', cost: 1 },
+  { id: 'hat_wizard',    title: 'Верховный Чародей',   sub: 'Шляпа со звёздами + Борода + Плащ',icon: '🧙‍♂️', hat: 'wizard',  rarity: 'ЭПИЧЕСКИЙ', unlockType: 'crowns', cost: 1 },
+  { id: 'hat_pineapple', title: 'Тропический Ананас',  sub: 'Корона листьев + Очки + Юбка',   icon: '🍍', hat: 'pineapple', rarity: 'ЛЕГЕНДА',   unlockType: 'crowns', cost: 2 },
+  { id: 'hat_king',      title: 'Император Короны',    sub: 'Золотая Корона + Царская Мантия',icon: '👑', hat: 'king',      rarity: 'ЛЕГЕНДА',   unlockType: 'crowns', cost: 3 }
 ];
 
 const SEASON_TIERS = [
-  { level: 1, xpReq: 0,    title: 'Старт Сезона',       icon: '🎨', rewardText: 'Базовые цвета' },
+  { level: 1, xpReq: 0,    title: 'Старт Сезона',       icon: '🥽', rewardText: 'Очки Миньона' },
   { level: 2, xpReq: 300,  title: 'Бонус Лавров',       icon: '🟣', rewardText: '+300 Лавров' },
-  { level: 3, xpReq: 700,  title: 'Светофор Тусовки',   icon: '🟧', rewardText: 'Цвет фасольки' },
-  { level: 4, xpReq: 1200, title: 'Дино-Гребень',       icon: '🦖', rewardText: 'Костюм Дино' },
+  { level: 3, xpReq: 700,  title: 'Пламя Турбо-Гонки',  icon: '🔥', rewardText: 'Паттерн Пламя' },
+  { level: 4, xpReq: 1200, title: 'Ти-Рекс Динозавр',   icon: '🦖', rewardText: 'Полный Костюм' },
   { level: 5, xpReq: 1800, title: 'Кубок Чемпиона',     icon: '👑', rewardText: '+1 Корона' },
-  { level: 6, xpReq: 2500, title: 'Акула Тусовщик',     icon: '🦈', rewardText: 'Эпик Костюм' },
-  { level: 7, xpReq: 3500, title: 'Золотая Корона',     icon: '🏆', rewardText: 'Легенда Шоу' }
+  { level: 6, xpReq: 2500, title: 'Кибер-Самурай',      icon: '👹', rewardText: 'Броня + Маска' },
+  { level: 7, xpReq: 3500, title: 'Император Короны',   icon: '🏆', rewardText: 'Мантия + Корона' }
 ];
 
-// Совместимый массив SKINS для генерации разнообразных ботов на арене
+// Разнообразные скины ботов (с 1 и 2 глазами-очками миньона, разными паттернами и полными костюмами)
 const SKINS = [
-  { id: 0, title: 'Королевский Розовый', icon: '👑', c1: 0xff2a85, c2: 0xffe600, hat: 'crown' },
-  { id: 1, title: 'Кибер-Гонщик',        icon: '⚡', c1: 0x00e5ff, c2: 0x1e40af, hat: 'horns' },
-  { id: 2, title: 'Дино-Завр',           icon: '🦖', c1: 0x00e676, c2: 0x3e2723, hat: 'dino' },
-  { id: 3, title: 'Тигровый Прыгун',     icon: '🐯', c1: 0xff9100, c2: 0x00e5ff, hat: 'ears' },
-  { id: 4, title: 'Космо-Пришелец',      icon: '👽', c1: 0xd500f9, c2: 0x76ff03, hat: 'antenna' },
-  { id: 5, title: 'Золотой Рыцарь',      icon: '🏆', c1: 0xffd700, c2: 0xb71c1c, hat: 'crown' },
-  { id: 6, title: 'Повар Пельмешек',     icon: '🍓', c1: 0xff1744, c2: 0xffffff, hat: 'chef' },
-  { id: 7, title: 'Акула-Тусовщик',      icon: '🦈', c1: 0x26c6da, c2: 0xf8bbd0, hat: 'fin' }
+  { id: 0, title: 'Ти-Рекс Завр',       icon: '🦖', c1: 0x00e676, c2: 0xffe600, css1: '#00e676', css2: '#ffe600', pattern: 'stripes',   hat: 'dino',      eyeCount: 2 },
+  { id: 1, title: 'Сочный Хот-Дог',     icon: '🌭', c1: 0xff2a85, c2: 0xffe600, css1: '#ff2a85', css2: '#ffe600', pattern: 'belly',     hat: 'hotdog',    eyeCount: 1 },
+  { id: 2, title: 'Капитан Пират',      icon: '🏴‍☠️', c1: 0x00e5ff, c2: 0x1e40af, css1: '#00e5ff', css2: '#1e40af', pattern: 'stripes',   hat: 'pirate',    eyeCount: 1 },
+  { id: 3, title: 'Боевой Петушок',     icon: '🐓', c1: 0xff9100, c2: 0xffffff, css1: '#ff9100', css2: '#ffffff', pattern: 'polka',     hat: 'chicken',   eyeCount: 2 },
+  { id: 4, title: 'Звёздный Астронавт', icon: '👩‍🚀', c1: 0xd500f9, c2: 0x76ff03, css1: '#d500f9', css2: '#76ff03', pattern: 'stars',     hat: 'astronaut', eyeCount: 1 },
+  { id: 5, title: 'Кибер-Самурай',      icon: '👹', c1: 0xff1744, c2: 0xffd700, css1: '#ff1744', css2: '#ffd700', pattern: 'flames',    hat: 'samurai',   eyeCount: 2 },
+  { id: 6, title: 'Верховный Чародей',  icon: '🧙‍♂️', c1: 0x26c6da, c2: 0xff80ab, css1: '#26c6da', css2: '#ff80ab', pattern: 'stars',     hat: 'wizard',    eyeCount: 2 },
+  { id: 7, title: 'Тропический Ананас', icon: '🍍', c1: 0xffd700, c2: 0x00e676, css1: '#ffd700', css2: '#00e676', pattern: 'diamonds',  hat: 'pineapple', eyeCount: 1 },
+  { id: 8, title: 'Император Короны',   icon: '👑', c1: 0xffd700, c2: 0xb71c1c, css1: '#ffd700', css2: '#b71c1c', pattern: 'diamonds',  hat: 'king',      eyeCount: 2 }
 ];
 
 function getPlayerComposedSkin() {
   const col = COLOR_PALETTES.find(c => c.id === saveData.selectedColorId) || COLOR_PALETTES[0];
+  const pat = PATTERN_ITEMS.find(p => p.id === saveData.selectedPatternId) || PATTERN_ITEMS[0];
   const cos = COSTUME_ITEMS.find(h => h.id === saveData.selectedCostumeId) || COSTUME_ITEMS[0];
   return {
     title: `${col.title} • ${cos.title}`,
     icon: cos.icon,
     c1: col.c1,
     c2: col.c2,
-    hat: cos.hat
+    css1: col.css1,
+    css2: col.css2,
+    pattern: pat.pattern,
+    hat: cos.hat,
+    eyeCount: saveData.eyeCount === 1 ? 1 : 2
   };
 }
 
@@ -188,7 +207,7 @@ function generateFunnyBotNames(count) {
   return result;
 }
 
-// ==================== ПРОЦЕДУРНЫЙ ЗВУКОВОЙ ДВИЖОК ====================
+// ==================== ПРОЦЕДУРНЫЙ ЗВУКОВОЙ ДВИЖОК + ФЕСТИВАЛЬНАЯ МУЗЫКА FALL GUYS ====================
 class SoundFX {
   constructor() {
     this.ctx = null;
@@ -216,10 +235,20 @@ class SoundFX {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(320 + Math.random() * 50, now);
       osc.frequency.exponentialRampToValueAtTime(175, now + 0.08);
-      gain.gain.setValueAtTime(0.055, now);
+      gain.gain.setValueAtTime(0.05, now);
       gain.gain.linearRampToValueAtTime(0.001, now + 0.08);
       osc.start(now);
       osc.stop(now + 0.085);
+    } else if (type === 'bump') {
+      // Упругое столкновение двух пухлых фасолинок (Boing + Thump!)
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(145, now);
+      osc.frequency.exponentialRampToValueAtTime(340, now + 0.07);
+      osc.frequency.exponentialRampToValueAtTime(110, now + 0.19);
+      gain.gain.setValueAtTime(0.16, now);
+      gain.gain.linearRampToValueAtTime(0.001, now + 0.19);
+      osc.start(now);
+      osc.stop(now + 0.20);
     } else if (type === 'break') {
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(160, now);
@@ -239,19 +268,19 @@ class SoundFX {
     } else if (type === 'jump') {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(250, now);
-      osc.frequency.exponentialRampToValueAtTime(550, now + 0.18);
-      gain.gain.setValueAtTime(0.12, now);
-      gain.gain.linearRampToValueAtTime(0.001, now + 0.18);
+      osc.frequency.exponentialRampToValueAtTime(520, now + 0.17);
+      gain.gain.setValueAtTime(0.11, now);
+      gain.gain.linearRampToValueAtTime(0.001, now + 0.17);
       osc.start(now);
-      osc.stop(now + 0.19);
+      osc.stop(now + 0.18);
     } else if (type === 'spring') {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(220, now);
-      osc.frequency.exponentialRampToValueAtTime(820, now + 0.32);
-      gain.gain.setValueAtTime(0.15, now);
-      gain.gain.linearRampToValueAtTime(0.001, now + 0.32);
+      osc.frequency.exponentialRampToValueAtTime(760, now + 0.28);
+      gain.gain.setValueAtTime(0.14, now);
+      gain.gain.linearRampToValueAtTime(0.001, now + 0.28);
       osc.start(now);
-      osc.stop(now + 0.33);
+      osc.stop(now + 0.29);
     } else if (type === 'dive') {
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(390, now);
@@ -320,12 +349,356 @@ class SoundFX {
 
 const sfx = new SoundFX();
 
+// Заряжающий фестивальный синтезатор музыки в стиле Fall Guys ("Everybody Falls" / "Survive the Fall")
+class FestivalMusicEngine {
+  constructor() {
+    this.isPlaying = false;
+    this.muted = false;
+    this.mode = 'lobby'; // 'lobby' (126 BPM) | 'arena' (136 BPM)
+    this.step = 0;
+    this.nextNoteTime = 0;
+    this.timerId = null;
+    this.masterGain = null;
+    this.noiseBuffer = null;
+  }
+
+  ensureContext() {
+    sfx.init();
+    const ctx = sfx.ctx;
+    if (!ctx) return null;
+    if (!this.masterGain) {
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.setValueAtTime(-16, ctx.currentTime);
+      comp.ratio.setValueAtTime(4, ctx.currentTime);
+      comp.connect(ctx.destination);
+
+      this.masterGain = ctx.createGain();
+      this.masterGain.gain.setValueAtTime(this.muted ? 0 : 0.28, ctx.currentTime);
+      this.masterGain.connect(comp);
+
+      // Буфер белого шума для хай-хэтов и фестивального хлопка (Clap/Snare)
+      const bufSize = ctx.sampleRate * 0.25;
+      this.noiseBuffer = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+      const data = this.noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+    }
+    return ctx;
+  }
+
+  start() {
+    const ctx = this.ensureContext();
+    if (!ctx || this.isPlaying) return;
+    this.isPlaying = true;
+    this.step = 0;
+    this.nextNoteTime = ctx.currentTime + 0.05;
+    this.timerId = setInterval(() => this.scheduler(), 25);
+  }
+
+  setMode(newMode) {
+    if (this.mode !== newMode) {
+      this.mode = newMode;
+      this.step = 0;
+    }
+  }
+
+  toggleMute() {
+    this.muted = !this.muted;
+    const ctx = this.ensureContext();
+    if (ctx && this.masterGain) {
+      this.masterGain.gain.setTargetAtTime(this.muted ? 0 : 0.28, ctx.currentTime, 0.05);
+    }
+    if (!this.isPlaying && !this.muted) this.start();
+    return this.muted;
+  }
+
+  midiToFreq(m) {
+    return 440 * Math.pow(2, (m - 69) / 12);
+  }
+
+  playKick(ctx, t, punch = 1.0) {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(155, t);
+    osc.frequency.exponentialRampToValueAtTime(44, t + 0.11);
+    g.gain.setValueAtTime(0.45 * punch, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+    osc.connect(g);
+    g.connect(this.masterGain);
+    osc.start(t);
+    osc.stop(t + 0.17);
+  }
+
+  playSnareClap(ctx, t) {
+    if (this.noiseBuffer) {
+      const src = ctx.createBufferSource();
+      src.buffer = this.noiseBuffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1600, t);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.24, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
+      src.connect(filter);
+      filter.connect(g);
+      g.connect(this.masterGain);
+      src.start(t);
+      src.stop(t + 0.14);
+    }
+    const osc = ctx.createOscillator();
+    const og = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(210, t);
+    osc.frequency.exponentialRampToValueAtTime(110, t + 0.07);
+    og.gain.setValueAtTime(0.18, t);
+    og.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+    osc.connect(og);
+    og.connect(this.masterGain);
+    osc.start(t);
+    osc.stop(t + 0.09);
+  }
+
+  playHiHat(ctx, t, open = false) {
+    if (!this.noiseBuffer) return;
+    const src = ctx.createBufferSource();
+    src.buffer = this.noiseBuffer;
+    const hp = ctx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.setValueAtTime(7500, t);
+    const g = ctx.createGain();
+    const dur = open ? 0.11 : 0.038;
+    g.gain.setValueAtTime(open ? 0.11 : 0.06, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    src.connect(hp);
+    hp.connect(g);
+    g.connect(this.masterGain);
+    src.start(t);
+    src.stop(t + dur + 0.01);
+  }
+
+  playFunkBass(ctx, t, midi, dur) {
+    const osc = ctx.createOscillator();
+    const sub = ctx.createOscillator();
+    const filter = ctx.createBiquadFilter();
+    const g = ctx.createGain();
+
+    const freq = this.midiToFreq(midi);
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(freq, t);
+    sub.type = 'square';
+    sub.frequency.setValueAtTime(freq * 0.5, t);
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1350, t);
+    filter.frequency.exponentialRampToValueAtTime(280, t + dur * 0.85);
+    filter.Q.setValueAtTime(3.5, t);
+
+    g.gain.setValueAtTime(0.22, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+
+    osc.connect(filter);
+    sub.connect(filter);
+    filter.connect(g);
+    g.connect(this.masterGain);
+
+    osc.start(t);
+    sub.start(t);
+    osc.stop(t + dur + 0.01);
+    sub.stop(t + dur + 0.01);
+  }
+
+  playBrassLead(ctx, t, midi, dur, slideFromMidi = null) {
+    // Яркий двухголосный фестивальный Brass-Synth как в главной теме Fall Guys!
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const filter = ctx.createBiquadFilter();
+    const g = ctx.createGain();
+
+    const targetFreq = this.midiToFreq(midi);
+    const startFreq = slideFromMidi ? this.midiToFreq(slideFromMidi) : targetFreq;
+
+    osc1.type = 'sawtooth';
+    osc2.type = 'square';
+    osc1.frequency.setValueAtTime(startFreq, t);
+    osc2.frequency.setValueAtTime(startFreq * 1.005, t);
+    if (slideFromMidi) {
+      osc1.frequency.exponentialRampToValueAtTime(targetFreq, t + 0.045);
+      osc2.frequency.exponentialRampToValueAtTime(targetFreq * 1.005, t + 0.045);
+    }
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(420, t);
+    filter.frequency.exponentialRampToValueAtTime(3200, t + 0.035);
+    filter.frequency.exponentialRampToValueAtTime(1600, t + dur);
+
+    g.gain.setValueAtTime(0.001, t);
+    g.gain.linearRampToValueAtTime(0.16, t + 0.018);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+
+    osc1.connect(filter);
+    osc2.connect(filter);
+    filter.connect(g);
+    g.connect(this.masterGain);
+
+    osc1.start(t);
+    osc2.start(t);
+    osc1.stop(t + dur + 0.015);
+    osc2.stop(t + dur + 0.015);
+  }
+
+  playMarimbaChord(ctx, t, midis, dur) {
+    midis.forEach((m) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(this.midiToFreq(m), t);
+      g.gain.setValueAtTime(0.075, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      osc.connect(g);
+      g.connect(this.masterGain);
+      osc.start(t);
+      osc.stop(t + dur + 0.01);
+    });
+  }
+
+  playFestivalWhistle(ctx, t) {
+    // Карнавальный свисток/колокольчик на сильных долях припева
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1567.98, t); // G6
+    osc.frequency.setValueAtTime(1760.0, t + 0.06); // A6
+    g.gain.setValueAtTime(0.07, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+    osc.connect(g);
+    g.connect(this.masterGain);
+    osc.start(t);
+    osc.stop(t + 0.17);
+  }
+
+  scheduleStep(ctx, stepIdx, t) {
+    const s = stepIdx % 64; // 4 такта по 16 шестнадцатых долей
+    const bar = Math.floor(s / 16);
+    const inBar = s % 16;
+
+    const bpm = this.mode === 'arena' ? 136 : 126;
+    const stepDur = (60 / bpm) / 4;
+
+    if (this.mode === 'lobby') {
+      // ===== ФЕСТИВАЛЬНОЕ ЛОББИ (Bouncy Funk-Pop Groove в Фа-мажоре / Ре-миноре) =====
+      if (inBar % 4 === 0) this.playKick(ctx, t, 0.85);
+      if (inBar === 4 || inBar === 12) this.playSnareClap(ctx, t);
+      if (inBar % 2 === 1) this.playHiHat(ctx, t, inBar === 7 || inBar === 15);
+
+      const lobbyBass = [
+        [53, 0, 53, 65, 53, 0, 55, 57, 58, 0, 58, 70, 60, 0, 62, 64],
+        [53, 0, 53, 65, 53, 0, 55, 57, 62, 0, 60, 0,  58, 0, 55, 57],
+        [50, 0, 50, 62, 52, 0, 53, 55, 58, 0, 58, 70, 60, 0, 62, 64],
+        [53, 0, 55, 0,  57, 0, 58, 0,  60, 60, 0, 60, 65, 0, 60, 57]
+      ];
+      const bNote = lobbyBass[bar][inBar];
+      if (bNote > 0) this.playFunkBass(ctx, t, bNote, stepDur * 1.7);
+
+      // Праздничные аккорды маримбы на слабую долю
+      if (inBar === 2 || inBar === 6 || inBar === 10 || inBar === 14) {
+        const chords = [
+          [65, 69, 72], // F maj
+          [67, 70, 74], // Gm
+          [62, 65, 69], // Dm
+          [60, 64, 67]  // C maj
+        ];
+        this.playMarimbaChord(ctx, t, chords[bar], stepDur * 2.1);
+      }
+
+      // Залипательная мелодия синтезатора Лобби
+      const lobbyLead = [
+        [77, 0, 81, 0, 84, 81, 77, 0, 79, 0, 77, 74, 72, 0, 0, 0],
+        [77, 0, 81, 0, 84, 86, 84, 0, 81, 0, 79, 77, 79, 0, 0, 0],
+        [74, 0, 77, 0, 81, 77, 74, 0, 79, 0, 81, 82, 84, 0, 81, 0],
+        [86, 84, 81, 79, 77, 0, 74, 77, 79, 0, 76, 0, 77, 0, 0, 0]
+      ];
+      const lNote = lobbyLead[bar][inBar];
+      if (lNote > 0) {
+        this.playBrassLead(ctx, t, lNote, stepDur * 1.9, inBar === 0 ? lNote - 2 : null);
+      }
+    } else {
+      // ===== ЗАРЯЖАЮЩИЙ ГИМН АРЕНЫ ШОУ (136 BPM High-Energy Festival Game Show!) =====
+      if (inBar % 4 === 0 || (bar === 3 && inBar === 14)) this.playKick(ctx, t, 1.0);
+      if (inBar === 4 || inBar === 12 || (bar === 3 && inBar === 15)) this.playSnareClap(ctx, t);
+      this.playHiHat(ctx, t, inBar % 4 === 2);
+
+      if (inBar === 0 && (bar === 0 || bar === 2)) {
+        this.playFestivalWhistle(ctx, t);
+      }
+
+      // Октавный драйвовый фанк-бас
+      const arenaBass = [
+        [55, 67, 55, 67, 55, 67, 58, 60, 62, 74, 62, 74, 60, 72, 58, 60],
+        [55, 67, 55, 67, 55, 67, 58, 60, 65, 77, 63, 75, 62, 74, 60, 58],
+        [51, 63, 51, 63, 53, 65, 53, 65, 55, 67, 55, 67, 58, 70, 60, 72],
+        [62, 62, 0,  62, 63, 63, 0,  63, 65, 65, 0,  65, 67, 65, 62, 58]
+      ];
+      const abNote = arenaBass[bar][inBar];
+      if (abNote > 0) this.playFunkBass(ctx, t, abNote, stepDur * 1.45);
+
+      // Мощный фестивальный Brass-хук (в духе Everybody Falls!)
+      const arenaLead = [
+        [79, 0, 79, 82, 86, 0, 84, 82, 84, 0, 79, 77, 79, 0, 74, 0],
+        [79, 0, 79, 82, 86, 0, 89, 86, 84, 0, 82, 79, 81, 0, 0,  0],
+        [75, 0, 79, 0,  77, 0, 81, 0,  79, 82, 86, 84, 82, 0, 79, 0],
+        [86, 86, 0, 86, 87, 87, 0, 87, 89, 89, 0, 89, 91, 89, 86, 82]
+      ];
+      const alNote = arenaLead[bar][inBar];
+      if (alNote > 0) {
+        this.playBrassLead(ctx, t, alNote, stepDur * 1.8, (inBar === 4 || inBar === 12) ? alNote - 2 : null);
+      }
+
+      // Праздничная гармоническая подложка
+      if (inBar === 0 || inBar === 8) {
+        const showChords = [
+          [67, 70, 74], // Gm
+          [65, 69, 72], // F
+          [63, 67, 70], // Eb
+          [62, 66, 69]  // D7
+        ];
+        this.playMarimbaChord(ctx, t, showChords[bar], stepDur * 3.5);
+      }
+    }
+  }
+
+  scheduler() {
+    const ctx = sfx.ctx;
+    if (!ctx || !this.isPlaying) return;
+    const bpm = this.mode === 'arena' ? 136 : 126;
+    const stepDur = (60 / bpm) / 4;
+
+    while (this.nextNoteTime < ctx.currentTime + 0.12) {
+      if (!this.muted && !sfx.muted) {
+        this.scheduleStep(ctx, this.step, this.nextNoteTime);
+      }
+      this.nextNoteTime += stepDur;
+      this.step++;
+    }
+  }
+}
+
+const music = new FestivalMusicEngine();
+
+// Автозапуск фестивальной музыки при первом клике или нажатии клавиши
+function tryAutoStartMusic() {
+  if (!music.isPlaying) {
+    music.start();
+  }
+}
+window.addEventListener('pointerdown', tryAutoStartMusic, { once: true });
+window.addEventListener('keydown', tryAutoStartMusic, { once: true });
+
 // ==================== 3D МИРОВЫЕ КОНСТАНТЫ (В МЕТРАХ THREE.JS) ====================
 // В Three.js Y — это высота вверх, а X и Z — горизонтальная плоскость гекса-яруса!
 const HEX_RADIUS = 2.25;      // радиус одной шестиугольной 3D-плитки
 const HEX_GAP_SCALE = 0.94;   // небольшой зазор между сотами для чёткой читаемости
 const HEX_THICKNESS = 0.55;   // толщина 3D-призмы соты
-const LAYER_HEIGHT_GAP = 10.5;// расстояние по высоте (Y) между ярусами
+const LAYER_HEIGHT_GAP = 17.5;// увеличенная высота между ярусами, чтобы при прыжках камера никогда не заходила в верхний этаж!
 const SQRT3 = Math.sqrt(3);
 
 function axialToWorldXZ(q, r) {
@@ -364,22 +737,25 @@ function hexDistance(q1, r1, q2, r2) {
 }
 
 // ==================== СОХРАНЕНИЯ И ЛИДЕРБОРД ====================
-const STORAGE_KEY = 'hex_fall_guys_save_v4';
+const STORAGE_KEY = 'hex_fall_guys_save_v5';
 
 function loadSaveData() {
   let data = null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('hex_fall_guys_save_v3');
+    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('hex_fall_guys_save_v4') || localStorage.getItem('hex_fall_guys_save_v3');
     if (raw) data = JSON.parse(raw);
   } catch (e) {}
 
   const defaults = {
     playerName: 'СуперФасолька',
     skinIndex: 0,
-    selectedColorId: 'c_lime_choco',
-    selectedCostumeId: 'hat_none',
+    eyeCount: 2, // 2 = два отдельных глаза в маске Миньона, 1 = один большой глаз-циклоп Миньона
+    selectedColorId: 'c_pink_yellow',
+    selectedPatternId: 'pat_stripes',
+    selectedCostumeId: 'hat_dino',
     unlockedColors: ['c_pink_yellow', 'c_cyan_blue', 'c_lime_choco'],
-    unlockedCostumes: ['hat_none'],
+    unlockedPatterns: ['pat_belly', 'pat_stripes', 'pat_polka'],
+    unlockedCostumes: ['hat_none', 'hat_dino'],
     difficulty: 'normal',
     crowns: 0,
     kudos: 350,
@@ -409,6 +785,7 @@ function loadSaveData() {
     ...defaults,
     ...data,
     unlockedColors: Array.isArray(data.unlockedColors) ? data.unlockedColors : defaults.unlockedColors,
+    unlockedPatterns: Array.isArray(data.unlockedPatterns) ? data.unlockedPatterns : defaults.unlockedPatterns,
     unlockedCostumes: Array.isArray(data.unlockedCostumes) ? data.unlockedCostumes : defaults.unlockedCostumes
   };
 }
@@ -887,9 +1264,10 @@ class HexTile3D {
     if (actor && actor.buffs.ghost > 0) return;
 
     if (this.specialType === 'spring' && actor && actor.vy <= 1.0) {
-      actor.vy = 21.5;
+      // Умеренный батутный прыжок, чтобы персонаж всегда оставался в кадре и не улетал под потолок верхнего этажа
+      actor.vy = 15.4;
       actor.onGround = false;
-      actor.squash = -0.32;
+      actor.squash = -0.28;
       sfx.play('spring');
       spawnParticles3D(this.x, this.baseY + 0.5, this.z, 0x00e676, 12);
     }
@@ -1026,61 +1404,301 @@ function processRegenQueue() {
   }
 }
 
-// ==================== СОЗДАНИЕ 3D-МОДЕЛИ ФАСОЛИНКИ (FALL GUYS BEAN) ====================
+// ==================== ГЕНЕРАЦИЯ ПРОЦЕДУРНЫХ ПАТТЕРНОВ ДЛЯ РАСКРАСКИ ФАСОЛЬКИ ====================
+const patternTextureCache = new Map();
+
+function hexToCss(hexNum) {
+  return '#' + Number(hexNum).toString(16).padStart(6, '0');
+}
+
+function drawStarShape(ctx, cx, cy, spikes, outerR, innerR) {
+  let rot = Math.PI / 2 * 3;
+  const step = Math.PI / spikes;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - outerR);
+  for (let i = 0; i < spikes; i++) {
+    ctx.lineTo(cx + Math.cos(rot) * outerR, cy + Math.sin(rot) * outerR);
+    rot += step;
+    ctx.lineTo(cx + Math.cos(rot) * innerR, cy + Math.sin(rot) * innerR);
+    rot += step;
+  }
+  ctx.closePath();
+  ctx.fill();
+}
+
+function getBeanPatternTexture(c1Hex, c2Hex, patternId = 'belly') {
+  const key = `${c1Hex}_${c2Hex}_${patternId}`;
+  if (patternTextureCache.has(key)) return patternTextureCache.get(key);
+
+  const cnv = document.createElement('canvas');
+  cnv.width = 512;
+  cnv.height = 512;
+  const ctx = cnv.getContext('2d');
+
+  const col1 = hexToCss(c1Hex);
+  const col2 = hexToCss(c2Hex);
+
+  // Базовая заливка цветом 1
+  ctx.fillStyle = col1;
+  ctx.fillRect(0, 0, 512, 512);
+  ctx.fillStyle = col2;
+  ctx.strokeStyle = col2;
+
+  if (patternId === 'belly') {
+    // Овальное контрастное пузико спереди и сердечко/эмблема
+    ctx.beginPath();
+    ctx.ellipse(256, 305, 92, 130, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Полоска на макушке
+    ctx.fillRect(0, 0, 512, 55);
+  } else if (patternId === 'stripes') {
+    // Выразительные тигровые диагональные и поперечные полосы
+    for (let y = -120; y < 620; y += 64) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.quadraticCurveTo(160, y + 28, 320, y - 12);
+      ctx.quadraticCurveTo(420, y - 30, 512, y + 10);
+      ctx.lineTo(512, y + 34);
+      ctx.quadraticCurveTo(360, y + 4, 200, y + 44);
+      ctx.lineTo(0, y + 28);
+      ctx.closePath();
+      ctx.fill();
+    }
+  } else if (patternId === 'polka') {
+    // Крупный праздничный горошек / конфетти по всему телу
+    const rows = 6;
+    const cols = 6;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const px = (c + (r % 2) * 0.5) * (512 / cols);
+        const py = (r + 0.5) * (512 / rows);
+        ctx.beginPath();
+        ctx.arc(px % 512, py, 26, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  } else if (patternId === 'flames') {
+    // Языки гоночного пламени снизу вверх + воротник сверху
+    ctx.fillRect(0, 390, 512, 122);
+    const flameCount = 10;
+    const fw = 512 / flameCount;
+    for (let i = 0; i < flameCount; i++) {
+      const fx = i * fw;
+      const fh = (i % 2 === 0) ? 185 : 135;
+      ctx.beginPath();
+      ctx.moveTo(fx, 410);
+      ctx.quadraticCurveTo(fx + fw * 0.35, 410 - fh * 0.6, fx + fw * 0.5, 410 - fh);
+      ctx.quadraticCurveTo(fx + fw * 0.65, 410 - fh * 0.6, fx + fw, 410);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.fillRect(0, 0, 512, 65);
+  } else if (patternId === 'stars') {
+    // Россыпь пятиконечных звёзд
+    const starCoords = [
+      [80, 90, 28], [220, 75, 24], [380, 95, 30], [460, 170, 22],
+      [130, 195, 32], [270, 185, 36], [395, 220, 26], [60, 290, 25],
+      [185, 310, 34], [320, 300, 32], [445, 325, 28], [110, 410, 26],
+      [256, 415, 34], [385, 420, 28]
+    ];
+    for (const [sx, sy, sr] of starCoords) {
+      drawStarShape(ctx, sx, sy, 5, sr, sr * 0.45);
+    }
+  } else if (patternId === 'lightning') {
+    // Острые зигзаги-молнии вокруг корпуса
+    ctx.lineWidth = 26;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (let yBase = 95; yBase <= 415; yBase += 105) {
+      ctx.beginPath();
+      for (let x = 0; x <= 512; x += 64) {
+        const dy = ((x / 64) % 2 === 0) ? -28 : 28;
+        if (x === 0) ctx.moveTo(x, yBase + dy);
+        else ctx.lineTo(x, yBase + dy);
+      }
+      ctx.stroke();
+    }
+  } else if (patternId === 'rings') {
+    // Гипнотические концентрические мишени и волны
+    ctx.lineWidth = 20;
+    const centers = [[256, 265], [0, 265], [512, 265]];
+    for (const [cx, cy] of centers) {
+      for (let rad = 32; rad <= 145; rad += 38) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+  } else if (patternId === 'diamonds') {
+    // Королевский ромбовидный узор Арлекин
+    const size = 64;
+    for (let y = 0; y < 512; y += size) {
+      for (let x = 0; x < 512; x += size) {
+        ctx.beginPath();
+        ctx.moveTo(x + size / 2, y);
+        ctx.lineTo(x + size, y + size / 2);
+        ctx.lineTo(x + size / 2, y + size);
+        ctx.lineTo(x, y + size / 2);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+  }
+
+  const tex = new THREE.CanvasTexture(cnv);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.needsUpdate = true;
+  patternTextureCache.set(key, tex);
+  return tex;
+}
+
+// ==================== СОЗДАНИЕ 3D-МОДЕЛИ ФАСОЛИНКИ (ОЧКИ МИНЬОНА + ПАТТЕРН + ПОЛНЫЙ КОСТЮМ ВЕРХ И НИЗ) ====================
 function createBean3DMesh(skin) {
   const root = new THREE.Group();
   const bodyPivot = new THREE.Group();
   root.add(bodyPivot);
 
+  const patTex = getBeanPatternTexture(skin.c1, skin.c2, skin.pattern || 'belly');
+
+  // Материал туловища с процедурным 2D-паттерном поверх белой базы, чтобы оба цвета паттерна были яркими и сочными!
   const mainMat = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    map: patTex,
+    roughness: 0.30,
+    metalness: 0.06
+  });
+  const primarySolidMat = new THREE.MeshStandardMaterial({
     color: skin.c1,
     roughness: 0.32,
     metalness: 0.06
   });
   const subMat = new THREE.MeshStandardMaterial({
     color: skin.c2,
-    roughness: 0.38,
+    roughness: 0.36,
     metalness: 0.08
   });
   const whiteMat = new THREE.MeshStandardMaterial({
     color: 0xffffff,
-    roughness: 0.2
+    roughness: 0.18
   });
   const darkMat = new THREE.MeshStandardMaterial({
-    color: 0x140a28,
-    roughness: 0.2
+    color: 0x161224,
+    roughness: 0.25
+  });
+  const chromeMat = new THREE.MeshStandardMaterial({
+    color: 0xd0d7de,
+    metalness: 0.72,
+    roughness: 0.22
+  });
+  const goldMat = new THREE.MeshStandardMaterial({
+    color: 0xffd700,
+    metalness: 0.68,
+    roughness: 0.22
   });
 
-  // 1. Туловище-капсула (Bean Torso)
-  const torsoGeo = new THREE.CapsuleGeometry(0.62, 0.56, 16, 24);
+  // 1. Туловище-капсула (Bean Torso) с паттерном раскраски
+  const torsoGeo = new THREE.CapsuleGeometry(0.62, 0.56, 16, 28);
   const torsoMesh = new THREE.Mesh(torsoGeo, mainMat);
   torsoMesh.position.y = 1.12;
   torsoMesh.castShadow = true;
   torsoMesh.receiveShadow = true;
   bodyPivot.add(torsoMesh);
 
-  // Нижний пояс / штанишки
-  const pantsGeo = new THREE.CylinderGeometry(0.635, 0.58, 0.42, 24);
-  const pantsMesh = new THREE.Mesh(pantsGeo, subMat);
-  pantsMesh.position.y = 0.78;
-  bodyPivot.add(pantsMesh);
+  // 2. МАСКА-ОЧКИ КАК У МИНЬОНОВ (с выбором: 1 глаз-циклоп или 2 раздельных глаза!)
+  const goggleGroup = new THREE.Group();
+  bodyPivot.add(goggleGroup);
 
-  // 2. Белое лицевое окошко (Faceplate Visor) спереди (+Z направление взгляда)
-  const faceplateGeo = new THREE.SphereGeometry(0.44, 20, 16);
-  faceplateGeo.scale(1.05, 0.76, 0.45);
-  const faceplateMesh = new THREE.Mesh(faceplateGeo, whiteMat);
-  faceplateMesh.position.set(0, 1.28, 0.45);
-  bodyPivot.add(faceplateMesh);
+  // Чёрный прорезиненный ремешок очков вокруг головы
+  const strapGeo = new THREE.CylinderGeometry(0.632, 0.632, 0.14, 28, 1, true);
+  const strapMesh = new THREE.Mesh(strapGeo, darkMat);
+  strapMesh.position.y = 1.34;
+  goggleGroup.add(strapMesh);
 
-  // Выразительные глазки-бусинки
-  const eyeGeo = new THREE.CapsuleGeometry(0.065, 0.07, 8, 8);
-  const leftEye = new THREE.Mesh(eyeGeo, darkMat);
-  leftEye.position.set(-0.16, 1.30, 0.63);
-  bodyPivot.add(leftEye);
+  // Тёмная подложка маски на лице, в которую встроены очки-окуляры
+  const maskPlateGeo = new THREE.SphereGeometry(0.45, 20, 16);
+  maskPlateGeo.scale(1.08, 0.64, 0.38);
+  const maskPlate = new THREE.Mesh(maskPlateGeo, darkMat);
+  maskPlate.position.set(0, 1.34, 0.45);
+  goggleGroup.add(maskPlate);
 
-  const rightEye = new THREE.Mesh(eyeGeo, darkMat);
-  rightEye.position.set(0.16, 1.30, 0.63);
-  bodyPivot.add(rightEye);
+  // Вспомогательная функция создания одного детализированного окуляра Миньона (корпус + белок + радужка + зрачок + блик)
+  function buildMinionGoggleEye(radius, posX, posY, posZ, rotY = 0) {
+    const eyeUnit = new THREE.Group();
+    eyeUnit.position.set(posX, posY, posZ);
+    eyeUnit.rotation.y = rotY;
+
+    // Металлическая оправа окуляра (Torus + цилиндрический ободок)
+    const rim = new THREE.Mesh(
+      new THREE.TorusGeometry(radius, radius * 0.24, 14, 28),
+      chromeMat
+    );
+    eyeUnit.add(rim);
+
+    const barrel = new THREE.Mesh(
+      new THREE.CylinderGeometry(radius * 1.02, radius * 1.02, 0.12, 24, 1, true),
+      chromeMat
+    );
+    barrel.rotation.x = Math.PI / 2;
+    barrel.position.z = -0.04;
+    eyeUnit.add(barrel);
+
+    // Выпуклое белое глазное яблоко внутри оправы
+    const sclera = new THREE.Mesh(
+      new THREE.SphereGeometry(radius * 0.86, 18, 16),
+      whiteMat
+    );
+    sclera.scale.set(1, 1, 0.42);
+    sclera.position.z = -0.01;
+    eyeUnit.add(sclera);
+
+    // Тёпло-каряя/янтарная радужка
+    const irisMat = new THREE.MeshStandardMaterial({ color: 0x6d4c41, roughness: 0.2 });
+    const iris = new THREE.Mesh(
+      new THREE.CircleGeometry(radius * 0.46, 20),
+      irisMat
+    );
+    iris.position.z = radius * 0.37;
+    eyeUnit.add(iris);
+
+    // Чёрный зрачок
+    const pupil = new THREE.Mesh(
+      new THREE.CircleGeometry(radius * 0.25, 18),
+      darkMat
+    );
+    pupil.position.z = radius * 0.385;
+    eyeUnit.add(pupil);
+
+    // Живой белый блик в глазу
+    const glint = new THREE.Mesh(
+      new THREE.CircleGeometry(radius * 0.10, 12),
+      new THREE.MeshBasicMaterial({ color: 0xffffff })
+    );
+    glint.position.set(radius * 0.14, radius * 0.14, radius * 0.395);
+    eyeUnit.add(glint);
+
+    // Болтик-заклёпка сбоку оправы
+    const bolt = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.05, 0.05), chromeMat);
+    bolt.position.set(posX >= 0 ? radius * 1.12 : -radius * 1.12, 0, 0);
+    eyeUnit.add(bolt);
+
+    return eyeUnit;
+  }
+
+  const eyeCount = skin.eyeCount === 1 ? 1 : 2;
+  if (eyeCount === 1) {
+    // 👁️ ОДИН БОЛЬШОЙ ГЛАЗ-ЦИКЛОП (как у Стюарта из Миньонов)
+    const singleEye = buildMinionGoggleEye(0.215, 0, 1.34, 0.62, 0);
+    goggleGroup.add(singleEye);
+  } else {
+    // 👀 ДВА ОТДЕЛЬНЫХ ГЛАЗА В ОПРАВЕ С ПЕРЕНОСИЦЕЙ (разнесены по X на ±0.215, чтобы никогда не сливались!)
+    const leftGoggle = buildMinionGoggleEye(0.155, -0.215, 1.34, 0.59, -0.14);
+    const rightGoggle = buildMinionGoggleEye(0.155, 0.215, 1.34, 0.59, 0.14);
+    // Перемычка очков посередине
+    const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.045, 0.05), chromeMat);
+    bridge.position.set(0, 1.34, 0.61);
+    goggleGroup.add(leftGoggle, rightGoggle, bridge);
+  }
 
   // 3. Шарнирные ножки с ботиночками
   const legGeo = new THREE.CapsuleGeometry(0.17, 0.24, 8, 12);
@@ -1104,7 +1722,7 @@ function createBean3DMesh(skin) {
   const armGeo = new THREE.CapsuleGeometry(0.145, 0.34, 8, 12);
   const leftArm = new THREE.Group();
   leftArm.position.set(-0.68, 1.18, 0);
-  const leftHand = new THREE.Mesh(armGeo, mainMat);
+  const leftHand = new THREE.Mesh(armGeo, primarySolidMat);
   leftHand.position.y = -0.18;
   leftHand.castShadow = true;
   leftArm.add(leftHand);
@@ -1113,67 +1731,329 @@ function createBean3DMesh(skin) {
 
   const rightArm = new THREE.Group();
   rightArm.position.set(0.68, 1.18, 0);
-  const rightHand = new THREE.Mesh(armGeo, mainMat);
+  const rightHand = new THREE.Mesh(armGeo, primarySolidMat);
   rightHand.position.y = -0.18;
   rightHand.castShadow = true;
   rightArm.add(rightHand);
   rightArm.rotation.z = -0.22;
   bodyPivot.add(rightArm);
 
-  // 5. 3D Аксессуар / Корона / Шляпа на макушке
+  // ==================== 5. ПОЛНЫЕ ВЫРАЗИТЕЛЬНЫЕ 3D-КОСТЮМЫ (ВЕРХ + НИЗ + МАСКИ / ХВОСТЫ / ДОСПЕХИ) ====================
+  const costumeGroup = new THREE.Group();
+  bodyPivot.add(costumeGroup);
+
   const hatGroup = new THREE.Group();
-  hatGroup.position.set(0, 1.98, 0);
+  hatGroup.position.set(0, 1.92, 0);
   bodyPivot.add(hatGroup);
 
-  if (skin.hat === 'crown') {
-    const crownMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.65, roughness: 0.2 });
-    const crownBase = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.28, 0.26, 7), crownMat);
-    hatGroup.add(crownBase);
-  } else if (skin.hat === 'dino') {
-    for (let i = -1; i <= 1; i++) {
-      const spike = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.34, 8), subMat);
-      spike.position.set(0, -0.05, i * 0.24);
-      hatGroup.add(spike);
+  // Базовые штанишки/пояс (переопределяются полными костюмами)
+  const pantsGeo = new THREE.CylinderGeometry(0.642, 0.585, 0.40, 24);
+  const pantsMat = new THREE.MeshStandardMaterial({ color: skin.c2, roughness: 0.38 });
+  const pantsMesh = new THREE.Mesh(pantsGeo, pantsMat);
+  pantsMesh.position.y = 0.72;
+  costumeGroup.add(pantsMesh);
+
+  const cType = skin.hat || 'none';
+
+  if (cType === 'dino') {
+    // 🦖 КОСТЮМ ТИ-РЕКСА (ВЕРХ: пасть динозавра с белыми 3D-зубами + спинной гребень | НИЗ: зелёный пояс + длинный хвост)
+    const dinoMat = new THREE.MeshStandardMaterial({ color: 0x00c853, roughness: 0.35 });
+    const bellyScaleMat = new THREE.MeshStandardMaterial({ color: 0xffe082, roughness: 0.4 });
+    pantsMat.color.setHex(0x009624);
+
+    // Верхняя челюсть-капюшон над очками
+    const snout = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.34, 0.68), dinoMat);
+    snout.position.set(0, -0.02, 0.16);
+    hatGroup.add(snout);
+
+    // Ноздри и глаза динозавра на капюшоне
+    const nostrilL = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), darkMat);
+    nostrilL.position.set(-0.20, 0.14, 0.44);
+    const nostrilR = nostrilL.clone();
+    nostrilR.position.x = 0.20;
+    hatGroup.add(nostrilL, nostrilR);
+
+    // Ряд белых острых зубов под верхней челюстью
+    for (let i = -2; i <= 2; i++) {
+      const tooth = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.14, 6), whiteMat);
+      tooth.rotation.x = Math.PI;
+      tooth.position.set(i * 0.13, -0.22, 0.46);
+      hatGroup.add(tooth);
     }
-  } else if (skin.hat === 'ears') {
-    const earGeo = new THREE.SphereGeometry(0.18, 12, 12);
-    const e1 = new THREE.Mesh(earGeo, subMat);
-    e1.position.set(-0.34, -0.06, 0);
-    const e2 = new THREE.Mesh(earGeo, subMat);
-    e2.position.set(0.34, -0.06, 0);
-    hatGroup.add(e1, e2);
-  } else if (skin.hat === 'antenna') {
-    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.35, 8), subMat);
-    stem.position.y = 0.12;
-    const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 12), new THREE.MeshBasicMaterial({ color: 0x00e676 }));
-    bulb.position.y = 0.32;
-    hatGroup.add(stem, bulb);
-  } else if (skin.hat === 'chef') {
-    const toque = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.28, 0.38, 16), whiteMat);
-    toque.position.y = 0.12;
-    hatGroup.add(toque);
-  } else if (skin.hat === 'fin') {
-    const fin = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.45, 4), mainMat);
-    fin.position.y = 0.15;
-    hatGroup.add(fin);
-  } else if (skin.hat === 'horns') {
-    const hGeo = new THREE.ConeGeometry(0.11, 0.34, 8);
-    const h1 = new THREE.Mesh(hGeo, new THREE.MeshBasicMaterial({ color: 0x00e5ff }));
-    h1.position.set(-0.28, 0.08, 0);
-    h1.rotation.z = 0.35;
-    const h2 = new THREE.Mesh(hGeo, new THREE.MeshBasicMaterial({ color: 0x00e5ff }));
-    h2.position.set(0.28, 0.08, 0);
-    h2.rotation.z = -0.35;
-    hatGroup.add(h1, h2);
+
+    // Гребень из жёлтых шипов от макушки вдоль спины до хвоста
+    for (let s = 0; s < 5; s++) {
+      const spike = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.32, 8), bellyScaleMat);
+      spike.rotation.x = -0.85;
+      spike.position.set(0, 1.82 - s * 0.25, -0.52 - (s === 2 ? 0.08 : 0));
+      costumeGroup.add(spike);
+    }
+
+    // Длинный изогнутый 3D-хвост динозавра сзади (Низ)
+    const tail = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.95, 12), dinoMat);
+    tail.rotation.x = -Math.PI * 0.42;
+    tail.position.set(0, 0.68, -0.86);
+    costumeGroup.add(tail);
+  } else if (cType === 'hotdog') {
+    // 🌭 ПОЛНЫЙ КОСТЮМ СОЧНОГО ХОТ-ДОГА (Боковые половинки пышной булочки + волна горчицы + шорты)
+    const bunMat = new THREE.MeshStandardMaterial({ color: 0xe69a45, roughness: 0.48 });
+    const sausageMat = new THREE.MeshStandardMaterial({ color: 0xc62828, roughness: 0.32 });
+    const mustardMat = new THREE.MeshStandardMaterial({ color: 0xffea00, roughness: 0.25 });
+    pantsMat.color.setHex(0xb71c1c);
+
+    // Левая и правая половинки пышной булочки по бокам туловища
+    const bunGeo = new THREE.CapsuleGeometry(0.32, 0.72, 12, 18);
+    const leftBun = new THREE.Mesh(bunGeo, bunMat);
+    leftBun.position.set(-0.48, 1.12, -0.05);
+    const rightBun = new THREE.Mesh(bunGeo, bunMat);
+    rightBun.position.set(0.48, 1.12, -0.05);
+    costumeGroup.add(leftBun, rightBun);
+
+    // Верхушка сосиски на голове
+    const topDog = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.42, 0.28, 18), sausageMat);
+    topDog.position.y = -0.02;
+    hatGroup.add(topDog);
+
+    // Зигзаг горчицы на животике
+    for (let i = 0; i < 4; i++) {
+      const zig = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.085, 0.12), mustardMat);
+      zig.position.set((i % 2 === 0 ? -0.04 : 0.04), 1.05 - i * 0.12, 0.61);
+      zig.rotation.z = (i % 2 === 0) ? 0.28 : -0.28;
+      costumeGroup.add(zig);
+    }
+  } else if (cType === 'pirate') {
+    // 🏴‍☠️ КАПИТАН ПИРАТ (ВЕРХ: треуголка с золотым кантом и пером + эполеты | НИЗ: широкий пояс с пряжкой и камзол)
+    const tricornMat = new THREE.MeshStandardMaterial({ color: 0x1b162a, roughness: 0.4 });
+    const coatMat = new THREE.MeshStandardMaterial({ color: 0x8e0000, roughness: 0.38 });
+    pantsMat.color.setHex(0x1f2937);
+
+    // Широкая треуголка
+    const hatBrim = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.52, 0.26, 3), tricornMat);
+    hatBrim.rotation.y = Math.PI;
+    hatBrim.position.y = 0.02;
+    hatGroup.add(hatBrim);
+
+    // Золотой кант и красное перо на треуголке
+    const feather = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.52, 8), new THREE.MeshStandardMaterial({ color: 0xff1744 }));
+    feather.position.set(0.36, 0.24, 0);
+    feather.rotation.z = -0.35;
+    hatGroup.add(feather);
+
+    // Золотые эполеты на плечах (Верх)
+    const epL = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.12, 0.34), goldMat);
+    epL.position.set(-0.62, 1.44, 0);
+    const epR = epL.clone();
+    epR.position.x = 0.62;
+    costumeGroup.add(epL, epR);
+
+    // Полы капитанского камзола и широкий кожаный ремень с золотой пряжкой (Низ)
+    const coatSkirt = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.72, 0.42, 24, 1, true), coatMat);
+    coatSkirt.position.y = 0.85;
+    costumeGroup.add(coatSkirt);
+
+    const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.66, 0.66, 0.14, 24), darkMat);
+    belt.position.y = 0.88;
+    const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.20, 0.10), goldMat);
+    buckle.position.set(0, 0.88, 0.64);
+    costumeGroup.add(belt, buckle);
+  } else if (cType === 'chicken') {
+    // 🐓 БОЕВОЙ ПЕТУШОК (ВЕРХ: красный гребешок + жёлтый клюв + крылышки | НИЗ: пуховые штанишки + хвост + оранжевые лапки)
+    const combMat = new THREE.MeshStandardMaterial({ color: 0xff1744, roughness: 0.3 });
+    const beakMat = new THREE.MeshStandardMaterial({ color: 0xffab00, roughness: 0.25 });
+    pantsMat.color.setHex(0xffffff);
+    leftFoot.material = beakMat;
+    rightFoot.material = beakMat;
+
+    // Трёхзубчатый красный гребешок на макушке
+    for (let i = -1; i <= 1; i++) {
+      const lobe = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 12), combMat);
+      lobe.scale.set(0.65, 1.35, 1.0);
+      lobe.position.set(0, 0.08 + (1 - Math.abs(i)) * 0.06, i * 0.20);
+      hatGroup.add(lobe);
+    }
+
+    // Объёмный жёлтый клюв под очками Миньона и красная бородка
+    const beak = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.34, 8), beakMat);
+    beak.rotation.x = Math.PI / 2;
+    beak.position.set(0, 1.12, 0.74);
+    const wattle = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 10), combMat);
+    wattle.position.set(0, 0.99, 0.66);
+    costumeGroup.add(beak, wattle);
+
+    // Пышный перьевой хвост сзади (Низ)
+    for (let t = -1; t <= 1; t++) {
+      const tailFeather = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.48, 8), whiteMat);
+      tailFeather.rotation.x = -0.8;
+      tailFeather.rotation.z = t * 0.32;
+      tailFeather.position.set(t * 0.14, 0.78, -0.72);
+      costumeGroup.add(tailFeather);
+    }
+  } else if (cType === 'astronaut') {
+    // 👩‍🚀 ЗВЁЗДНЫЙ АСТРОНАВТ (ВЕРХ: прозрачный купол шлема + реактивный джетпак + нагрудный пульт | НИЗ: пояс скафандра)
+    const suitMat = new THREE.MeshStandardMaterial({ color: 0xeceff1, roughness: 0.25, metalness: 0.15 });
+    pantsMat.color.setHex(0xcfd8dc);
+
+    // Прозрачный стеклянный купол гермошлема вокруг головы
+    const glassMat = new THREE.MeshStandardMaterial({
+      color: 0x80d8ff,
+      transparent: true,
+      opacity: 0.34,
+      roughness: 0.08,
+      metalness: 0.2
+    });
+    const helmetDome = new THREE.Mesh(new THREE.SphereGeometry(0.74, 24, 20), glassMat);
+    helmetDome.position.set(0, 1.40, 0.04);
+    costumeGroup.add(helmetDome);
+
+    // Золотое шейное кольцо скафандра
+    const neckRing = new THREE.Mesh(new THREE.TorusGeometry(0.64, 0.065, 12, 28), goldMat);
+    neckRing.rotation.x = Math.PI / 2;
+    neckRing.position.y = 1.05;
+    costumeGroup.add(neckRing);
+
+    // Двухсопловый реактивный джетпак за спиной
+    const packBox = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.62, 0.34), suitMat);
+    packBox.position.set(0, 1.22, -0.68);
+    const thrusterL = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.24, 12), darkMat);
+    thrusterL.position.set(-0.20, 0.84, -0.68);
+    const thrusterR = thrusterL.clone();
+    thrusterR.position.x = 0.20;
+    costumeGroup.add(packBox, thrusterL, thrusterR);
+
+    // Нагрудная панель управления
+    const chestPad = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.26, 0.10), suitMat);
+    chestPad.position.set(0, 0.94, 0.60);
+    costumeGroup.add(chestPad);
+  } else if (cType === 'samurai') {
+    // 👹 КИБЕР-САМУРАЙ (ВЕРХ: шлем Кабуто с рогами-полумесяцем + демоническая маска Мэнгу + наплечники | НИЗ: юбка-доспех)
+    const armorMat = new THREE.MeshStandardMaterial({ color: 0xb71c1c, roughness: 0.3, metalness: 0.25 });
+    pantsMat.color.setHex(0x1b162a);
+
+    // Купол шлема Кабуто и боковые пластины Сикоро
+    const kabuto = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.72, 0.32, 16), darkMat);
+    kabuto.position.y = 0.02;
+    hatGroup.add(kabuto);
+
+    // Золотой рогатый полумесяц Кувагата на лбу шлема
+    const hornL = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.48, 8), goldMat);
+    hornL.position.set(-0.26, 0.22, 0.38);
+    hornL.rotation.z = 0.48;
+    const hornR = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.48, 8), goldMat);
+    hornR.position.set(0.26, 0.22, 0.38);
+    hornR.rotation.z = -0.48;
+    hatGroup.add(hornL, hornR);
+
+    // Детализированная маска демона Они (Мэнгу) на нижней половине лица с белыми клыками
+    const mengu = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.24, 0.26), armorMat);
+    mengu.position.set(0, 1.08, 0.56);
+    const fangL = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.13, 6), whiteMat);
+    fangL.position.set(-0.18, 1.16, 0.68);
+    const fangR = fangL.clone();
+    fangR.position.x = 0.18;
+    costumeGroup.add(mengu, fangL, fangR);
+
+    // Самурайские наплечники (Содэ) и боевая юбка-доспех (Кусадзури) внизу
+    const sodeL = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.32, 0.42), armorMat);
+    sodeL.position.set(-0.72, 1.28, 0);
+    const sodeR = sodeL.clone();
+    sodeR.position.x = 0.72;
+
+    const armorSkirt = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.76, 0.38, 8), armorMat);
+    armorSkirt.position.y = 0.74;
+    const goldBelt = new THREE.Mesh(new THREE.CylinderGeometry(0.66, 0.66, 0.10, 24), goldMat);
+    goldBelt.position.y = 0.90;
+    costumeGroup.add(sodeL, sodeR, armorSkirt, goldBelt);
+  } else if (cType === 'wizard') {
+    // 🧙‍♂️ ВЕРХОВНЫЙ ЧАРОДЕЙ (ВЕРХ: высокая шляпа мага + пушистая белая борода + плащ | НИЗ: мантия и пояс со сферой)
+    const wizMat = new THREE.MeshStandardMaterial({ color: 0x4a148c, roughness: 0.38 });
+    pantsMat.color.setHex(0x311b92);
+
+    // Широкие поля и высокий конус шляпы волшебника
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.88, 0.88, 0.06, 24), wizMat);
+    brim.position.y = -0.05;
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.46, 0.88, 18), wizMat);
+    cone.position.y = 0.38;
+    cone.rotation.z = -0.12;
+    const hatBand = new THREE.Mesh(new THREE.CylinderGeometry(0.47, 0.48, 0.10, 18), goldMat);
+    hatBand.position.y = 0.02;
+    hatGroup.add(brim, cone, hatBand);
+
+    // Пышная белоснежная 3D-борода под очками Миньона
+    const beardMain = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.62, 14), whiteMat);
+    beardMain.rotation.x = Math.PI;
+    beardMain.position.set(0, 0.92, 0.56);
+    costumeGroup.add(beardMain);
+
+    // Магический плащ за спиной и золотой пояс со светящейся сферой (Низ)
+    const cape = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.78, 1.05, 16, 1, true, Math.PI * 0.6, Math.PI * 0.8), wizMat);
+    cape.position.set(0, 1.05, -0.08);
+    const orb = new THREE.Mesh(new THREE.SphereGeometry(0.13, 14, 14), new THREE.MeshBasicMaterial({ color: 0x00e5ff }));
+    orb.position.set(0, 0.84, 0.66);
+    costumeGroup.add(cape, orb);
+  } else if (cType === 'pineapple') {
+    // 🍍 ТРОПИЧЕСКИЙ АНАНАС (ВЕРХ: корона зелёных листьев + неоновые очки-жалюзи | НИЗ: гавайская травяная юбочка)
+    const leafMat = new THREE.MeshStandardMaterial({ color: 0x00e676, roughness: 0.32 });
+    const shadesMat = new THREE.MeshStandardMaterial({ color: 0xff2a85, roughness: 0.2 });
+    pantsMat.color.setHex(0x00c853);
+
+    // Пышный пучок листьев ананаса на макушке
+    for (let i = 0; i < 7; i++) {
+      const ang = (i / 7) * Math.PI * 2;
+      const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.62, 6), leafMat);
+      leaf.position.set(Math.cos(ang) * 0.16, 0.22, Math.sin(ang) * 0.16);
+      leaf.rotation.x = Math.sin(ang) * 0.45;
+      leaf.rotation.z = -Math.cos(ang) * 0.45;
+      hatGroup.add(leaf);
+    }
+
+    // Модные тропические козырьки над окулярами
+    const visorBar = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.08, 0.16), shadesMat);
+    visorBar.position.set(0, 1.49, 0.60);
+    costumeGroup.add(visorBar);
+
+    // Гавайская юбочка из листьев вокруг пояса (Низ)
+    for (let k = 0; k < 12; k++) {
+      const a = (k / 12) * Math.PI * 2;
+      const frond = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.42, 5), leafMat);
+      frond.rotation.x = Math.PI;
+      frond.position.set(Math.cos(a) * 0.64, 0.72, Math.sin(a) * 0.64);
+      costumeGroup.add(frond);
+    }
+  } else if (cType === 'king' || cType === 'crown') {
+    // 👑 ИМПЕРАТОР КОРОНЫ (ВЕРХ: большая золотая корона с рубинами + горностаевый воротник + мантия | НИЗ: царский кушак)
+    const velvetMat = new THREE.MeshStandardMaterial({ color: 0xb71c1c, roughness: 0.35 });
+    pantsMat.color.setHex(0x880e4f);
+
+    // Большая золотая корона с бархатным куполом и самоцветами
+    const crownCyl = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.36, 0.32, 8), goldMat);
+    crownCyl.position.y = 0.10;
+    const innerVelvet = new THREE.Mesh(new THREE.SphereGeometry(0.36, 14, 12), velvetMat);
+    innerVelvet.position.y = 0.14;
+    hatGroup.add(crownCyl, innerVelvet);
+
+    // Пышный белый горностаевый воротник вокруг плеч и пурпурная мантия за спиной
+    const furCollar = new THREE.Mesh(new THREE.TorusGeometry(0.58, 0.14, 12, 24), whiteMat);
+    furCollar.rotation.x = Math.PI / 2;
+    furCollar.position.y = 1.54;
+
+    const royalCape = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.56, 0.84, 1.15, 18, 1, true, Math.PI * 0.55, Math.PI * 0.9),
+      velvetMat
+    );
+    royalCape.position.set(0, 1.02, -0.10);
+
+    const goldSash = new THREE.Mesh(new THREE.CylinderGeometry(0.66, 0.66, 0.14, 24), goldMat);
+    goldSash.position.y = 0.86;
+    costumeGroup.add(furCollar, royalCape, goldSash);
   }
 
   // Тень-блоб под ногами (проектируется ровно на поверхность соты под персонажем для 100% читаемости прыжка!)
-  const shadowGeo = new THREE.CircleGeometry(0.65, 20);
+  const shadowGeo = new THREE.CircleGeometry(0.68, 20);
   shadowGeo.rotateX(-Math.PI / 2);
   const shadowMat = new THREE.MeshBasicMaterial({
     color: 0x000000,
     transparent: true,
-    opacity: 0.42,
+    opacity: 0.44,
     depthWrite: false
   });
   const blobShadow = new THREE.Mesh(shadowGeo, shadowMat);
@@ -1218,7 +2098,12 @@ class Actor3D {
     this.vy = 0;
     this.vz = 0;
 
-    this.radius = 0.72; // радиус капсулы персонажа в метрах
+    // Импульс физического отталкивания при столкновении двух фасолинок
+    this.knockVx = 0;
+    this.knockVz = 0;
+    this.bumpCooldown = 0;
+
+    this.radius = 0.80; // увеличенный физический радиус капсулы с учётом костюма для честных столкновений
     this.facing = Math.atan2(-startX, -startZ); // угол поворота в плоскости XZ (0 смотрит вдоль +Z)
     this.visualFacing = this.facing;
 
@@ -1277,11 +2162,12 @@ class Actor3D {
   jump() {
     if (!this.alive || state.phase !== 'playing') return false;
     if (this.onGround || this.jumpCount < this.getMaxJumps()) {
-      const boost = this.buffs.feather > 0 ? 1.22 : 1.0;
-      this.vy = 14.2 * boost;
+      // Аккуратный прыжок (и ослабленный бонус Грави-перьев), чтобы камера всегда держала фасольку в идеальном ракурсе
+      const boost = this.buffs.feather > 0 ? 1.06 : 1.0;
+      this.vy = 12.4 * boost;
       this.onGround = false;
       this.jumpCount++;
-      this.squash = -0.28;
+      this.squash = -0.25;
       if (this.isPlayer) sfx.play('jump');
       spawnParticles3D(this.x, this.y + 0.3, this.z, 0xffffff, 6);
       return true;
@@ -1296,28 +2182,29 @@ class Actor3D {
     this.diveTimer = 0.42;
     this.squash = -0.20;
 
-    const diveSpeed = 13.8;
+    const diveSpeed = 13.5;
     this.vx = Math.sin(this.facing) * diveSpeed;
     this.vz = Math.cos(this.facing) * diveSpeed;
-    this.vy = this.onGround ? 7.5 : Math.max(this.vy, 6.2);
+    this.vy = this.onGround ? 6.8 : Math.max(this.vy, 5.5);
     this.onGround = false;
 
     if (this.isPlayer) sfx.play('dive');
     spawnParticles3D(this.x, this.y + 0.8, this.z, 0xff9100, 8);
 
-    // Расталкиваем соперников впереди
+    // Мощный толчок соперников при нырке вперёд
     state.actors.forEach(other => {
       if (other !== this && other.alive && Math.abs(other.y - this.y) < 2.5) {
         const dx = other.x - this.x;
         const dz = other.z - this.z;
         const dist = Math.hypot(dx, dz);
-        if (dist < 3.2 && dist > 0.01) {
-          other.vx += (dx / dist) * 14.0;
-          other.vz += (dz / dist) * 14.0;
-          other.vy = 8.5;
+        if (dist < 3.4 && dist > 0.01) {
+          other.knockVx += (dx / dist) * 14.5;
+          other.knockVz += (dz / dist) * 14.5;
+          other.vy = 7.2;
           other.onGround = false;
-          other.squash = 0.28;
+          other.squash = 0.32;
           this.score += 35;
+          if (this.isPlayer || other.isPlayer) sfx.play('bump');
         }
       }
     });
@@ -1505,14 +2392,16 @@ function startMatch() {
   document.getElementById('lb-modal').classList.add('hidden');
   document.getElementById('killfeed').innerHTML = '';
 
-  // Включаем 3D-арену и фон телешоу
+  // Включаем 3D-арену, фон телешоу и переключаем фестивальный синтезатор на драйвовый ритм шоу (136 BPM)!
+  music.start();
+  music.setMode('arena');
   lobbyGroup.visible = false;
   stadiumGroup.visible = true;
   arenaGroup.visible = true;
   actorsGroup.visible = true;
   fxGroup.visible = true;
   scene.background = new THREE.Color(0x180e3a);
-  scene.fog = new THREE.FogExp2(0x180e3a, 0.0065);
+  scene.fog = new THREE.FogExp2(0x180e3a, 0.0055);
 
   clearActorsAndFX();
   buildArena3D(config);
@@ -2153,6 +3042,7 @@ function updateWorld3D(dt, nowSec) {
       if (actor.buffs[k] > 0) actor.buffs[k] = Math.max(0, actor.buffs[k] - simDt);
     }
     if (actor.diveCooldown > 0) actor.diveCooldown = Math.max(0, actor.diveCooldown - simDt);
+    if (actor.bumpCooldown > 0) actor.bumpCooldown = Math.max(0, actor.bumpCooldown - simDt);
     if (actor.isDiving) {
       actor.diveTimer -= simDt;
       if (actor.diveTimer <= 0) actor.isDiving = false;
@@ -2165,10 +3055,15 @@ function updateWorld3D(dt, nowSec) {
     const prevY = actor.y;
     const wasOnGround = actor.onGround;
 
-    actor.x += actor.vx * simDt;
-    actor.z += actor.vz * simDt;
+    // Плавное затухание импульса отталкивания от столкновений с другими фасольками
+    const knockDecay = Math.max(0, 1 - simDt * 5.2);
+    actor.knockVx *= knockDecay;
+    actor.knockVz *= knockDecay;
 
-    const gravity = actor.buffs.feather > 0 && actor.vy < 0 ? 19.0 : 30.0;
+    actor.x += (actor.vx + actor.knockVx) * simDt;
+    actor.z += (actor.vz + actor.knockVz) * simDt;
+
+    const gravity = actor.buffs.feather > 0 && actor.vy < 0 ? 23.5 : 30.0;
     actor.vy -= gravity * simDt;
     actor.y += actor.vy * simDt;
 
@@ -2225,8 +3120,8 @@ function updateWorld3D(dt, nowSec) {
       if (actor.buffs.shield > 0) {
         actor.buffs.shield = 0;
         const bottomLayer = state.layers[state.layers.length - 1];
-        actor.y = bottomLayer.yHeight + 4.5;
-        actor.vy = 20.0;
+        actor.y = bottomLayer.yHeight + 3.5;
+        actor.vy = 16.5;
         actor.x *= 0.3;
         actor.z *= 0.3;
         const cAx = worldXZToAxial(actor.x, actor.z);
@@ -2250,31 +3145,56 @@ function updateWorld3D(dt, nowSec) {
     }
   }
 
-  // Столкновения плечами между 3D-фасолинками
+  // ЧЕСТНАЯ ФИЗИЧЕСКАЯ КОЛЛИЗИЯ И УПРУГОЕ ОТТАЛКИВАНИЕ ПРИ СТОЛКНОВЕНИИ 2 ФАСОЛЕК!
   const aliveList = state.actors.filter(a => a.alive);
   for (let i = 0; i < aliveList.length; i++) {
     for (let j = i + 1; j < aliveList.length; j++) {
       const a = aliveList[i];
       const b = aliveList[j];
-      if (Math.abs(a.y - b.y) < 1.8) {
+      if (Math.abs(a.y - b.y) < 2.1) {
         const dx = b.x - a.x;
         const dz = b.z - a.z;
         const dist = Math.hypot(dx, dz);
-        const minDist = a.radius + b.radius;
-        if (dist < minDist && dist > 0.01) {
-          const overlap = (minDist - dist) * 0.5;
+        const minDist = a.radius + b.radius; // 1.60 м — плотный контакт корпусов
+        if (dist < minDist && dist > 0.001) {
+          const overlap = (minDist - dist) * 0.54;
           const nx = dx / dist;
           const nz = dz / dist;
+
+          // Выталкиваем фасолек друг из друга, чтобы никогда не проходили сквозь модели
           a.x -= nx * overlap;
           a.z -= nz * overlap;
           b.x += nx * overlap;
           b.z += nz * overlap;
 
-          const push = 4.2;
-          a.vx -= nx * push * simDt * 8;
-          a.vz -= nz * push * simDt * 8;
-          b.vx += nx * push * simDt * 8;
-          b.vz += nz * push * simDt * 8;
+          // Если оба ещё не в кулдауне бампа — даём ощутимый упругий импульс отскока животиками!
+          if (a.bumpCooldown <= 0 || b.bumpCooldown <= 0) {
+            const aDiveBoost = a.isDiving ? 14.5 : 7.8;
+            const bDiveBoost = b.isDiving ? 14.5 : 7.8;
+
+            a.knockVx = -nx * bDiveBoost;
+            a.knockVz = -nz * bDiveBoost;
+            b.knockVx = nx * aDiveBoost;
+            b.knockVz = nz * aDiveBoost;
+
+            // Небольшой вертикальный подскок и сплющивание при ударе плечом/животиком
+            if (a.onGround) a.vy = Math.max(a.vy, 3.6);
+            if (b.onGround) b.vy = Math.max(b.vy, 3.6);
+            a.squash = 0.28;
+            b.squash = 0.28;
+
+            a.bumpCooldown = 0.26;
+            b.bumpCooldown = 0.26;
+
+            // Искры в точке столкновения и упругий звук "Boing!"
+            const midX = (a.x + b.x) * 0.5;
+            const midY = Math.max(a.y, b.y) + 1.1;
+            const midZ = (a.z + b.z) * 0.5;
+            spawnParticles3D(midX, midY, midZ, 0xffe600, 6);
+            if (a.isPlayer || b.isPlayer) {
+              sfx.play('bump');
+            }
+          }
         }
       }
     }
@@ -2349,19 +3269,40 @@ function updateThirdPersonCamera(dt, forcedTarget = null) {
   }
 
   if (focusActor) {
-    const targetPos = new THREE.Vector3(focusActor.x, focusActor.y + 1.35, focusActor.z);
-    state.camFocusPos.lerp(targetPos, Math.min(1, dt * 9));
+    // По горизонтали следим быстро, а по вертикали во время прыжка плавно, чтобы камера не дёргалась вверх под потолок
+    const targetX = focusActor.x;
+    const targetZ = focusActor.z;
+    const baseLayerY = state.layers[focusActor.currentLayer]
+      ? state.layers[focusActor.currentLayer].yHeight
+      : focusActor.y;
+    const jumpDeltaY = Math.max(-4, Math.min(3.2, focusActor.y - baseLayerY));
+    const targetY = baseLayerY + jumpDeltaY * 0.55 + 1.35;
+
+    state.camFocusPos.x += (targetX - state.camFocusPos.x) * Math.min(1, dt * 10);
+    state.camFocusPos.z += (targetZ - state.camFocusPos.z) * Math.min(1, dt * 10);
+    state.camFocusPos.y += (targetY - state.camFocusPos.y) * Math.min(1, dt * 7);
   }
 
   const dist = state.phase === 'celebrating' ? 9.5 : state.camDist;
-  const height = state.phase === 'celebrating' ? 4.2 : state.camHeight + state.camPitchOffset;
+  let height = state.phase === 'celebrating' ? 4.2 : state.camHeight + state.camPitchOffset;
 
   const camX = state.camFocusPos.x + Math.sin(state.camYaw) * dist;
-  const camY = state.camFocusPos.y + Math.max(2.5, height);
+  let camY = state.camFocusPos.y + Math.max(2.5, height);
   const camZ = state.camFocusPos.z + Math.cos(state.camYaw) * dist;
 
+  // Защита от перекрытия верхним ярусом: если над персонажем есть верхний этаж, держим камеру ниже его плиток!
+  if (focusActor && focusActor.currentLayer > 0) {
+    const upperLayer = state.layers[focusActor.currentLayer - 1];
+    if (upperLayer) {
+      const maxAllowedCamY = upperLayer.yHeight - 1.8;
+      if (camY > maxAllowedCamY) {
+        camY = Math.max(state.camFocusPos.y + 2.4, maxAllowedCamY);
+      }
+    }
+  }
+
   camera.position.set(camX, camY, camZ);
-  camera.lookAt(state.camFocusPos.x, state.camFocusPos.y + 0.3, state.camFocusPos.z);
+  camera.lookAt(state.camFocusPos.x, state.camFocusPos.y + 0.25, state.camFocusPos.z);
 }
 
 // Проекция 3D координат макушки каждой фасолинки в 2D экранные координаты для чётких смешных ников
@@ -2636,11 +3577,17 @@ function watchRewardedAd(rewardTitle, onComplete) {
   }, 850);
 }
 
-// Проверка доступности цвета или костюма
+// Проверка доступности цвета, паттерна или костюма
 function isColorUnlocked(col) {
   if (col.unlockType === 'free') return true;
   if (col.unlockType === 'crowns' && saveData.crowns >= col.cost) return true;
   return saveData.unlockedColors.includes(col.id);
+}
+
+function isPatternUnlocked(pat) {
+  if (pat.unlockType === 'free') return true;
+  if (pat.unlockType === 'crowns' && saveData.crowns >= pat.cost) return true;
+  return (saveData.unlockedPatterns || []).includes(pat.id);
 }
 
 function isCostumeUnlocked(cos) {
@@ -2652,14 +3599,24 @@ function isCostumeUnlocked(cos) {
 function getUnlockBadgeText(item, unlocked) {
   if (unlocked) return '✓ Открыто';
   if (item.unlockType === 'ad') return '📺 За рекламу';
-  if (item.unlockType === 'crowns') return `👑 Нужна ${item.cost} победа`;
+  if (item.unlockType === 'crowns') return `👑 За ${item.cost} побед(ы)`;
   if (item.unlockType === 'kudos') return `🟣 ${item.cost} Лавров`;
   return 'Закрыто';
 }
 
+function applyColorWithDefaultPattern(col) {
+  saveData.selectedColorId = col.id;
+  if (col.defaultPat) {
+    const patObj = PATTERN_ITEMS.find(p => p.id === col.defaultPat);
+    if (patObj && isPatternUnlocked(patObj)) {
+      saveData.selectedPatternId = patObj.id;
+    }
+  }
+}
+
 function handleSelectOrUnlockColor(col) {
   if (isColorUnlocked(col)) {
-    saveData.selectedColorId = col.id;
+    applyColorWithDefaultPattern(col);
     saveGameData();
     sfx.play('step');
     rebuildLobbyBeanModel();
@@ -2668,9 +3625,12 @@ function handleSelectOrUnlockColor(col) {
   }
 
   if (col.unlockType === 'ad') {
-    watchRewardedAd(`ОТКРЫВАЕМ ЦВЕТ: ${col.title}`, () => {
+    watchRewardedAd(`ОТКРЫВАЕМ РАСЦВЕТКУ: ${col.title}`, () => {
       if (!saveData.unlockedColors.includes(col.id)) saveData.unlockedColors.push(col.id);
-      saveData.selectedColorId = col.id;
+      if (col.defaultPat && !saveData.unlockedPatterns.includes(col.defaultPat)) {
+        saveData.unlockedPatterns.push(col.defaultPat);
+      }
+      applyColorWithDefaultPattern(col);
       saveGameData();
       rebuildLobbyBeanModel();
       renderAllLobbyPanels();
@@ -2679,7 +3639,45 @@ function handleSelectOrUnlockColor(col) {
     if ((saveData.kudos || 0) >= col.cost) {
       saveData.kudos -= col.cost;
       saveData.unlockedColors.push(col.id);
-      saveData.selectedColorId = col.id;
+      if (col.defaultPat && !saveData.unlockedPatterns.includes(col.defaultPat)) {
+        saveData.unlockedPatterns.push(col.defaultPat);
+      }
+      applyColorWithDefaultPattern(col);
+      saveGameData();
+      sfx.play('powerup');
+      rebuildLobbyBeanModel();
+      renderAllLobbyPanels();
+    } else {
+      sfx.play('elim');
+    }
+  } else {
+    sfx.play('elim');
+  }
+}
+
+function handleSelectOrUnlockPattern(pat) {
+  if (isPatternUnlocked(pat)) {
+    saveData.selectedPatternId = pat.id;
+    saveGameData();
+    sfx.play('step');
+    rebuildLobbyBeanModel();
+    renderAllLobbyPanels();
+    return;
+  }
+
+  if (pat.unlockType === 'ad') {
+    watchRewardedAd(`ОТКРЫВАЕМ ПАТТЕРН: ${pat.title}`, () => {
+      if (!saveData.unlockedPatterns.includes(pat.id)) saveData.unlockedPatterns.push(pat.id);
+      saveData.selectedPatternId = pat.id;
+      saveGameData();
+      rebuildLobbyBeanModel();
+      renderAllLobbyPanels();
+    });
+  } else if (pat.unlockType === 'kudos') {
+    if ((saveData.kudos || 0) >= pat.cost) {
+      saveData.kudos -= pat.cost;
+      saveData.unlockedPatterns.push(pat.id);
+      saveData.selectedPatternId = pat.id;
       saveGameData();
       sfx.play('powerup');
       rebuildLobbyBeanModel();
@@ -2703,7 +3701,7 @@ function handleSelectOrUnlockCostume(cos) {
   }
 
   if (cos.unlockType === 'ad') {
-    watchRewardedAd(`ОТКРЫВАЕМ КОСТЮМ: ${cos.title}`, () => {
+    watchRewardedAd(`ОТКРЫВАЕМ ПОЛНЫЙ КОСТЮМ: ${cos.title}`, () => {
       if (!saveData.unlockedCostumes.includes(cos.id)) saveData.unlockedCostumes.push(cos.id);
       saveData.selectedCostumeId = cos.id;
       saveGameData();
@@ -2730,23 +3728,34 @@ function handleSelectOrUnlockCostume(cos) {
 function renderAllLobbyPanels() {
   updateHUD();
 
-  // 1. Сетка цветов в Гардеробе (Диагональные двухцветные квадраты как на скриншоте 4)
+  // Обновляем кнопки выбора 1 или 2 глаз в маске Миньона
+  const btnEyes2 = document.getElementById('btn-eyes-2');
+  const btnEyes1 = document.getElementById('btn-eyes-1');
+  if (btnEyes2 && btnEyes1) {
+    const isOne = saveData.eyeCount === 1;
+    btnEyes2.classList.toggle('active', !isOne);
+    btnEyes1.classList.toggle('active', isOne);
+  }
+
+  // 1. Сетка расцветок в Гардеробе (Диагональные двухцветные квадраты + авто-паттерн)
   const colGrid = document.getElementById('custom-colors-grid');
   if (colGrid) {
     colGrid.innerHTML = '';
     COLOR_PALETTES.forEach(col => {
       const unlocked = isColorUnlocked(col);
       const isSelected = saveData.selectedColorId === col.id;
+      const patObj = PATTERN_ITEMS.find(p => p.id === col.defaultPat);
       const btn = document.createElement('div');
       btn.className = 'fg-color-tile' + (isSelected ? ' active' : '');
       btn.style.setProperty('--c1', col.css1);
       btn.style.setProperty('--c2', col.css2);
       btn.innerHTML = `
         ${isSelected ? '<div class="tile-check-badge">✓</div>' : ''}
-        ${!unlocked ? `<div class="tile-lock-tag">${getUnlockBadgeText(col, false)}</div>` : ''}
+        <div style="position:absolute;top:6px;left:8px;font-size:16px;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.5))">${patObj ? patObj.icon : '🎨'}</div>
+        ${!unlocked ? `<div class="tile-lock-tag">${getUnlockBadgeText(col, false)}</div>` : `<div class="tile-lock-tag" style="background:rgba(0,0,0,0.45);color:#fff">${col.title}</div>`}
       `;
       btn.addEventListener('click', () => {
-        document.getElementById('custom-selected-title').textContent = col.title;
+        document.getElementById('custom-selected-title').textContent = `${col.title} (${patObj ? patObj.title : 'Узор'})`;
         document.getElementById('custom-selected-rarity').textContent = col.rarity;
         handleSelectOrUnlockColor(col);
       });
@@ -2754,7 +3763,33 @@ function renderAllLobbyPanels() {
     });
   }
 
-  // 2. Сетка костюмов/шляп в Гардеробе (за победы и за рекламу)
+  // 2. Сетка Паттернов (Узоров) раскраски в Гардеробе
+  const patGrid = document.getElementById('custom-patterns-grid');
+  if (patGrid) {
+    patGrid.innerHTML = '';
+    PATTERN_ITEMS.forEach(pat => {
+      const unlocked = isPatternUnlocked(pat);
+      const isSelected = saveData.selectedPatternId === pat.id;
+      const card = document.createElement('div');
+      card.className = 'fg-costume-card' + (isSelected ? ' active' : '');
+      card.innerHTML = `
+        ${isSelected ? '<div class="tile-check-badge">✓</div>' : ''}
+        <div class="costume-icon-big">${pat.icon}</div>
+        <div class="costume-card-name">${pat.title}</div>
+        <div class="tile-lock-tag" style="${unlocked ? 'background:#00c853; color:#fff' : ''}">
+          ${getUnlockBadgeText(pat, unlocked)}
+        </div>
+      `;
+      card.addEventListener('click', () => {
+        document.getElementById('custom-selected-title').textContent = `Узор: ${pat.title}`;
+        document.getElementById('custom-selected-rarity').textContent = pat.rarity;
+        handleSelectOrUnlockPattern(pat);
+      });
+      patGrid.appendChild(card);
+    });
+  }
+
+  // 3. Сетка Полных Костюмов (Верх + Низ + Маски/Хвосты) в Гардеробе
   const cosGrid = document.getElementById('custom-costumes-grid');
   if (cosGrid) {
     cosGrid.innerHTML = '';
@@ -2767,12 +3802,13 @@ function renderAllLobbyPanels() {
         ${isSelected ? '<div class="tile-check-badge">✓</div>' : ''}
         <div class="costume-icon-big">${cos.icon}</div>
         <div class="costume-card-name">${cos.title}</div>
+        <div style="font-size:10px;color:#e0f7fa;margin-bottom:5px;font-weight:700">${cos.sub || 'Верх + Низ'}</div>
         <div class="tile-lock-tag" style="${unlocked ? 'background:#00c853; color:#fff' : ''}">
           ${getUnlockBadgeText(cos, unlocked)}
         </div>
       `;
       card.addEventListener('click', () => {
-        document.getElementById('custom-selected-title').textContent = cos.title;
+        document.getElementById('custom-selected-title').textContent = `${cos.title} (${cos.sub || ''})`;
         document.getElementById('custom-selected-rarity').textContent = cos.rarity;
         handleSelectOrUnlockCostume(cos);
       });
@@ -2780,7 +3816,7 @@ function renderAllLobbyPanels() {
     });
   }
 
-  // 3. Шкала Сезона (Скриншот 2)
+  // 4. Шкала Сезона (Скриншот 2)
   const trackRow = document.getElementById('season-track-row');
   if (trackRow) {
     trackRow.innerHTML = '';
@@ -2802,20 +3838,21 @@ function renderAllLobbyPanels() {
     });
   }
 
-  // 4. Витрина Магазина (Скриншот 3: эксклюзив за победы + базовые за рекламу)
+  // 5. Витрина Магазина (Скриншот 3: эксклюзив за победы + базовые за рекламу)
   const featRow = document.getElementById('shop-featured-row');
   if (featRow) {
     featRow.innerHTML = '';
-    const featuredCostumes = COSTUME_ITEMS.filter(c => c.unlockType === 'crowns');
+    const featuredCostumes = COSTUME_ITEMS.filter(c => c.unlockType === 'crowns').slice(0, 3);
     featuredCostumes.forEach(cos => {
       const unlocked = isCostumeUnlocked(cos);
       const card = document.createElement('div');
       card.className = 'fg-shop-card';
       card.innerHTML = `
-        <div class="shop-card-top">${cos.rarity} • КОСТЮМ</div>
+        <div class="shop-card-top">${cos.rarity} • ПОЛНЫЙ КОСТЮМ</div>
         <div class="shop-card-body">
           <div class="shop-preview-swatch" style="background:linear-gradient(135deg,#ff2a85,#7c4dff)">${cos.icon}</div>
           <strong style="font-size:14px">${cos.title}</strong>
+          <small style="font-size:10.5px;color:#004d40;font-weight:800">${cos.sub || ''}</small>
         </div>
         <div class="shop-price-bar">${unlocked ? '✅ В ГАРДЕРОБЕ (НАДЕТЬ)' : `👑 За ${cos.cost} побед(ы)`}</div>
       `;
@@ -2941,6 +3978,7 @@ function openLeaderboard() {
 
 function openStartModal() {
   state.phase = 'menu';
+  music.setMode('lobby');
   clearActorsAndFX();
 
   // Включаем 3D-пьедестал Лобби и прозрачный фон для концентрических кругов
@@ -2973,6 +4011,15 @@ function toggleSound() {
   document.getElementById('btn-lobby-sound').textContent = icon;
 }
 
+function toggleMusic() {
+  const isMuted = music.toggleMute();
+  const icon = isMuted ? '🔕' : '🎵';
+  const b1 = document.getElementById('btn-music');
+  const b2 = document.getElementById('btn-lobby-music');
+  if (b1) b1.textContent = icon;
+  if (b2) b2.textContent = icon;
+}
+
 // ==================== ПРИВЯЗКА UI СОБЫТИЙ ====================
 document.querySelectorAll('.fg-nav-tab').forEach(btn => {
   btn.addEventListener('click', () => switchLobbyTab(btn.dataset.tab));
@@ -2980,13 +4027,27 @@ document.querySelectorAll('.fg-nav-tab').forEach(btn => {
 
 document.getElementById('season-widget-click').addEventListener('click', () => switchLobbyTab('season'));
 
+// Переключатель 1 или 2 глаза в маске Миньона
+document.querySelectorAll('.eye-mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    saveData.eyeCount = Number(btn.dataset.eyes) === 1 ? 1 : 2;
+    saveGameData();
+    sfx.play('step');
+    rebuildLobbyBeanModel();
+    renderAllLobbyPanels();
+  });
+});
+
+// Переключатель под-вкладок Гардероба: Цвета | Паттерны | Полные Костюмы
 document.querySelectorAll('.c-subtab').forEach(sub => {
   sub.addEventListener('click', () => {
     document.querySelectorAll('.c-subtab').forEach(s => s.classList.remove('active'));
     sub.classList.add('active');
-    const isColors = sub.dataset.subtab === 'colors';
-    document.getElementById('custom-colors-grid').classList.toggle('hidden', !isColors);
-    document.getElementById('custom-costumes-grid').classList.toggle('hidden', isColors);
+    const st = sub.dataset.subtab;
+    document.getElementById('custom-colors-grid').classList.toggle('hidden', st !== 'colors');
+    document.getElementById('custom-patterns-grid').classList.toggle('hidden', st !== 'patterns');
+    document.getElementById('custom-costumes-grid').classList.toggle('hidden', st !== 'costumes');
+    sfx.play('step');
   });
 });
 
@@ -3045,6 +4106,8 @@ document.getElementById('btn-result-settings').addEventListener('click', openSta
 document.getElementById('btn-menu').addEventListener('click', openStartModal);
 document.getElementById('btn-sound').addEventListener('click', toggleSound);
 document.getElementById('btn-lobby-sound').addEventListener('click', toggleSound);
+document.getElementById('btn-music')?.addEventListener('click', toggleMusic);
+document.getElementById('btn-lobby-music')?.addEventListener('click', toggleMusic);
 
 document.getElementById('btn-leaderboard').addEventListener('click', openLeaderboard);
 document.getElementById('btn-lobby-lb').addEventListener('click', openLeaderboard);
