@@ -5,6 +5,7 @@ export function initializeRacer(actor) {
   actor.checkpoint = 0;
   actor.raceFinished = false;
   actor.raceBeamCooldown = 0;
+  actor.raceBumpCooldown = 0;
   if (!actor.isPlayer) resetBotRoute(actor);
 }
 
@@ -14,6 +15,7 @@ export function updateRace(course, actors, dt, elapsed, limit = 210) {
   for (const actor of actors) {
     if (actor.raceFinished) continue;
     actor.raceBeamCooldown = Math.max(0, (actor.raceBeamCooldown || 0) - dt);
+    actor.raceBumpCooldown = Math.max(0, (actor.raceBumpCooldown || 0) - dt);
     if (actor.onGround) {
       const carried = carryActor(surfaceAt(course, actor.x, actor.z), actor, dt);
       actor.x = carried.x; actor.z = carried.z;
@@ -59,6 +61,30 @@ export function updateRace(course, actors, dt, elapsed, limit = 210) {
     actor.checkpoint = checkpointAt(actor.x, actor.z, actor.checkpoint);
     if (actor.checkpoint === 3 && Math.abs(actor.x) < COURSE.finish.halfWidth && actor.z >= COURSE.finish.z) {
       actor.raceFinished = true; actor.raceFinishTime = elapsed;
+    }
+  }
+  // Resolve soft body contact after all racers have moved. Finished racers no longer obstruct the course.
+  for (let i = 0; i < actors.length; i++) for (let j = i + 1; j < actors.length; j++) {
+    const a = actors[i], b = actors[j];
+    if (!a.alive && a.alive !== undefined || !b.alive && b.alive !== undefined || a.raceFinished || b.raceFinished || Math.abs(a.y - b.y) > 1.8) continue;
+    let dx = b.x - a.x, dz = b.z - a.z;
+    let distance = Math.hypot(dx, dz);
+    const minDistance = (a.radius + b.radius) * 0.85;
+    if (distance >= minDistance) continue;
+    if (distance < 1e-5) { dx = 1; dz = 0; distance = 1e-5; }
+    const nx = dx / Math.hypot(dx, dz), nz = dz / Math.hypot(dx, dz);
+    const separation = (minDistance - distance) * .5;
+    a.x -= nx * separation; a.z -= nz * separation;
+    b.x += nx * separation; b.z += nz * separation;
+    if (a.raceBumpCooldown <= 0 && b.raceBumpCooldown <= 0) {
+      const closing = Math.max(0, (a.vx - b.vx) * nx + (a.vz - b.vz) * nz);
+      const impulse = Math.min(3.2, 1.2 + closing * .16);
+      a.knockVx = (a.knockVx || 0) - nx * impulse;
+      a.knockVz = (a.knockVz || 0) - nz * impulse;
+      b.knockVx = (b.knockVx || 0) + nx * impulse;
+      b.knockVz = (b.knockVz || 0) + nz * impulse;
+      a.squash = Math.max(a.squash || 0, .10); b.squash = Math.max(b.squash || 0, .10);
+      a.raceBumpCooldown = b.raceBumpCooldown = .22;
     }
   }
   const finished = actors.filter(a => a.raceFinished).sort((a,b) => a.raceFinishTime-b.raceFinishTime);

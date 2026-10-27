@@ -28,3 +28,18 @@ test('bots complete the course at common simulation frame rates', () => {
     assert.ok(actors.filter(a=>a.raceFinished).length >= 14, `too few bots finished at dt=${dt}`);
   }
 });
+test('racers get a small separating impulse on contact', () => {
+  const a=racer(-.3,0), b=racer(.3,0); initializeRacer(a); initializeRacer(b);
+  a.vx=2; b.vx=-2;
+  updateRace(createCourseState(),[a,b],.01,1);
+  assert.ok(a.knockVx < 0 && b.knockVx > 0);
+  assert.ok(Math.abs(a.knockVx) <= 3.2 && Math.abs(b.knockVx) <= 3.2);
+  assert.ok(b.x-a.x >= (a.radius+b.radius)*.85-1e-8);
+});
+test('finished racers and racers at different heights do not collide', () => {
+  const a=racer(0,0), b=racer(.1,0); initializeRacer(a); initializeRacer(b);
+  b.raceFinished=true; updateRace(createCourseState(),[a,b],.01,1);
+  assert.equal(a.knockVx,0);
+  b.raceFinished=false; b.y=3; updateRace(createCourseState(),[a,b],.01,2);
+  assert.equal(a.knockVx,0);
+});

@@ -27,6 +27,33 @@ export function createCourseVisuals(THREE, course) {
   box(16.7, .8, .7, pink, 0, 6, COURSE.finish.z);
   for (let i=0; i<12; i++) box(1.3,.06,.8,i%2 ? purple : white, -7.15+i*1.3,.04,COURSE.finish.z);
 
+  // A bright marquee and floating confetti make the finish readable from afar.
+  const signCanvas = document.createElement('canvas');
+  signCanvas.width = 1024; signCanvas.height = 256;
+  const ctx = signCanvas.getContext('2d');
+  ctx.fillStyle = '#713aca'; ctx.fillRect(0, 0, 1024, 256);
+  ctx.strokeStyle = '#ffdc38'; ctx.lineWidth = 14; ctx.strokeRect(8, 8, 1008, 240);
+  ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = 'bold 150px sans-serif'; ctx.fillText('FINISH!', 512, 132);
+  const signTexture = new THREE.CanvasTexture(signCanvas);
+  signTexture.colorSpace = THREE.SRGBColorSpace;
+  const signMat = new THREE.MeshBasicMaterial({ map: signTexture, side: THREE.DoubleSide });
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(8, 2), signMat);
+  sign.position.set(0, 7.45, COURSE.finish.z); root.add(sign);
+  const decorations = [];
+  const colors = [pink, cyan, yellow, white];
+  for (let i = 0; i < 24; i++) {
+    const a = i * 2.399, radius = 3 + (i % 4) * 1.3;
+    const piece = box(.20, .34, .12, colors[i % colors.length], Math.cos(a)*radius, 5+(i%5)*.7, COURSE.finish.z+Math.sin(a)*1.5);
+    decorations.push({mesh:piece, baseY:piece.position.y, phase:i*.8});
+  }
+  for (const side of [-1, 1]) {
+    for (let i=0; i<5; i++) {
+      const bulb = new THREE.Mesh(new THREE.SphereGeometry(.2,12,8), i%2 ? yellow : white);
+      bulb.position.set(side*8, .8+i*1.1, COURSE.finish.z-.42); root.add(bulb);
+    }
+  }
+
   const fanVisuals = course.fans.map((fan, i) => {
     const group = new THREE.Group(); group.position.set(fan.x, 0, fan.z); root.add(group);
     const rotor = new THREE.Group(); group.add(rotor);
@@ -55,6 +82,10 @@ export function createCourseVisuals(THREE, course) {
   return {
     root,
     update() {
+      decorations.forEach(({mesh, baseY, phase}) => {
+        mesh.position.y = baseY + Math.sin(course.time*1.6+phase)*.28;
+        mesh.rotation.z = course.time*.6+phase;
+      });
       course.fans.forEach((fan,i) => {
         fanVisuals[i].rotor.rotation.y = -fan.angle;
         if (fanVisuals[i].sweeper) fanVisuals[i].sweeper.rotation.y = -fan.beamAngle;
@@ -62,7 +93,8 @@ export function createCourseVisuals(THREE, course) {
     },
     dispose() {
       root.traverse(obj => { if (obj.geometry) obj.geometry.dispose(); });
-      [pink,cyan,yellow,purple,white].forEach(m => m.dispose());
+      [pink,cyan,yellow,purple,white,signMat].forEach(m => m.dispose());
+      signTexture.dispose();
     }
   };
 }
