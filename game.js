@@ -1605,100 +1605,23 @@ function createBean3DMesh(skin) {
   torsoMesh.receiveShadow = true;
   bodyPivot.add(torsoMesh);
 
-  // 2. МАСКА-ОЧКИ КАК У МИНЬОНОВ (с выбором: 1 глаз-циклоп или 2 раздельных глаза!)
-  const goggleGroup = new THREE.Group();
-  bodyPivot.add(goggleGroup);
-
-  // Чёрный прорезиненный ремешок очков вокруг головы
-  const strapGeo = new THREE.CylinderGeometry(0.632, 0.632, 0.14, 28, 1, true);
-  const strapMesh = new THREE.Mesh(strapGeo, darkMat);
-  strapMesh.position.y = 1.34;
-  goggleGroup.add(strapMesh);
-
-  // Тёмная подложка маски на лице, в которую встроены очки-окуляры
-  const maskPlateGeo = new THREE.SphereGeometry(0.45, 20, 16);
-  maskPlateGeo.scale(1.08, 0.64, 0.38);
-  const maskPlate = new THREE.Mesh(maskPlateGeo, darkMat);
-  maskPlate.position.set(0, 1.34, 0.45);
-  goggleGroup.add(maskPlate);
-
-  // Вспомогательная функция создания одного детализированного окуляра Миньона (корпус + белок + радужка + зрачок + блик)
-  function buildMinionGoggleEye(radius, posX, posY, posZ, rotY = 0) {
-    const eyeUnit = new THREE.Group();
-    eyeUnit.position.set(posX, posY, posZ);
-    eyeUnit.rotation.y = rotY;
-
-    // Металлическая оправа окуляра (Torus + цилиндрический ободок)
-    const rim = new THREE.Mesh(
-      new THREE.TorusGeometry(radius, radius * 0.24, 14, 28),
-      chromeMat
-    );
-    eyeUnit.add(rim);
-
-    const barrel = new THREE.Mesh(
-      new THREE.CylinderGeometry(radius * 1.02, radius * 1.02, 0.12, 24, 1, true),
-      chromeMat
-    );
-    barrel.rotation.x = Math.PI / 2;
-    barrel.position.z = -0.04;
-    eyeUnit.add(barrel);
-
-    // Выпуклое белое глазное яблоко внутри оправы
-    const sclera = new THREE.Mesh(
-      new THREE.SphereGeometry(radius * 0.86, 18, 16),
-      whiteMat
-    );
-    sclera.scale.set(1, 1, 0.42);
-    sclera.position.z = -0.01;
-    eyeUnit.add(sclera);
-
-    // Тёпло-каряя/янтарная радужка
-    const irisMat = new THREE.MeshStandardMaterial({ color: 0x6d4c41, roughness: 0.2 });
-    const iris = new THREE.Mesh(
-      new THREE.CircleGeometry(radius * 0.46, 20),
-      irisMat
-    );
-    iris.position.z = radius * 0.37;
-    eyeUnit.add(iris);
-
-    // Чёрный зрачок
-    const pupil = new THREE.Mesh(
-      new THREE.CircleGeometry(radius * 0.25, 18),
-      darkMat
-    );
-    pupil.position.z = radius * 0.385;
-    eyeUnit.add(pupil);
-
-    // Живой белый блик в глазу
-    const glint = new THREE.Mesh(
-      new THREE.CircleGeometry(radius * 0.10, 12),
-      new THREE.MeshBasicMaterial({ color: 0xffffff })
-    );
-    glint.position.set(radius * 0.14, radius * 0.14, radius * 0.395);
-    eyeUnit.add(glint);
-
-    // Болтик-заклёпка сбоку оправы
-    const bolt = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.05, 0.05), chromeMat);
-    bolt.position.set(posX >= 0 ? radius * 1.12 : -radius * 1.12, 0, 0);
-    eyeUnit.add(bolt);
-
-    return eyeUnit;
-  }
-
-  const eyeCount = skin.eyeCount === 1 ? 1 : 2;
-  if (eyeCount === 1) {
-    // 👁️ ОДИН БОЛЬШОЙ ГЛАЗ-ЦИКЛОП (как у Стюарта из Миньонов)
-    const singleEye = buildMinionGoggleEye(0.215, 0, 1.34, 0.62, 0);
-    goggleGroup.add(singleEye);
-  } else {
-    // 👀 ДВА ОТДЕЛЬНЫХ ГЛАЗА В ОПРАВЕ С ПЕРЕНОСИЦЕЙ (разнесены по X на ±0.215, чтобы никогда не сливались!)
-    const leftGoggle = buildMinionGoggleEye(0.155, -0.215, 1.34, 0.59, -0.14);
-    const rightGoggle = buildMinionGoggleEye(0.155, 0.215, 1.34, 0.59, 0.14);
-    // Перемычка очков посередине
-    const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.045, 0.05), chromeMat);
-    bridge.position.set(0, 1.34, 0.61);
-    goggleGroup.add(leftGoggle, rightGoggle, bridge);
-  }
+  // Rounded face plate and simple eyes keep the expression readable at game distance.
+  const faceGroup = new THREE.Group();
+  bodyPivot.add(faceGroup);
+  const faceMat = new THREE.MeshStandardMaterial({ color: 0xfff4df, roughness: 0.55 });
+  const face = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 20), faceMat);
+  face.scale.set(0.43, 0.275, 0.075);
+  face.position.set(0, 1.40, 0.603);
+  faceGroup.add(face);
+  const eyeGeo = new THREE.SphereGeometry(1, 16, 12);
+  const addEye = (x) => {
+    const eye = new THREE.Mesh(eyeGeo, darkMat);
+    eye.scale.set(0.057, 0.105, 0.025);
+    eye.position.set(x, 1.40, 0.676);
+    faceGroup.add(eye);
+  };
+  if (skin.eyeCount === 1) addEye(0);
+  else { addEye(-0.145); addEye(0.145); }
 
   // 3. Шарнирные ножки с ботиночками
   const legGeo = new THREE.CapsuleGeometry(0.17, 0.24, 8, 12);
@@ -4170,3 +4093,4 @@ function animate(now) {
 }
 
 requestAnimationFrame(animate);
+
