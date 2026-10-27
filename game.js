@@ -19,7 +19,7 @@ import { createCourseVisuals } from './big-fans/visuals.mjs';
 import { initializeRacer, updateRace } from './big-fans/race.mjs';
 import { createRollout, advanceRollout, sampleSurface, carryRacer, hitWall, botDecision, RING_WIDTH } from './roll-out/rollout.mjs';
 import { createRolloutVisuals } from './roll-out/visuals.mjs';
-import { createCourse as createSlimeCourse, advanceCourse as advanceSlimeCourse, surface as slimeSurface, courseY as slimeCourseY, slimeY as risingSlimeY, obstaclesAt as slimeObstacles, botDecision as slimeBotDecision, LENGTH as SLIME_LENGTH, LIMIT as SLIME_LIMIT } from './slime-climb/course.mjs';
+import { createCourse as createSlimeCourse, advanceCourse as advanceSlimeCourse, surface as slimeSurface, courseY as slimeCourseY, slimeY as risingSlimeY, obstaclesAt as slimeObstacles, obstacleContact as slimeObstacleContact, botDecision as slimeBotDecision, LENGTH as SLIME_LENGTH, LIMIT as SLIME_LIMIT } from './slime-climb/course.mjs';
 import { createVisuals as createSlimeVisuals } from './slime-climb/visuals.mjs';
 
 // ==================== 1. КОНФИГУРАЦИЯ СЛОЖНОСТИ И УСКОРЕННЫЙ РЕГЕН ====================
@@ -2836,7 +2836,7 @@ function updateSlimeClimb(dt){
   if(floor!==null&&a.vy<=0&&oldY>=floor-.8&&a.y<=floor+.12){a.y=floor;a.vy=0;a.onGround=true;a.jumpCount=0;}
   if(a.climbHitCooldown<=0)for(const o of obstacles){
     if(Math.abs(a.y-slimeCourseY(o.z))>2)continue;
-    const dx=a.x-o.x,dz=a.z-o.z,d=Math.hypot(dx,dz),radius=o.radius+a.radius*.55;
+    const {dx,dz}=slimeObstacleContact(o,a.x,a.z),d=Math.hypot(dx,dz),radius=o.radius+a.radius*.55;
     if(d<radius&&d>.001){const nx=dx/d,nz=dz/d;a.x+=nx*(radius-d);a.z+=nz*(radius-d);a.knockVx=nx*(o.type==='hammer'?8:5);a.knockVz=nz*(o.type==='ball'?8:5);a.vy=3.2;a.onGround=false;a.climbHitCooldown=.5;a.squash=.2;break;}
   }
   a.rig.blobShadow.visible=floor!==null&&a.y>=floor;if(a.rig.blobShadow.visible)a.rig.blobShadow.position.y=floor-a.y+.03;
@@ -3703,7 +3703,7 @@ function update3DNameplates() {
   const halfH = window.innerHeight * 0.5;
 
   for (const actor of state.actors) {
-    if (!actor.alive) {
+    if (!actor.alive || (!actor.isPlayer && (actor.climbFinished || actor.raceFinished))) {
       actor.labelEl.style.display = 'none';
       continue;
     }
