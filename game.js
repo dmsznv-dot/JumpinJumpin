@@ -2830,23 +2830,90 @@ function updateSlimeClimb(dt){
   if(a.isDiving&&(a.diveTimer-=dt)<=0)a.isDiving=false;
   if(!a.isPlayer){const d=slimeBotDecision(state.slimeCourse,a);const rate=Math.min(1,dt*8);a.vx+=(d.vx-a.vx)*rate;a.vz+=(d.vz-a.vz)*rate;if(d.jump)a.jump();a.facing=Math.atan2(d.vx,d.vz);}
   const oldY=a.y;a.x+=(a.vx+a.knockVx)*dt;a.z+=(a.vz+a.knockVz)*dt;
+
+  // Requirement 5: Rotating Cylinders (Brevna) tangential sideways carry
+  if(a.onGround&&a.x>=0.0&&a.x<=14.0&&a.y>=11.5&&a.y<=13.0){
+    if(Math.abs(a.z-61.5)<1.0)a.z+=1.9*dt;
+    else if(Math.abs(a.z-64.5)<1.0)a.z-=1.9*dt;
+  }
   // Conveyor belt zone on Floor 3 (drags backward if on belt)
-  if(a.onGround&&a.y>=14.0&&a.y<=17.5&&a.x>=-12.5&&a.x<=-3.0){a.x+=2.4*dt;a.z-=1.4*dt;}
+  if(a.onGround&&a.y>=14.0&&a.y<=17.5&&a.x>=-12.5&&a.x<=-2.0){a.x+=2.4*dt;a.z-=1.4*dt;}
+
   a.knockVx*=Math.max(0,1-dt*4);a.knockVz*=Math.max(0,1-dt*4);a.vy-=30*dt;a.y+=a.vy*dt;
   const floor=slimeSurface(a.x,a.z,a.y);a.onGround=false;
   if(floor!==null&&a.vy<=0&&oldY>=floor-1.5&&a.y<=floor+0.35){a.y=floor;a.vy=0;a.onGround=true;a.jumpCount=0;}
   else if(floor!==null&&oldY>=floor-1.5&&a.y<floor){a.y=floor;a.vy=0;a.onGround=true;a.jumpCount=0;}
-  if(a.climbHitCooldown<=0)for(const o of obstacles){
-    const obsY=o.y!==undefined?o.y:slimeCourseY(o.z);
-    if(Math.abs(a.y-obsY)>2.6)continue;
-    const {dx,dz}=slimeObstacleContact(o,a.x,a.z),d=Math.hypot(dx,dz),radius=o.radius+a.radius*.55;
-    if(d<radius&&d>.001){
-      const nx=dx/d,nz=dz/d;a.x+=nx*(radius-d);a.z+=nz*(radius-d);
-      if(o.isGiant){a.knockVx=nx*14;a.knockVz=nz*14;a.vy=4.5;}
-      else{a.knockVx=nx*(o.type==='hammer'?8.5:o.type==='pusher'?9:5.5);a.knockVz=nz*(o.type==='ball'?8:o.type==='pusher'?9:5.5);a.vy=3.2;}
-      a.onGround=false;a.climbHitCooldown=.5;a.squash=.2;break;
+
+  // Obstacle collisions with solid body pushout
+  for(const o of obstacles){
+    if(o.type==='bumper_tri'){
+      // Requirement 1: Solid glossy triangular bumper - cannot walk through, bouncy pushout
+      const dx=a.x-o.x,dz=a.z-o.z,d=Math.hypot(dx,dz),r=o.radius+a.radius;
+      if(d<r&&Math.abs(a.y-o.y)<2.0&&d>.001){
+        const nx=dx/d,nz=dz/d;
+        a.x=o.x+nx*r;a.z=o.z+nz*r;
+        if(a.climbHitCooldown<=0){
+          a.knockVx=nx*12.0;a.knockVz=nz*12.0;a.vy=4.2;a.onGround=false;
+          a.squash=.35;a.climbHitCooldown=.25;sfx.play('hit');
+        }
+      }
+    } else if(o.type==='pusher_box'){
+      // Requirement 3: Snappy pusher with pixel-perfect AABB pushout
+      if(Math.abs(a.y-o.y)<2.2&&a.z>=o.zMin-a.radius&&a.z<=o.zMax+a.radius){
+        if(a.x<o.xMax+a.radius){
+          a.x=Math.max(a.x,o.xMax+a.radius+0.04);
+          a.knockVx=Math.max(a.knockVx,12.5);a.vy=2.2;a.onGround=false;a.squash=.25;
+          if(a.climbHitCooldown<=0){sfx.play('hit');a.climbHitCooldown=.2;}
+        }
+      }
+    } else if(o.type==='hammer_dynamic'){
+      // Requirement 6: Fast spinning hammers with instant swat
+      let hit=false;
+      for(const head of [o.head1,o.head2]){
+        const dh=Math.hypot(a.x-head.x,a.z-head.z),rHead=o.headRadius+a.radius;
+        if(dh<rHead&&Math.abs(a.y-o.y)<2.2){
+          const nhx=(a.x-head.x)/(dh||1),nhz=(a.z-head.z)/(dh||1);
+          a.x=head.x+nhx*rHead;a.z=head.z+nhz*rHead;
+          const tangX=-Math.sin(o.angle)*16.0,tangZ=Math.cos(o.angle)*16.0;
+          a.knockVx=tangX*1.3+nhx*6.0;a.knockVz=tangZ*1.3+nhz*6.0;
+          a.vy=4.6;a.onGround=false;a.squash=.4;
+          sfx.play('hit');a.climbHitCooldown=.25;hit=true;break;
+        }
+      }
+      if(!hit){
+        const along=(a.x-o.x)*Math.cos(o.angle)+(a.z-o.z)*Math.sin(o.angle);
+        if(Math.abs(along)<o.armLen&&Math.abs(a.y-o.y)<1.8){
+          const perpX=a.x-(o.x+Math.cos(o.angle)*along),perpZ=a.z-(o.z+Math.sin(o.angle)*along);
+          const dPerp=Math.hypot(perpX,perpZ);
+          if(dPerp<0.6+a.radius){
+            const tangX=-Math.sin(o.angle)*13.0,tangZ=Math.cos(o.angle)*13.0;
+            a.knockVx=tangX;a.knockVz=tangZ;a.vy=3.6;a.onGround=false;
+            sfx.play('hit');a.climbHitCooldown=.25;
+          }
+        }
+      }
+    } else if(o.type==='ball'&&o.isGiant){
+      // Requirement 4: The Giant Rolling Boulder
+      const dx=a.x-o.x,dz=a.z-o.z,d=Math.hypot(dx,dz),r=o.radius+a.radius;
+      if(d<r&&Math.abs(a.y-o.y)<2.8&&d>.001){
+        const nx=dx/d,nz=dz/d;
+        a.x=o.x+nx*r;a.z=o.z+nz*r;
+        a.knockVx=nx*14.0-4.0;a.knockVz=nz*14.0-4.0;a.vy=4.8;a.onGround=false;
+        a.squash=.45;a.climbHitCooldown=.4;sfx.play('hit');
+      }
+    } else {
+      const obsY=o.y!==undefined?o.y:slimeCourseY(o.z);
+      if(Math.abs(a.y-obsY)<2.4){
+        const {dx,dz}=slimeObstacleContact(o,a.x,a.z),d=Math.hypot(dx,dz),radius=o.radius+a.radius*.55;
+        if(d<radius&&d>.001&&a.climbHitCooldown<=0){
+          const nx=dx/d,nz=dz/d;a.x+=nx*(radius-d);a.z+=nz*(radius-d);
+          a.knockVx=nx*(o.type==='pusher'?9:5.5);a.knockVz=nz*(o.type==='pusher'?9:5.5);
+          a.vy=3.2;a.onGround=false;a.climbHitCooldown=.3;a.squash=.2;
+        }
+      }
     }
   }
+
   a.rig.blobShadow.visible=floor!==null&&a.y>=floor;if(a.rig.blobShadow.visible)a.rig.blobShadow.position.y=floor-a.y+.03;
   if(a.z>=120&&Math.abs(a.x)<8.5&&a.y>=25.0){a.climbFinished=true;a.climbTime=state.elapsed;a.vx=a.vz=0;if(!a.isPlayer){a.rig.root.visible=false;a.labelEl.style.display='none';}}
   else if(a.y<=risingSlimeY(state.elapsed)||a.y< -20){a.alive=false;a.rig.root.visible=false;a.labelEl.style.display='none';state.eliminationOrder.push(a);sfx.play('elim');if(a.isPlayer)onPlayerEliminated();}

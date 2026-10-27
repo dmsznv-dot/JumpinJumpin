@@ -21,14 +21,21 @@ test('slime rises to summit by the time limit', () => {
   assert.ok(slimeY(LIMIT) >= FINISH_Y);
 });
 
-test('surface supports multi-tier altitude queries without clipping', () => {
+test('stepped stairs and multi-tier surface support exact heights', () => {
   // Start pad
   assert.equal(surface(0, 0, 0), 0);
+  // Real stepped stairs (step 1 at z=21, step 3 at z=25, step 6 at z=31)
+  assert.equal(surface(0, 21, 0.8), 0.8);
+  assert.ok(Math.abs(surface(0, 25, 2.4) - 2.4) < 1e-5);
+  assert.equal(surface(0, 31, 4.8), 4.8);
   // Floor 1 pushers
   assert.equal(surface(0, 36, 4.8), 4.8);
-  // Floor 2 boulder ramp (u=0.5 -> x=0, z=50.5, y=8.2)
-  const f2Y = surface(0, 50.5, 8.5);
-  assert.ok(f2Y !== null && f2Y > 7.0 && f2Y < 10.0);
+  // Rotating logs top surface at z=61.5
+  const logTopY = surface(7, 61.5, 12.0);
+  assert.ok(logTopY !== null && logTopY >= 12.4);
+  // Recovery pit underneath the rotating logs
+  const pitY = surface(7, 61.5, 9.8);
+  assert.equal(pitY, 9.8);
   // Floor 5 summit
   assert.equal(surface(0, 125, 26.0), 26.0);
   // Off-track abyss should return null
@@ -37,24 +44,31 @@ test('surface supports multi-tier altitude queries without clipping', () => {
 
 test('pushers use snappy punch-out motion', () => {
   const ext0 = pusherExtension(0.2);
-  const extPunch = pusherExtension(0.8);
-  const extHold = pusherExtension(1.0);
+  const extPunch = pusherExtension(0.75);
+  const extHold = pusherExtension(0.95);
   assert.equal(ext0, 0);
   assert.ok(extPunch > 0.5);
   assert.equal(extHold, 1.0);
 });
 
-test('giant boulder triggers when contestants approach floor 2', () => {
+test('giant boulder triggers only when contestants step on Floor 2 ramp', () => {
   const c = createCourse();
   assert.equal(c.boulder.active, false);
 
+  // Far away contestants -> no trigger
   advanceCourse(c, 0.1, [{ alive: true, x: 0, z: 10, y: 0 }]);
   assert.equal(c.boulder.active, false);
 
-  advanceCourse(c, 0.1, [{ alive: true, x: -10, z: 44, y: 5.2 }]);
+  // Contestant on Floor 1 pushers -> still no trigger!
+  advanceCourse(c, 0.1, [{ alive: true, x: -1, z: 36, y: 4.8 }]);
+  assert.equal(c.boulder.active, false);
+
+  // Contestant steps onto Floor 2 entrance staircase (y=5.2, z=47, x=-10) -> BOULDER TRIGGERS!
+  advanceCourse(c, 0.1, [{ alive: true, x: -10, z: 47, y: 5.2 }]);
   assert.equal(c.boulder.active, true);
   assert.ok(c.boulder.progress >= 0);
 
+  // Advance course -> boulder rolls down
   advanceCourse(c, 1.0, []);
   assert.ok(c.boulder.progress > 0.2);
   const obs = obstaclesAt(1.0, c);
@@ -98,6 +112,10 @@ test('bot can navigate the switchback waypoints to the summit finish', () => {
     const floor = surface(a.x, a.z, a.y);
     a.onGround = false;
     if (floor !== null && a.vy <= 0 && oldY >= floor - 1.5 && a.y <= floor + 0.35) {
+      a.y = floor;
+      a.vy = 0;
+      a.onGround = true;
+    } else if (floor !== null && oldY >= floor - 1.5 && a.y < floor) {
       a.y = floor;
       a.vy = 0;
       a.onGround = true;
