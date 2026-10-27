@@ -2394,6 +2394,8 @@ function clearActorsAndFX() {
 function startMatch(options = {}) {
   if (state.rolloutVisuals) { state.rolloutVisuals.dispose(); state.rolloutVisuals = null; }
   state.rollout = null;
+  document.querySelector('.brand-pill .pill-title').textContent='HEX-A-GONE 3D';
+  document.querySelector('.layer-pill .pill-label').textContent='ЯРУС';
   if (state.raceVisuals) { state.raceVisuals.dispose(); state.raceVisuals = null; }
   state.race = null;
   const diffKey = state.diffKey;
@@ -2626,6 +2628,8 @@ function startRollOut(mode = 'single_rollout', qualifiers = null) {
   if (mode === 'single_rollout') state.lastMode = mode;
   startMatch(qualifiers ? {qualifiers} : {largeField:true});
   state.showMode = mode;
+  document.querySelector('.brand-pill .pill-title').textContent='ROLL OUT';
+  document.querySelector('.layer-pill .pill-label').textContent='КВАЛИФИКАЦИЯ';
   stadiumPillars.forEach(pillar => { pillar.visible = false; });
   arenaGroup.clear();
   state.layers = [{ index:0, yHeight:0, list:[], map:new Map() }];
@@ -2634,7 +2638,7 @@ function startRollOut(mode = 'single_rollout', qualifiers = null) {
   arenaGroup.add(state.rolloutVisuals.root); state.rolloutVisuals.update();
   state.rolloutQuota = Math.max(1, Math.ceil(state.actors.length * .6));
   state.actors.forEach((actor,i) => {
-    actor.x = ((i % 5)-2)*RING_WIDTH;
+    actor.x = (((i + 2) % 5)-2)*RING_WIDTH;
     actor.z = (Math.floor(i/5)-1)*1.25;
     actor.y = sampleSurface(state.rollout,actor.x,actor.z)?.y ?? 0;
     actor.vx=actor.vy=actor.vz=actor.knockVx=actor.knockVz=0;
@@ -3208,7 +3212,7 @@ function updateWorld3D(dt, nowSec) {
     return;
   }
 
-  if (state.rollout) { updateRollOut(dt); return; }
+  if (state.rollout) { updateRollOut(dt * (state.player && !state.player.alive ? state.spectateSpeed : 1)); return; }
   if (state.race) { updateBigFans(dt); return; }
 
   const simDt = dt * (state.player && !state.player.alive ? state.spectateSpeed : 1);
@@ -3522,7 +3526,7 @@ function updateThirdPersonCamera(dt, forcedTarget = null) {
     focusActor = state.spectateTarget;
     if (focusActor) {
       document.getElementById('spec-target-name').textContent =
-        `Смотрим за: ${focusActor.name} (Ярус ${focusActor.currentLayer + 1})`;
+        state.rollout ? `Смотрим за: ${focusActor.name}` : `Смотрим за: ${focusActor.name} (Ярус ${focusActor.currentLayer + 1})`;
     }
   }
 
