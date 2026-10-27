@@ -17,6 +17,8 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 import { createCourseState } from './big-fans/course.mjs';
 import { createCourseVisuals } from './big-fans/visuals.mjs';
 import { initializeRacer, updateRace } from './big-fans/race.mjs';
+import { createRollout, advanceRollout, sampleSurface, carryRacer, hitWall, botDecision, RING_WIDTH } from './roll-out/rollout.mjs';
+import { createRolloutVisuals } from './roll-out/visuals.mjs';
 
 // ==================== 1. КОНФИГУРАЦИЯ СЛОЖНОСТИ И УСКОРЕННЫЙ РЕГЕН ====================
 const DIFFICULTIES = {
@@ -2390,6 +2392,8 @@ function clearActorsAndFX() {
 }
 
 function startMatch(options = {}) {
+  if (state.rolloutVisuals) { state.rolloutVisuals.dispose(); state.rolloutVisuals = null; }
+  state.rollout = null;
   if (state.raceVisuals) { state.raceVisuals.dispose(); state.raceVisuals = null; }
   state.race = null;
   const diffKey = state.diffKey;
@@ -2542,10 +2546,7 @@ function finishRace(result) {
   const qualifiers = result.finished.slice(0, result.quota);
   const playerQualified = qualifiers.includes(state.player);
   if (state.showMode === 'championship' && playerQualified) {
-    state.showMode = 'championship_final';
-    startMatch({ qualifiers });
-    document.getElementById('countdown-badge').textContent = `ФИНАЛ HEX-A-GONE • ${qualifiers.length} УЧАСТНИКОВ`;
-    document.getElementById('countdown-sub').textContent = 'Прошедшие выходят в финал!';
+    startRollOut('championship_rollout', qualifiers);
     return;
   }
   state.phase = 'gameover';
@@ -2618,6 +2619,106 @@ function updateBigFans(dt) {
   }
   updateFX(dt); updateThirdPersonCamera(dt); update3DNameplates(); updateRaceHUD();
   if (result.done && state.raceFinishNotice <= 0) finishRace(result);
+}
+
+// ==================== ROLL OUT: SURVIVAL ROUND ====================
+function startRollOut(mode = 'single_rollout', qualifiers = null) {
+  if (mode === 'single_rollout') state.lastMode = mode;
+  startMatch(qualifiers ? {qualifiers} : {largeField:true});
+  state.showMode = mode;
+  stadiumPillars.forEach(pillar => { pillar.visible = false; });
+  arenaGroup.clear();
+  state.layers = [{ index:0, yHeight:0, list:[], map:new Map() }];
+  state.rollout = createRollout();
+  state.rolloutVisuals = createRolloutVisuals(THREE, state.rollout);
+  arenaGroup.add(state.rolloutVisuals.root); state.rolloutVisuals.update();
+  state.rolloutQuota = Math.max(1, Math.ceil(state.actors.length * .6));
+  state.actors.forEach((actor,i) => {
+    actor.x = ((i % 5)-2)*RING_WIDTH;
+    actor.z = (Math.floor(i/5)-1)*1.25;
+    actor.y = sampleSurface(state.rollout,actor.x,actor.z)?.y ?? 0;
+    actor.vx=actor.vy=actor.vz=actor.knockVx=actor.knockVz=0;
+    actor.onGround=true; actor.currentLayer=0; actor.facing=0; actor.visualFacing=0;
+  });
+  state.phase='countdown'; state.countdownTimer=3.2; state.elapsed=0;
+  state.camYaw=state.targetCamYaw=Math.PI; state.camFocusPos.set(state.player.x,1.2,state.player.z);
+  document.getElementById('countdown-badge').textContent = mode === 'championship_rollout' ? 'ROLL OUT • РАУНД 2' : 'ROLL OUT • ТЕСТ';
+  document.getElementById('countdown-text').textContent='3';
+  document.getElementById('countdown-sub').textContent='Переходите между вращающимися секциями и не падайте!';
+  updateRolloutHUD();
+}
+function updateRolloutHUD() {
+  const count=state.actors.filter(a=>a.alive).length;
+  document.getElementById('hud-mode-label').textContent = 'ROLL OUT • ВЫЖИВАНИЕ';
+  document.getElementById('hud-alive').textContent = `${count} / ${state.actors.length}`;
+  document.getElementById('hud-layer').textContent = `${state.rolloutQuota} проходят`;
+  document.getElementById('hud-timer').textContent = formatTime(state.elapsed);
+}
+function finishRollOut() {
+  const survivors=state.actors.filter(a=>a.alive);
+  if (state.showMode==='championship_rollout' && state.player.alive) {
+    state.showMode='championship_final'; startMatch({qualifiers:survivors});
+    document.getElementById('countdown-badge').textContent=`ФИНАЛ HEX-A-GONE • ${survivors.length} УЧАСТНИКОВ`;
+    document.getElementById('countdown-sub').textContent='Прошедшие выходят в финал!';
+    return;
+  }
+  state.phase='gameover';
+  document.getElementById('spectator-bar').classList.add('hidden');
+  document.getElementById('result-ribbon').textContent='ROLL OUT • ВЫЖИВАНИЕ';
+  document.getElementById('result-title').textContent=state.player.alive?'ВЫ ПРОШЛИ! 🎉':'ВЫ ВЫБЫЛИ';
+  document.getElementById('result-subtitle').textContent=`Участников прошло: ${survivors.length} из ${state.actors.length}`;
+  document.getElementById('spot-winner-name').textContent=state.player.alive?'Вы удержались!':'Раунд окончен';
+  document.getElementById('spot-winner-meta').textContent=`Время: ${formatTime(state.elapsed)}`;
+  document.getElementById('res-place').textContent=state.player.alive?'✓':'—';
+  document.getElementById('res-time').textContent=formatTime(state.player.survivalTime);
+  document.getElementById('res-tiles').textContent='—'; document.getElementById('res-score').textContent='—';
+  const list=document.getElementById('match-standings');list.replaceChildren();
+  for (const a of survivors) { const row=document.createElement('div');row.className='standing-row';row.textContent=`✓ ${a.name}`;list.appendChild(row); }
+  document.getElementById('result-modal').classList.remove('hidden');
+}
+function updateRollOut(dt) {
+  state.elapsed+=dt; advanceRollout(state.rollout,dt); state.rolloutVisuals.update();
+  const p=state.player;
+  if (p.alive && !p.isDiving) {
+    let right=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0);
+    let forward=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0);
+    if(joystick.active){right+=joystick.dx;forward-=joystick.dy;}
+    const len=Math.hypot(right,forward);
+    if(len>.05){right/=Math.max(1,len);forward/=Math.max(1,len);
+      const dx=-Math.sin(state.camYaw)*forward+Math.cos(state.camYaw)*right;
+      const dz=-Math.cos(state.camYaw)*forward-Math.sin(state.camYaw)*right;
+      p.facing=Math.atan2(dx,dz);const rate=Math.min(1,dt*(p.onGround?11:6));
+      p.vx+=(dx*7.2-p.vx)*rate;p.vz+=(dz*7.2-p.vz)*rate;
+    }else{const friction=Math.max(0,1-dt*(p.onGround?10:2.5));p.vx*=friction;p.vz*=friction;}
+  }
+  for (const a of state.actors) {
+    if(!a.alive)continue;
+    a.survivalTime=state.elapsed; a.diveCooldown=Math.max(0,a.diveCooldown-dt);
+    if(a.isDiving && (a.diveTimer-=dt)<=0)a.isDiving=false;
+    if(!a.isPlayer){const d=botDecision(state.rollout,a);const rate=Math.min(1,dt*7);a.vx+=(d.vx-a.vx)*rate;a.vz+=(d.vz-a.vz)*rate;if(d.jump)a.jump();if(Math.hypot(d.vx,d.vz)>.1)a.facing=Math.atan2(d.vx,d.vz);}
+    carryRacer(state.rollout,a,dt);
+    const oldY=a.y, oldZ=a.z;
+    a.x+=(a.vx+a.knockVx)*dt; a.z+=(a.vz+a.knockVz)*dt;
+    a.knockVx*=Math.max(0,1-dt*5);a.knockVz*=Math.max(0,1-dt*5);
+    a.vy-=30*dt;a.y+=a.vy*dt;
+    const surface=sampleSurface(state.rollout,a.x,a.z);a.onGround=false;
+    if(surface && a.vy<=0 && oldY>=surface.y-.65 && a.y<=surface.y+.08){a.y=surface.y;a.vy=0;a.onGround=true;a.jumpCount=0;}
+    hitWall(surface,a,oldZ);
+    a.rig.blobShadow.visible=!!surface && a.y>=surface.y;
+    if(a.rig.blobShadow.visible)a.rig.blobShadow.position.y=surface.y-a.y+.03;
+    if(a.y < -10){a.alive=false;a.rig.root.visible=false;a.labelEl.style.display='none';state.eliminationOrder.push(a);sfx.play('elim');if(a.isPlayer)onPlayerEliminated();}
+  }
+  // Gentle contact between contestants on the roller.
+  const alive=state.actors.filter(a=>a.alive);
+  for(let i=0;i<alive.length;i++)for(let j=i+1;j<alive.length;j++){
+    const a=alive[i],b=alive[j];if(Math.abs(a.y-b.y)>1.8)continue;
+    const dx=b.x-a.x,dz=b.z-a.z,d=Math.hypot(dx,dz),min=(a.radius+b.radius)*.8;
+    if(d>1e-4 && d<min){const nx=dx/d,nz=dz/d,off=(min-d)*.5;a.x-=nx*off;a.z-=nz*off;b.x+=nx*off;b.z+=nz*off;
+      if(a.bumpCooldown<=0 && b.bumpCooldown<=0){a.knockVx-=nx*1.2;a.knockVz-=nz*1.2;b.knockVx+=nx*1.2;b.knockVz+=nz*1.2;a.bumpCooldown=b.bumpCooldown=.25;}}
+  }
+  for(const a of alive)a.bumpCooldown=Math.max(0,a.bumpCooldown-dt);
+  updateFX(dt);updateThirdPersonCamera(dt);update3DNameplates();updateRolloutHUD();
+  if(alive.length<=state.rolloutQuota || state.elapsed>=150)finishRollOut();
 }
 
 // ==================== 3D БОНУСЫ, ЧАСТИЦЫ И УДАРНЫЕ ВОЛНЫ ====================
@@ -3107,6 +3208,7 @@ function updateWorld3D(dt, nowSec) {
     return;
   }
 
+  if (state.rollout) { updateRollOut(dt); return; }
   if (state.race) { updateBigFans(dt); return; }
 
   const simDt = dt * (state.player && !state.player.alive ? state.spectateSpeed : 1);
@@ -4135,6 +4237,8 @@ function openLeaderboard() {
 function openStartModal() {
   document.getElementById('race-finish-notice')?.remove();
   if (state.raceVisuals) { state.raceVisuals.dispose(); state.raceVisuals = null; }
+  if (state.rolloutVisuals) { state.rolloutVisuals.dispose(); state.rolloutVisuals = null; }
+  state.rollout = null;
   state.race = null;
   state.phase = 'menu';
   music.setMode('lobby');
@@ -4263,8 +4367,9 @@ document.getElementById('btn-start-match').addEventListener('click', () => {
   startMatch();
 });
 
-document.getElementById('btn-play-again').addEventListener('click', () => state.lastMode === 'hex' ? startMatch() : startBigFans(state.lastMode || 'single'));
+document.getElementById('btn-play-again').addEventListener('click', () => state.lastMode === 'hex' ? startMatch() : state.lastMode === 'single_rollout' ? startRollOut() : startBigFans(state.lastMode || 'single'));
 document.getElementById('btn-big-fans').addEventListener('click', () => startBigFans('single'));
+document.getElementById('btn-roll-out').addEventListener('click', () => startRollOut());
 document.getElementById('btn-result-settings').addEventListener('click', openStartModal);
 document.getElementById('btn-menu').addEventListener('click', openStartModal);
 document.getElementById('btn-sound').addEventListener('click', toggleSound);
@@ -4301,7 +4406,7 @@ document.getElementById('btn-spec-fast').addEventListener('click', (e) => {
 
 document.getElementById('btn-spec-skip').addEventListener('click', () => {
   const aliveList = state.actors.filter(a => a.alive);
-  triggerWinnerCelebration(aliveList[0] || state.player);
+  if (state.rollout) finishRollOut(); else triggerWinnerCelebration(aliveList[0] || state.player);
 });
 
 window.addEventListener('resize', () => {
