@@ -2729,10 +2729,10 @@ function finishRollOut() {
       icon: '🛡️',
       ribbon: 'РАУНД 2 ПРОЙДЕН!',
       title: 'КВАЛИФИЦИРОВАН!',
-      subtitle: 'ТЫ ПРОШЁЛ! Переход в Раунд 3: Slime Climb...',
+      subtitle: 'ТЫ ПРОШЁЛ! Переход в финал: Jump Showdown...',
       duration: 2.6,
       onComplete: () => {
-        startSlimeClimb('championship_slime', survivors);
+        startJumpShowdown('championship_showdown', survivors);
       }
     });
     return;
@@ -5004,7 +5004,6 @@ document.getElementById('btn-start-match').addEventListener('click', () => {
 document.getElementById('btn-play-again').addEventListener('click', () => state.lastMode === 'hex' ? startMatch() : state.lastMode === 'single_rollout' ? startRollOut() : state.lastMode === 'single_slime' ? startSlimeClimb() : state.lastMode === 'single_showdown' ? startJumpShowdown() : startBigFans(state.lastMode || 'single'));
 document.getElementById('btn-big-fans').addEventListener('click', () => startBigFans('single'));
 document.getElementById('btn-roll-out').addEventListener('click', () => startRollOut());
-document.getElementById('btn-slime-climb').addEventListener('click', () => startSlimeClimb());
 document.getElementById('btn-jump-showdown')?.addEventListener('click', () => startJumpShowdown());
 document.getElementById('btn-result-settings').addEventListener('click', openStartModal);
 document.getElementById('btn-menu').addEventListener('click', openStartModal);
@@ -5074,4 +5073,5 @@ function animate(now) {
 }
 
 requestAnimationFrame(animate);
+
 

@@ -214,8 +214,8 @@ export function createShowdownVisuals(THREE, course) {
     root,
     update() {
       // 1. Sweeper rotations
-      lowBarPivot.rotation.y = course.lowBar.angle;
-      highBarPivot.rotation.y = course.highBar.angle;
+      lowBarPivot.rotation.y = -course.lowBar.angle;
+      highBarPivot.rotation.y = -course.highBar.angle;
 
       // Roller self-spinning around longitudinal axis
       rollerMesh.rotation.x = course.time * 8.0;
@@ -253,3 +253,4 @@ export function createShowdownVisuals(THREE, course) {
     }
   };
 }
+

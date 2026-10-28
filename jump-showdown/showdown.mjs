@@ -79,6 +79,8 @@ export function advanceShowdown(c, dt) {
   c.lowBar.omega = (0.72 + Math.min(1.48, (c.time / 140) * 1.48)) * 1.0;
   c.highBar.omega = c.lowBar.omega * 1.36; // different speed creates periodic double-decker overlaps!
 
+  c.lowBar.previousAngle = c.lowBar.angle;
+  c.highBar.previousAngle = c.highBar.angle;
   c.lowBar.angle = wrapAngle(c.lowBar.angle + c.lowBar.omega * dt);
   c.highBar.angle = wrapAngle(c.highBar.angle + c.highBar.omega * dt);
 
@@ -128,7 +130,7 @@ export function advanceShowdown(c, dt) {
 
 export function getSectorAt(course, x, z) {
   const dist = Math.hypot(x, z);
-  if (dist < INNER_RADIUS - 0.2 || dist > OUTER_RADIUS + 0.3) return null;
+  if (dist < INNER_RADIUS + 0.02 || dist > OUTER_RADIUS - 0.02) return null;
   const rawAngle = Math.atan2(z, x); // -PI..PI
   const theta = wrapAngle(rawAngle); // 0..TAU
   const idx = Math.min(NUM_SECTORS - 1, Math.floor(theta / SECTOR_ANGLE));
@@ -138,9 +140,7 @@ export function getSectorAt(course, x, z) {
   const relAngle = Math.abs(theta - sector.angleMid);
   const halfSectorAngle = SECTOR_ANGLE * 0.5;
   const angularDistToEdge = halfSectorAngle - relAngle;
-  const arcDistToEdge = angularDistToEdge * dist;
-
-  const inGap = arcDistToEdge < SECTOR_GAP * 0.5;
+  const inGap = angularDistToEdge < (SECTOR_GAP * 0.5) / ((INNER_RADIUS + OUTER_RADIUS) * 0.5);
   return { sector, dist, theta, inGap, idx };
 }
 
@@ -170,10 +170,19 @@ export function checkSweeperHit(course, actor) {
 
   const actorTheta = wrapAngle(Math.atan2(actor.z, actor.x));
   const actorY = actor.y;
+  const sweptDistance = bar => {
+    const now = Math.abs(wrapAngle(actorTheta - bar.angle + Math.PI) - Math.PI);
+    if (bar.previousAngle === undefined) return now;
+    const travel = wrapAngle(bar.angle - bar.previousAngle);
+    const fromStart = wrapAngle(actorTheta - bar.previousAngle);
+    if (fromStart <= travel) return 0;
+    const start = Math.abs(wrapAngle(actorTheta - bar.previousAngle + Math.PI) - Math.PI);
+    return Math.min(now, start);
+  };
 
   // 1. Lower Sweeper (Low Roller):
   // Character must jump over it (a.y >= 1.25)
-  const dThetaLow = Math.abs(wrapAngle(actorTheta - course.lowBar.angle + Math.PI) - Math.PI);
+  const dThetaLow = sweptDistance(course.lowBar);
   const arcDistLow = dist * dThetaLow;
   const hitDistLow = course.lowBar.radius + actor.radius * 0.72; // ~0.95m
 
@@ -201,14 +210,14 @@ export function checkSweeperHit(course, actor) {
 
   // 2. Upper Sweeper (High Overhead Arm):
   // Character is safe on ground (a.y <= 0.45); hit if jumping in mid-air (a.y in [1.35, 3.2])
-  const dThetaHigh = Math.abs(wrapAngle(actorTheta - course.highBar.angle + Math.PI) - Math.PI);
+  const dThetaHigh = sweptDistance(course.highBar);
   const arcDistHigh = dist * dThetaHigh;
   const hitDistHigh = course.highBar.radius + actor.radius * 0.72;
 
   if (arcDistHigh < hitDistHigh) {
     if (actorY <= 0.45) {
       // Ducked safely under high bar!
-    } else if (actorY >= 1.20 && actorY <= course.highBar.y + course.highBar.radius + 0.8) {
+    } else if (actorY > 0.45 && actorY <= course.highBar.y + course.highBar.radius + 0.8) {
       // HIT BY UPPER OVERHEAD ARM IN MID-AIR!
       const tangX = -Math.sin(course.highBar.angle);
       const tangZ = Math.cos(course.highBar.angle);
@@ -328,3 +337,4 @@ export function botDecision(course, actor) {
 export function getRemainingSectors(course) {
   return course.sectors.filter(s => s.state === 'solid' || s.state === 'warning');
 }
+

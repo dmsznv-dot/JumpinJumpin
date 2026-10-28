@@ -45,7 +45,8 @@ export function carryRacer(course, actor, dt) {
 export function hitWall(surface, actor, previousZ) {
   if (!surface || actor.y > surface.y + 1.5) return false;
   const wallZ = RADIUS * Math.sin(surface.wallAngle);
-  if (Math.abs(surface.wallAngle) > 1.15 || Math.abs(actor.z-wallZ) > .55) return false;
+  const crossed = (previousZ-wallZ)*(actor.z-wallZ) <= 0;
+  if (Math.abs(surface.wallAngle) > 1.15 || (!crossed && Math.abs(actor.z-wallZ) > .55)) return false;
   actor.z = wallZ + (previousZ <= wallZ ? -.58 : .58);
   actor.vz *= -.2;
   return true;
@@ -83,3 +84,4 @@ export function botDecision(course, actor) {
   if(jump)actor.rollNextJump=course.time+8+(id%4);
   return {vx,vz,jump};
 }
+

@@ -101,6 +101,18 @@ test('sweeper collisions: low bar requires jumping, high bar requires staying lo
   assert.equal(hitHigh.bar, 'high');
 });
 
+test('fast sweeper catches actors between its previous and current positions', () => {
+  const c = createShowdown();
+  c.highBar.angle = Math.PI;
+  c.lowBar.angle = 0;
+  advanceShowdown(c, 0.3);
+  const theta = c.lowBar.angle / 2;
+  for (const id of ['player', 'bot_0']) {
+    const actor = { id, x: 12 * Math.cos(theta), z: 12 * Math.sin(theta), y: 0, radius: .8, alive: true };
+    assert.equal(checkSweeperHit(c, actor)?.bar, 'low');
+  }
+});
+
 test('bot AI evacuates shaking sectors and jumps approaching sweepers', () => {
   const c = createShowdown();
 
@@ -121,3 +133,4 @@ test('bot AI evacuates shaking sectors and jumps approaching sweepers', () => {
   const dJump = botDecision(c, botSafe);
   assert.equal(dJump.jump, true, 'bot should jump when lower sweeper approaches');
 });
+
