@@ -22,6 +22,7 @@ export function createShowdownVisuals(THREE, course) {
   const darkMetal = mat(0x1a1530, { roughness: 0.65, metalness: 0.5 });
   const chrome = mat(0xd0d8e8, { roughness: 0.18, metalness: 0.85 });
   const woodGreen = mat(0x00e676, { roughness: 0.35 });
+  const stitchMat = mat(0xffffff, { roughness: 0.55 });
   const hazardOrange = mat(0xff9100, { roughness: 0.35 });
   const sirenOff = mat(0x4a0e1c, { roughness: 0.6 });
   const sirenOn = mat(0xff1744, { emissive: 0xff1744, emissiveIntensity: 1.8 });
@@ -63,12 +64,20 @@ export function createShowdownVisuals(THREE, course) {
 
     const wedgeGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
     wedgeGeo.rotateX(Math.PI / 2); // Lay horizontal
-    wedgeGeo.translate(0, -1.2, 0); // Top surface at y = 0
+    // Rotation puts the top at y=0 and the extrusion below it. A second
+    // downward translation would place the visible floor below the collider.
 
     const wedgeMesh = new THREE.Mesh(wedgeGeo, topMat);
     wedgeMesh.receiveShadow = true;
     wedgeMesh.castShadow = true;
     sGroup.add(wedgeMesh);
+
+    // Fine seams give the large wedges a soft padded-mat finish.
+    const seamLength=OUTER_RADIUS-INNER_RADIUS-1.6;
+    const seam=new THREE.Mesh(new THREE.BoxGeometry(seamLength,.018,.06), stitchMat);
+    const seamAngle=(aStart+aEnd)*.5, seamRadius=(INNER_RADIUS+OUTER_RADIUS)*.5;
+    seam.position.set(Math.cos(seamAngle)*seamRadius,.025,Math.sin(seamAngle)*seamRadius);
+    seam.rotation.y=-seamAngle;sGroup.add(seam);
 
     // Hazard warning curb along outer perimeter
     const curbGeo = new THREE.TorusGeometry(OUTER_RADIUS - 0.25, 0.22, 8, 14, aEnd - aStart);

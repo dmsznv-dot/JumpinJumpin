@@ -8,6 +8,8 @@ export function createCourseVisuals(THREE, course) {
   const yellow = new THREE.MeshStandardMaterial({ color: 0xffda34, roughness: 0.48 });
   const purple = new THREE.MeshStandardMaterial({ color: 0x7845d0, roughness: 0.5 });
   const white = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.55 });
+  const lightPink = new THREE.MeshStandardMaterial({ color: 0xffc8df, roughness: 0.42 });
+  const darkBlue = new THREE.MeshStandardMaterial({ color: 0x294c86, roughness: 0.55 });
   const box = (w,h,d,mat,x,y,z,parent=root) => {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
     mesh.position.set(x,y,z); mesh.castShadow = true; mesh.receiveShadow = true;
@@ -16,6 +18,13 @@ export function createCourseVisuals(THREE, course) {
   [COURSE.start, ...COURSE.checkpoints, COURSE.finish].forEach((pad, i) => {
     box(pad.halfWidth*2, 0.65, pad.halfLength*2, i === 4 ? yellow : cyan, pad.x, -0.325, pad.z);
     box(pad.halfWidth*2, 0.12, 0.25, pink, pad.x, 0.06, pad.z-pad.halfLength+0.25);
+    // Seams and a padded rim remain inside the walkable platform footprint.
+    for (let stripe = -2; stripe <= 2; stripe++) {
+      box(.07, .015, Math.max(.1, pad.halfLength*2-.55), white,
+        pad.x+stripe*pad.halfWidth*.32, .008, pad.z);
+    }
+    for (const side of [-1,1]) box(.28,.2,pad.halfLength*2-.3,lightPink,
+      pad.x+side*(pad.halfWidth-.18),.04,pad.z);
     if (i > 0 && i < 4) {
       box(0.3, 3.8, 0.3, white, pad.x-pad.halfWidth+1, 1.9, pad.z);
       box(2, 1.2, 0.12, pink, pad.x-pad.halfWidth+2, 3.0, pad.z);
@@ -72,6 +81,10 @@ export function createCourseVisuals(THREE, course) {
     const rotor = new THREE.Group(); group.add(rotor);
     const hub = new THREE.Mesh(new THREE.CylinderGeometry(fan.hubRadius,fan.hubRadius,.5,32), yellow);
     hub.position.y = -.25; hub.castShadow = true; rotor.add(hub);
+    const hubTrim = new THREE.Mesh(new THREE.TorusGeometry(fan.hubRadius*.75,.08,8,32), white);
+    hubTrim.rotation.x = Math.PI/2; hubTrim.position.y=.012; rotor.add(hubTrim);
+    const hubCenter = new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,.08,16), darkBlue);
+    hubCenter.position.y=.04;rotor.add(hubCenter);
     // Blades are tapered to match the widening collision surface.
     for (let n=0; n<fan.blades; n++) {
       const shape = new THREE.Shape();
@@ -83,6 +96,10 @@ export function createCourseVisuals(THREE, course) {
       const blade = new THREE.Mesh(geo, i%2 ? cyan : pink);
       blade.rotation.y = -n * Math.PI*2/fan.blades;
       blade.castShadow = true; blade.receiveShadow = true; rotor.add(blade);
+      // A narrow inset highlight reads as a seam, with no extra collision surface.
+      const seam = new THREE.Mesh(new THREE.BoxGeometry((fan.radius-fan.hubRadius)*.72,.018,.055), white);
+      const mid=(fan.hubRadius+fan.radius)*.5, a=n*Math.PI*2/fan.blades;
+      seam.position.set(Math.cos(a)*mid,.012,Math.sin(a)*mid); seam.rotation.y=-a; rotor.add(seam);
     }
     let sweeper = null;
     if (fan.beam) {
@@ -107,8 +124,9 @@ export function createCourseVisuals(THREE, course) {
     },
     dispose() {
       root.traverse(obj => { if (obj.geometry) obj.geometry.dispose(); });
-      [pink,cyan,yellow,purple,white,signMat,bulbMat].forEach(m => m.dispose());
+      [pink,cyan,yellow,purple,white,lightPink,darkBlue,signMat,bulbMat].forEach(m => m.dispose());
       signTexture.dispose();
     }
   };
 }
+

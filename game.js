@@ -1016,7 +1016,7 @@ function buildStadiumEnvironment() {
     pGroup.position.set(px, 22, pz);
 
     const pMat = new THREE.MeshStandardMaterial({
-      color: 0x261758,
+      color: 0x6278a6,
       roughness: 0.5,
       metalness: 0.25
     });
@@ -1636,6 +1636,19 @@ function getBeanPatternTexture(c1Hex, c2Hex, patternId = 'belly') {
   return tex;
 }
 
+// A soft shared shadow keeps feet readable without the hard black discs that
+// otherwise look like holes in the platforms.
+const beanShadowCanvas = document.createElement('canvas');
+beanShadowCanvas.width = beanShadowCanvas.height = 128;
+const beanShadowContext = beanShadowCanvas.getContext('2d');
+const beanShadowGradient = beanShadowContext.createRadialGradient(64, 64, 8, 64, 64, 64);
+beanShadowGradient.addColorStop(0, 'rgba(12,18,46,0.52)');
+beanShadowGradient.addColorStop(.48, 'rgba(12,18,46,0.24)');
+beanShadowGradient.addColorStop(1, 'rgba(12,18,46,0)');
+beanShadowContext.fillStyle = beanShadowGradient;
+beanShadowContext.fillRect(0, 0, 128, 128);
+const beanShadowTexture = new THREE.CanvasTexture(beanShadowCanvas);
+
 // ==================== СОЗДАНИЕ 3D-МОДЕЛИ ФАСОЛИНКИ (ОЧКИ МИНЬОНА + ПАТТЕРН + ПОЛНЫЙ КОСТЮМ ВЕРХ И НИЗ) ====================
 function createBean3DMesh(skin) {
   const root = new THREE.Group();
@@ -2119,12 +2132,13 @@ function createBean3DMesh(skin) {
   }
 
   // Тень-блоб под ногами (проектируется ровно на поверхность соты под персонажем для 100% читаемости прыжка!)
-  const shadowGeo = new THREE.CircleGeometry(0.68, 20);
+  const shadowGeo = new THREE.PlaneGeometry(1.55, 1.55);
   shadowGeo.rotateX(-Math.PI / 2);
   const shadowMat = new THREE.MeshBasicMaterial({
-    color: 0x000000,
+    color: 0xffffff,
+    map: beanShadowTexture,
     transparent: true,
-    opacity: 0.44,
+    opacity: 0.72,
     depthWrite: false,
     polygonOffset: true,
     polygonOffsetFactor: -1,
@@ -2133,6 +2147,10 @@ function createBean3DMesh(skin) {
   const blobShadow = new THREE.Mesh(shadowGeo, shadowMat);
   blobShadow.position.y = 0.03;
   root.add(blobShadow);
+
+  // The soft projected contact shadow is easier to read than a second,
+  // sharply offset silhouette from the directional light on small platforms.
+  root.traverse(part => { if (part.isMesh) part.castShadow = false; });
 
   // Кольцо щита «Батут-спасение»
   const shieldRing = new THREE.Mesh(
@@ -2327,6 +2345,7 @@ class Actor3D {
       // Полёт «рыбкой» животом вперёд!
       bodyPivot.position.y = 0.35;
       bodyPivot.rotation.x = 1.25;
+      bodyPivot.rotation.z = 0;
       leftArm.rotation.x = -2.2;
       rightArm.rotation.x = -2.2;
       leftLeg.rotation.x = 0.5;
@@ -2335,6 +2354,7 @@ class Actor3D {
       this.walkCycle += dt * 8;
       bodyPivot.position.y = 0;
       bodyPivot.rotation.x = 0.15;
+      bodyPivot.rotation.z *= Math.max(0, 1 - dt * 8);
       leftArm.rotation.x = -1.8 + Math.sin(this.walkCycle) * 0.3;
       rightArm.rotation.x = -1.8 - Math.sin(this.walkCycle) * 0.3;
       leftLeg.rotation.x = 0.45;
@@ -2489,8 +2509,9 @@ function startMatch(options = {}) {
   arenaGroup.visible = true;
   actorsGroup.visible = true;
   fxGroup.visible = true;
-  scene.background = new THREE.Color(0x180e3a);
-  scene.fog = new THREE.FogExp2(0x180e3a, 0.0055);
+  // A soft daylight backdrop separates the playfield from the distant scenery.
+  scene.background = new THREE.Color(0xa6dbee);
+  scene.fog = new THREE.FogExp2(0xa6dbee, 0.0030);
 
   clearActorsAndFX();
   buildArena3D(config);
@@ -2561,6 +2582,8 @@ function startBigFans(mode = 'single') {
   state.lastMode = mode;
   startMatch({largeField: mode === 'championship'});
   state.showMode = mode;
+  document.querySelector('.brand-pill .pill-title').textContent = 'BIG FANS';
+  document.querySelector('.layer-pill .pill-label').textContent = 'КОНТРОЛЬНЫЕ ТОЧКИ';
   stadiumPillars.forEach(pillar => { pillar.visible = false; });
   slimeSeaMesh.material.color.setHex(0x151c42); slimeSeaMesh.material.emissive.setHex(0x090d25);
   // The race has a single ground height and its own arena and rules.
@@ -3311,7 +3334,7 @@ function applyPowerup(actor, pu) {
   }
 }
 
-const sharedParticleGeo = new THREE.SphereGeometry(0.16, 6, 6);
+const sharedParticleGeo = new THREE.SphereGeometry(0.16, 10, 8);
 function spawnParticles3D(x, y, z, hexColor, count = 8) {
   for (let i = 0; i < count; i++) {
     const mat = new THREE.MeshBasicMaterial({ color: hexColor, transparent: true, opacity: 1 });
