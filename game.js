@@ -24,6 +24,7 @@ import { createVisuals as createSlimeVisuals } from './slime-climb/visuals.mjs';
 import { createShowdown, advanceShowdown, sampleSurface as showdownSurface, checkSweeperHit as showdownSweeperHit, botDecision as showdownBotDecision, LIMIT as SHOWDOWN_LIMIT } from './jump-showdown/showdown.mjs';
 import { createShowdownVisuals } from './jump-showdown/visuals.mjs';
 import { TRACKS as MUSIC_TRACKS, chooseTrack } from './music/tracks.mjs';
+import { introFrame } from './presentation/intro.mjs';
 
 // ==================== 1. КОНФИГУРАЦИЯ СЛОЖНОСТИ И УСКОРЕННЫЙ РЕГЕН ====================
 const DIFFICULTIES = {
@@ -640,8 +641,19 @@ class FestivalMusicEngine {
     const bar = Math.floor(s / 16);
     const inBar = s % 16;
 
-    const bpm = this.mode === 'arena' ? 136 : 126;
+    const bpm = this.mode === 'intro' ? 112 : this.mode === 'arena' ? 136 : 126;
     const stepDur = (60 / bpm) / 4;
+
+    if (this.mode === 'intro') {
+      // An original rising fanfare, held through the flyover and countdown.
+      const chords=[[60,64,67],[65,69,72],[57,60,64],[67,71,74]];
+      const melody=[[72,0,76,0,79,0,81,0],[77,0,81,0,84,0,81,0],[76,0,79,0,81,0,84,0],[79,0,83,0,86,0,88,0]];
+      if(inBar===0)this.playMarimbaChord(ctx,t,chords[bar],stepDur*7);
+      if(inBar===0||inBar===8)this.playFunkBass(ctx,t,chords[bar][0]-12,stepDur*3);
+      if(inBar%2===0){const note=melody[bar][inBar/2];if(note)this.playBrassLead(ctx,t,note,stepDur*3);}
+      if(inBar===12)this.playHiHat(ctx,t,true);
+      return;
+    }
 
     if (this.mode === 'arena' && this.track > 0) {
       const theme=MUSIC_TRACKS[this.track-1];
@@ -744,7 +756,7 @@ class FestivalMusicEngine {
   scheduler() {
     const ctx = sfx.ctx;
     if (!ctx || !this.isPlaying) return;
-    const bpm = this.mode === 'arena' ? 136 : 126;
+    const bpm = this.mode === 'intro' ? 112 : this.mode === 'arena' ? 136 : 126;
     const stepDur = (60 / bpm) / 4;
 
     while (this.nextNoteTime < ctx.currentTime + 0.12) {
@@ -2459,6 +2471,19 @@ function clearActorsAndFX() {
   state.shockwaves = [];
 }
 
+function beginLevelIntro(kind, title, description) {
+  state.introKind = kind;
+  state.introDuration = kind === 'big-fans' ? 8.0 : 6.0;
+  state.introTimer = state.introDuration;
+  state.countdownTimer = 3.2;
+  state.phase = 'intro_flyover';
+  music.setMode('intro');
+  document.getElementById('countdown-overlay').classList.remove('hidden');
+  document.getElementById('countdown-badge').textContent = title;
+  document.getElementById('countdown-text').textContent = '👀';
+  document.getElementById('countdown-sub').textContent = description;
+}
+
 function startMatch(options = {}) {
   if (state.showdownVisuals) { state.showdownVisuals.dispose(); state.showdownVisuals = null; }
   state.showdown = null;
@@ -2502,7 +2527,7 @@ function startMatch(options = {}) {
 
   // Включаем 3D-арену, фон телешоу и переключаем фестивальный синтезатор на драйвовый ритм шоу (136 BPM)!
   music.start();
-  music.setMode('arena');
+  music.setMode('intro');
   music.selectTrack();
   lobbyGroup.visible = false;
   stadiumGroup.visible = true;
@@ -2575,6 +2600,8 @@ function startMatch(options = {}) {
   cdText.textContent = '👀';
   cdSub.textContent = 'Обзор 3D-арены... Приготовьтесь к старту!';
 
+  beginLevelIntro('hex', 'HEX-A-GONE', 'Не падайте с исчезающих платформ!');
+
   updateHUD();
 }
 
@@ -2596,7 +2623,7 @@ function startBigFans(mode = 'single') {
   state.raceVisuals = createCourseVisuals(THREE, state.race);
   arenaGroup.add(state.raceVisuals.root);
   state.raceVisuals.update();
-  state.phase = 'countdown';
+  state.phase = 'intro_flyover';
   state.countdownTimer = 3.2;
   state.elapsed = 0;
   state.actors.forEach((actor, i) => {
@@ -2612,6 +2639,7 @@ function startBigFans(mode = 'single') {
   document.getElementById('countdown-badge').textContent = state.showMode === 'championship' ? 'BIG FANS • РАУНД 1' : 'BIG FANS';
   document.getElementById('countdown-text').textContent = '3';
   document.getElementById('countdown-sub').textContent = 'Доберитесь до финиша через вращающиеся платформы!';
+  beginLevelIntro('big-fans', 'BIG FANS', 'Доберитесь до финиша через вращающиеся платформы!');
   updateRaceHUD();
 }
 function updateRaceHUD() {
@@ -2730,11 +2758,12 @@ function startRollOut(mode = 'single_rollout', qualifiers = null) {
     actor.vx=actor.vy=actor.vz=actor.knockVx=actor.knockVz=0;
     actor.onGround=true; actor.currentLayer=0; actor.facing=0; actor.visualFacing=0;
   });
-  state.phase='countdown'; state.countdownTimer=3.2; state.elapsed=0;
+  state.phase='intro_flyover'; state.countdownTimer=3.2; state.elapsed=0;
   state.camYaw=state.targetCamYaw=Math.PI; state.camFocusPos.set(state.player.x,1.2,state.player.z);
   document.getElementById('countdown-badge').textContent = mode === 'championship_rollout' ? 'ROLL OUT • РАУНД 2' : 'ROLL OUT • ТЕСТ';
   document.getElementById('countdown-text').textContent='3';
   document.getElementById('countdown-sub').textContent='Переходите между вращающимися секциями и не падайте!';
+  beginLevelIntro('roll-out', 'ROLL OUT', 'Переходите между вращающимися секциями и не падайте!');
   updateRolloutHUD();
 }
 function updateRolloutHUD() {
@@ -3077,7 +3106,7 @@ function startJumpShowdown(mode = 'single_showdown', qualifiers = null) {
     actor.sweeperHitCooldown = 0;
   });
 
-  state.phase = 'countdown';
+  state.phase = 'intro_flyover';
   state.countdownTimer = 3.2;
   state.elapsed = 0;
   state.camYaw = state.targetCamYaw = state.player.facing + Math.PI;
@@ -3086,6 +3115,7 @@ function startJumpShowdown(mode = 'single_showdown', qualifiers = null) {
   document.getElementById('countdown-badge').textContent = mode === 'championship_showdown' ? 'JUMP SHOWDOWN • ГРАНД-ФИНАЛ' : 'JUMP SHOWDOWN • ФИНАЛ';
   document.getElementById('countdown-text').textContent = '3';
   document.getElementById('countdown-sub').textContent = 'Перепрыгивайте валики и не оставайтесь на падающих секциях!';
+  beginLevelIntro('jump-showdown', 'JUMP SHOWDOWN', 'Перепрыгивайте валики и не оставайтесь на падающих секциях!');
   updateShowdownHUD();
 }
 
@@ -3691,23 +3721,10 @@ function updateWorld3D(dt, nowSec) {
   // 1. ФАЗА СТАРТОВОГО ПРОЛЁТА КАМЕРЫ ПО БАШНЕ (как в Hex-A-GoneIntroLegacy.gif)
   if (state.phase === 'intro_flyover') {
     state.introTimer -= dt;
-    const p = 1 - Math.max(0, state.introTimer / 2.4); // от 0 (низ у слизи) до 1 (верхний ярус за спиной игрока)
-    const smoothP = p * p * (3 - 2 * p);
-
-    const topY = state.layers[0] ? state.layers[0].yHeight : 20;
-    const flyAngle = state.targetCamYaw + (1 - smoothP) * Math.PI * 1.35;
-    const flyRadius = 32 * (1 - smoothP) + state.camDist * smoothP;
-    const lookY = -6 * (1 - smoothP) + (topY + 1.4) * smoothP;
-
-    const targetX = state.player ? state.player.x * smoothP : 0;
-    const targetZ = state.player ? state.player.z * smoothP : 0;
-
-    camera.position.set(
-      targetX + Math.sin(flyAngle) * flyRadius,
-      lookY + 11 * (1 - smoothP) + state.camHeight * smoothP,
-      targetZ + Math.cos(flyAngle) * flyRadius
-    );
-    camera.lookAt(targetX, lookY, targetZ);
+    const progress = 1 - Math.max(0, state.introTimer / state.introDuration);
+    const frame=introFrame(state.introKind,progress,state.player,state.targetCamYaw,state.camDist,state.camHeight,state.layers[0]?.yHeight || 0);
+    camera.position.set(frame.position.x,frame.position.y,frame.position.z);
+    camera.lookAt(frame.look.x,frame.look.y,frame.look.z);
 
     if (state.introTimer <= 0) {
       state.phase = 'countdown';
@@ -3745,6 +3762,7 @@ function updateWorld3D(dt, nowSec) {
 
     if (state.countdownTimer <= 0) {
       state.phase = 'playing';
+      music.setMode('arena');
       document.getElementById('countdown-overlay').classList.add('hidden');
     }
     return;
