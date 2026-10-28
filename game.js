@@ -23,6 +23,7 @@ import { createCourse as createSlimeCourse, advanceCourse as advanceSlimeCourse,
 import { createVisuals as createSlimeVisuals } from './slime-climb/visuals.mjs';
 import { createShowdown, advanceShowdown, sampleSurface as showdownSurface, checkSweeperHit as showdownSweeperHit, botDecision as showdownBotDecision, LIMIT as SHOWDOWN_LIMIT } from './jump-showdown/showdown.mjs';
 import { createShowdownVisuals } from './jump-showdown/visuals.mjs';
+import { TRACKS as MUSIC_TRACKS, chooseTrack } from './music/tracks.mjs';
 
 // ==================== 1. КОНФИГУРАЦИЯ СЛОЖНОСТИ И УСКОРЕННЫЙ РЕГЕН ====================
 const DIFFICULTIES = {
@@ -445,7 +446,7 @@ class FestivalMusicEngine {
     this.timerId = setInterval(() => this.scheduler(), 25);
   }
 
-  selectTrack() { this.track = Math.floor(Math.random()*4); this.step = 0; }
+  selectTrack() { this.track = chooseTrack(this.track); this.step = 0; }
 
   setVolume(value) {
     this.volume = Math.max(0, Math.min(1, value));
@@ -643,19 +644,18 @@ class FestivalMusicEngine {
     const stepDur = (60 / bpm) / 4;
 
     if (this.mode === 'arena' && this.track > 0) {
-      // Three original match themes, each with its own hook, bass and chord cycle.
-      const themes = [null,
-        { bass:[48,53,57,55], chords:[[60,64,67],[65,69,72],[69,72,76],[67,71,74]], lead:[[72,76,79,76,81,79,76,74],[77,81,84,81,79,77,76,72],[81,84,88,84,83,81,79,76],[79,83,86,84,81,79,76,74]] },
-        { bass:[50,55,53,57], chords:[[62,65,69],[67,71,74],[65,69,72],[69,72,76]], lead:[[74,77,81,77,74,81,84,81],[79,83,86,83,81,79,77,74],[77,81,84,81,77,76,74,72],[81,84,88,86,84,81,79,77]] },
-        { bass:[53,58,55,60], chords:[[65,69,72],[70,74,77],[67,71,74],[72,76,79]], lead:[[77,81,84,89,84,81,79,77],[82,86,89,86,84,82,81,77],[79,83,86,83,79,81,83,86],[84,88,91,89,86,84,81,79]] }
-      ];
-      const theme=themes[this.track];
-      if(inBar%4===0)this.playKick(ctx,t,.9);
+      const theme=MUSIC_TRACKS[this.track-1];
+      const bassy=theme.style==='bass', melodic=theme.style==='melodic';
+      if(inBar%4===0 || (bassy && inBar===10))this.playKick(ctx,t,bassy?1:.85);
       if(inBar===4||inBar===12)this.playSnareClap(ctx,t);
       if(inBar%2===1)this.playHiHat(ctx,t,inBar===15);
-      if(inBar%2===0)this.playFunkBass(ctx,t,theme.bass[bar]+(inBar%8===4?12:0),stepDur*1.5);
+      if(inBar%2===0 && (!melodic || inBar%4===0))this.playFunkBass(ctx,t,theme.bass[bar]+(inBar%8===4?12:0),stepDur*(bassy?2:1.5));
       if(inBar===0||inBar===8)this.playMarimbaChord(ctx,t,theme.chords[bar],stepDur*3);
-      if(inBar%2===0)this.playBrassLead(ctx,t,theme.lead[bar][inBar/2],stepDur*1.65);
+      if(inBar%2===0) {
+        const note=theme.lead[bar][inBar/2];
+        if(melodic && inBar%4===2)this.playMarimbaChord(ctx,t,[note],stepDur*2.2);
+        else this.playBrassLead(ctx,t,note,stepDur*(melodic?2.1:1.4));
+      }
       if(inBar===0 && bar===0)this.playFestivalWhistle(ctx,t);
       return;
     }
@@ -1288,15 +1288,15 @@ class HexTile3D {
 
     this.topMat = new THREE.MeshStandardMaterial({
       color: initTopCol,
-      roughness: 0.28,
-      metalness: 0.08,
+      roughness: 0.40,
+      metalness: 0.04,
       transparent: false,
       opacity: 1
     });
     this.rimMat = new THREE.MeshStandardMaterial({
       color: initRimCol,
-      roughness: 0.45,
-      metalness: 0.15,
+      roughness: 0.56,
+      metalness: 0.06,
       transparent: false,
       opacity: 1
     });

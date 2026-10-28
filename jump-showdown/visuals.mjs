@@ -137,6 +137,10 @@ export function createShowdownVisuals(THREE, course) {
   spindle.position.y = 2.1;
   spindle.castShadow = true;
   centerHubGroup.add(spindle);
+  for(const y of [1.45,3.25]){
+    const trim=new THREE.Mesh(new THREE.TorusGeometry(2.18,.075,10,40),yellow);
+    trim.rotation.x=Math.PI/2;trim.position.y=y;centerHubGroup.add(trim);
+  }
 
   // Top dome crown
   const dome = new THREE.Mesh(new THREE.SphereGeometry(1.6, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.5), yellow);
@@ -157,6 +161,8 @@ export function createShowdownVisuals(THREE, course) {
   const lowCollar = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, 0.9, 24), yellow);
   lowCollar.position.y = 0.78;
   lowBarPivot.add(lowCollar);
+  const lowRim=new THREE.Mesh(new THREE.TorusGeometry(2.5,.09,10,40),pink);
+  lowRim.rotation.x=Math.PI/2;lowRim.position.y=1.23;lowBarPivot.add(lowRim);
 
   // Connecting steel boom
   const lowArmLen = OUTER_RADIUS - 0.2;
@@ -196,6 +202,8 @@ export function createShowdownVisuals(THREE, course) {
   const highCollar = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.3, 0.8, 24), mat(0x2979ff, { roughness: 0.25 }));
   highCollar.position.y = 2.30;
   highBarPivot.add(highCollar);
+  const highRim=new THREE.Mesh(new THREE.TorusGeometry(2.3,.08,10,40),yellow);
+  highRim.rotation.x=Math.PI/2;highRim.position.y=2.7;highBarPivot.add(highRim);
 
   const highArmLen = OUTER_RADIUS - 0.5;
   const highRadius = 0.32;

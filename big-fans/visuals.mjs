@@ -10,6 +10,7 @@ export function createCourseVisuals(THREE, course) {
   const white = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.55 });
   const lightPink = new THREE.MeshStandardMaterial({ color: 0xffc8df, roughness: 0.42 });
   const darkBlue = new THREE.MeshStandardMaterial({ color: 0x294c86, roughness: 0.55 });
+  const metal = new THREE.MeshStandardMaterial({color:0x6383ae,roughness:.4,metalness:.35});
   const box = (w,h,d,mat,x,y,z,parent=root) => {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
     mesh.position.set(x,y,z); mesh.castShadow = true; mesh.receiveShadow = true;
@@ -25,6 +26,13 @@ export function createCourseVisuals(THREE, course) {
     }
     for (const side of [-1,1]) box(.28,.2,pad.halfLength*2-.3,lightPink,
       pad.x+side*(pad.halfWidth-.18),.04,pad.z);
+    // Structural supports sit below the walking surface and remain out of the route.
+    for (const side of [-1,1]) {
+      const leg=new THREE.Mesh(new THREE.CylinderGeometry(.36,.48,3.1,16),metal);
+      leg.position.set(pad.x+side*(pad.halfWidth-1.4),-2.2,pad.z);root.add(leg);
+      const foot=new THREE.Mesh(new THREE.SphereGeometry(.48,16,10),yellow);
+      foot.position.set(pad.x+side*(pad.halfWidth-1.4),-3.72,pad.z);root.add(foot);
+    }
     if (i > 0 && i < 4) {
       box(0.3, 3.8, 0.3, white, pad.x-pad.halfWidth+1, 1.9, pad.z);
       box(2, 1.2, 0.12, pink, pad.x-pad.halfWidth+2, 3.0, pad.z);
@@ -81,6 +89,10 @@ export function createCourseVisuals(THREE, course) {
     const rotor = new THREE.Group(); group.add(rotor);
     const hub = new THREE.Mesh(new THREE.CylinderGeometry(fan.hubRadius,fan.hubRadius,.5,32), yellow);
     hub.position.y = -.25; hub.castShadow = true; rotor.add(hub);
+    const engine = new THREE.Mesh(new THREE.CylinderGeometry(fan.hubRadius*.72,fan.hubRadius*.52,1.3,24),metal);
+    engine.position.y=-1.13;rotor.add(engine);
+    const engineRim = new THREE.Mesh(new THREE.TorusGeometry(fan.hubRadius*.62,.08,8,24),white);
+    engineRim.rotation.x=Math.PI/2;engineRim.position.y=-1.75;rotor.add(engineRim);
     const hubTrim = new THREE.Mesh(new THREE.TorusGeometry(fan.hubRadius*.75,.08,8,32), white);
     hubTrim.rotation.x = Math.PI/2; hubTrim.position.y=.012; rotor.add(hubTrim);
     const hubCenter = new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,.08,16), darkBlue);
@@ -104,8 +116,18 @@ export function createCourseVisuals(THREE, course) {
     let sweeper = null;
     if (fan.beam) {
       sweeper = new THREE.Group(); group.add(sweeper);
-      box(fan.radius*2, .55, .55, purple, 0, .52, 0, sweeper);
-      box(.8, 1.2, .8, yellow, 0, .6, 0, sweeper);
+      const bar=new THREE.Mesh(new THREE.CylinderGeometry(.275,.275,fan.radius*2,24),purple);
+      bar.rotation.z=Math.PI/2;bar.position.y=.52;bar.castShadow=true;sweeper.add(bar);
+      const boss=new THREE.Mesh(new THREE.CylinderGeometry(.52,.56,1.0,24),yellow);
+      boss.position.y=.5;sweeper.add(boss);
+      for(const side of [-1,1]){
+        const end=new THREE.Mesh(new THREE.SphereGeometry(.275,16,12),lightPink);
+        end.position.set(side*fan.radius,.52,0);sweeper.add(end);
+        for(let j=1;j<=3;j++){
+          const band=new THREE.Mesh(new THREE.TorusGeometry(.28,.035,8,20),white);
+          band.rotation.y=Math.PI/2;band.position.set(side*fan.radius*j/4,.52,0);sweeper.add(band);
+        }
+      }
     }
     return {rotor,sweeper};
   });
@@ -124,7 +146,7 @@ export function createCourseVisuals(THREE, course) {
     },
     dispose() {
       root.traverse(obj => { if (obj.geometry) obj.geometry.dispose(); });
-      [pink,cyan,yellow,purple,white,lightPink,darkBlue,signMat,bulbMat].forEach(m => m.dispose());
+      [pink,cyan,yellow,purple,white,lightPink,darkBlue,metal,signMat,bulbMat].forEach(m => m.dispose());
       signTexture.dispose();
     }
   };

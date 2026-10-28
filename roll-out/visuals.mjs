@@ -6,6 +6,7 @@ export function createRolloutVisuals(THREE, course) {
  const wallMat=new THREE.MeshStandardMaterial({color:0xffe1f1,roughness:.48});
  const edgeMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.55});
  const stripeMat=new THREE.MeshStandardMaterial({color:0xf3548b,roughness:.45});
+ const gapMat=new THREE.MeshStandardMaterial({color:0xffdb56,roughness:.45});
  const seamGeo=new THREE.CylinderGeometry(.038,.038,RING_WIDTH-.25,8);
  seamGeo.rotateZ(Math.PI/2);
  const groups=course.rings.map((ring,i)=>{
@@ -37,8 +38,21 @@ export function createRolloutVisuals(THREE, course) {
     const holder=new THREE.Group();holder.rotation.x=s*Math.PI*2/SECTORS;holder.add(trim);group.add(holder);
    }
   }
+  // Padded lips outline the actual edges of each opening without covering it.
+  for(const boundary of [ring.gap,ring.gap+2]){
+   const a=boundary*Math.PI*2/SECTORS;
+   const lip=new THREE.Mesh(new THREE.CylinderGeometry(.11,.11,RING_WIDTH-.18,12),gapMat);
+   lip.rotation.z=Math.PI/2;
+   lip.position.set(0,(RADIUS-.06)*Math.cos(a),(RADIUS-.06)*Math.sin(a));group.add(lip);
+  }
   const a=(ring.wall+.5)*Math.PI*2/SECTORS;
-  const wall=new THREE.Mesh(new THREE.BoxGeometry(RING_WIDTH*.9,1.8,.48),wallMat);
+  const w=RING_WIDTH*.9,h=1.8,r=.28, shape=new THREE.Shape();
+  shape.moveTo(-w/2+r,-h/2);shape.lineTo(w/2-r,-h/2);shape.quadraticCurveTo(w/2,-h/2,w/2,-h/2+r);
+  shape.lineTo(w/2,h/2-r);shape.quadraticCurveTo(w/2,h/2,w/2-r,h/2);
+  shape.lineTo(-w/2+r,h/2);shape.quadraticCurveTo(-w/2,h/2,-w/2,h/2-r);
+  shape.lineTo(-w/2,-h/2+r);shape.quadraticCurveTo(-w/2,-h/2,-w/2+r,-h/2);
+  const wallGeo=new THREE.ExtrudeGeometry(shape,{depth:.48,bevelEnabled:false,curveSegments:6});wallGeo.translate(0,0,-.24);
+  const wall=new THREE.Mesh(wallGeo,wallMat);
   wall.position.set(0,(RADIUS+.9)*Math.cos(a),(RADIUS+.9)*Math.sin(a)); wall.rotation.x=a;wall.castShadow=true;group.add(wall);
   for (const side of [-1,1]) for(let stripe=-1;stripe<=1;stripe++){
    const detail=new THREE.Mesh(new THREE.BoxGeometry(.36,1.48,.015),stripeMat);
@@ -47,6 +61,6 @@ export function createRolloutVisuals(THREE, course) {
 
   return group;
  });
- return {root,update(){course.rings.forEach((r,i)=>{groups[i].rotation.x=r.angle;});},dispose(){root.traverse(o=>o.geometry?.dispose());[...mats,wallMat,edgeMat,stripeMat].forEach(m=>m.dispose());}};
+ return {root,update(){course.rings.forEach((r,i)=>{groups[i].rotation.x=r.angle;});},dispose(){root.traverse(o=>o.geometry?.dispose());[...mats,wallMat,edgeMat,stripeMat,gapMat].forEach(m=>m.dispose());}};
 }
 
