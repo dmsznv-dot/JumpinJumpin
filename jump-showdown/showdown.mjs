@@ -147,7 +147,14 @@ export function getSectorAt(course, x, z) {
 export function sampleSurface(course, x, z) {
   const info = getSectorAt(course, x, z);
   if (!info) return null;
-  if (info.inGap) return null; // character steps into the empty slit gap!
+  if (info.inGap) {
+    // The decorative seam is narrower than a contestant: bridge it while
+    // both neighbouring sections are in place, but not after a section falls.
+    const side = info.theta < info.sector.angleMid ? -1 : 1;
+    const neighbour = course.sectors[(info.idx + side + NUM_SECTORS) % NUM_SECTORS];
+    const stable = s => s.state === 'solid' || s.state === 'warning';
+    if (!stable(info.sector) || !stable(neighbour)) return null;
+  }
 
   const s = info.sector;
   if (s.state === 'dropped') return null;

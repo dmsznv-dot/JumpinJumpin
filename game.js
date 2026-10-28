@@ -2629,7 +2629,7 @@ function finishRace(result) {
       type: 'qualified',
       icon: '🏁',
       ribbon: 'РАУНД 1 ПРОЙДЕН!',
-      title: 'КВАЛИФИЦИРОВАН!',
+      title: 'РАУНД ПРОЙДЕН!',
       subtitle: 'ТЫ ПРОШЁЛ! Переход в Раунд 2: Roll Out...',
       duration: 2.4,
       onComplete: () => {
@@ -2693,7 +2693,7 @@ function updateBigFans(dt) {
       type: 'qualified',
       icon: '🏁',
       ribbon: state.showMode === 'championship' ? 'BIG FANS • РАУНД 1' : 'BIG FANS • ФИНИШ',
-      title: 'КВАЛИФИЦИРОВАН!',
+      title: 'ФИНИШ!',
       subtitle: `ТЫ ПРОШЁЛ! Место #${place} из ${result.quota} прошедших!`,
       duration: 3.0
     });
@@ -2749,9 +2749,9 @@ function finishRollOut() {
   if (state.showMode==='championship_rollout' && playerAlive) {
     showCelebrationOverlay({
       type: 'qualified',
-      icon: '🛡️',
+      icon: '🏁',
       ribbon: 'РАУНД 2 ПРОЙДЕН!',
-      title: 'КВАЛИФИЦИРОВАН!',
+      title: 'РАУНД ПРОЙДЕН!',
       subtitle: 'ТЫ ПРОШЁЛ! Переход в финал: Jump Showdown...',
       duration: 2.6,
       onComplete: () => {
@@ -2763,9 +2763,9 @@ function finishRollOut() {
   if (playerAlive) {
     showCelebrationOverlay({
       type: 'qualified',
-      icon: '🛡️',
+      icon: '🏁',
       ribbon: 'ROLL OUT • ВЫЖИВАНИЕ',
-      title: 'КВАЛИФИЦИРОВАН!',
+      title: 'РАУНД ПРОЙДЕН!',
       subtitle: `ТЫ ПРОШЁЛ! Вы удержались на барабанах! Выжило: ${survivors.length}`,
       duration: 2.6,
       onComplete: () => {

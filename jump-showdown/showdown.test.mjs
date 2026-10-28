@@ -41,6 +41,18 @@ test('arena has 8 distinct sectors with solid surfaces and slit gaps', () => {
   }
 });
 
+test('narrow seams support players only when both adjacent sectors are intact', () => {
+  const c = createShowdown();
+  for (let boundary = 0; boundary < NUM_SECTORS; boundary++) {
+    const theta = boundary * Math.PI * 2 / NUM_SECTORS;
+    for (const r of [4, 8, 14]) {
+      assert.ok(sampleSurface(c, r*Math.cos(theta), r*Math.sin(theta)), `seam ${boundary}, radius ${r}`);
+    }
+  }
+  c.sectors[0].state = 'dropped';
+  assert.equal(sampleSurface(c, 8, 0), null);
+});
+
 test('sweepers rotate and speed up progressively', () => {
   const c = createShowdown();
   const initLowOmega = c.lowBar.omega;

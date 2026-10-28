@@ -19,7 +19,7 @@ export function createShowdownVisuals(THREE, course) {
   const pink = mat(0xff2a85, { roughness: 0.32 });
   const cyan = mat(0x00e5ff, { roughness: 0.32 });
   const yellow = mat(0xffe600, { roughness: 0.28 });
-  const darkMetal = mat(0x1a1530, { roughness: 0.65, metalness: 0.5 });
+  const darkMetal = mat(0x35517b, { roughness: 0.55, metalness: 0.35 });
   const chrome = mat(0xd0d8e8, { roughness: 0.18, metalness: 0.85 });
   const woodGreen = mat(0x00e676, { roughness: 0.35 });
   const stitchMat = mat(0xffffff, { roughness: 0.55 });
@@ -82,7 +82,7 @@ export function createShowdownVisuals(THREE, course) {
     // Hazard warning curb along outer perimeter
     const curbGeo = new THREE.TorusGeometry(OUTER_RADIUS - 0.25, 0.22, 8, 14, aEnd - aStart);
     curbGeo.rotateX(Math.PI / 2);
-    curbGeo.rotateZ(aStart);
+    curbGeo.rotateY(-aStart);
     const curbMesh = new THREE.Mesh(curbGeo, yellow);
     curbMesh.position.y = 0.08;
     curbMesh.castShadow = true;
@@ -91,7 +91,7 @@ export function createShowdownVisuals(THREE, course) {
     // Inner rim curb
     const innerCurbGeo = new THREE.TorusGeometry(INNER_RADIUS + 0.25, 0.18, 8, 14, aEnd - aStart);
     innerCurbGeo.rotateX(Math.PI / 2);
-    innerCurbGeo.rotateZ(aStart);
+    innerCurbGeo.rotateY(-aStart);
     const innerCurbMesh = new THREE.Mesh(innerCurbGeo, rimMat);
     innerCurbMesh.position.y = 0.06;
     sGroup.add(innerCurbMesh);
@@ -128,7 +128,7 @@ export function createShowdownVisuals(THREE, course) {
 
   // Base motor column
   const baseCol = new THREE.Mesh(new THREE.CylinderGeometry(2.7, 3.1, 6.0, 28), darkMetal);
-  baseCol.position.y = -1.8;
+  baseCol.position.y = -3.0;
   baseCol.castShadow = true;
   centerHubGroup.add(baseCol);
 
@@ -145,7 +145,7 @@ export function createShowdownVisuals(THREE, course) {
 
   // Rotating spire antenna with beacon
   const spire = new THREE.Mesh(new THREE.ConeGeometry(0.35, 2.2, 8), pink);
-  spire.position.y = 5.3;
+  spire.position.y = 6.9;
   centerHubGroup.add(spire);
 
   // 3. ==================== LOWER SWEEPER (LOW ROLLER) ====================
@@ -208,6 +208,14 @@ export function createShowdownVisuals(THREE, course) {
   highArmMesh.castShadow = true;
   highBarPivot.add(highArmMesh);
 
+  // Raised coloured rings make the padded beam's motion easier to read.
+  for (let s=0; s<8; s++) {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(highRadius+.01, .035, 8, 20), yellow);
+    ring.rotation.y = Math.PI/2;
+    ring.position.set(1.6 + s*(highArmLen-3.2)/7, 2.30, 0);
+    highBarPivot.add(ring);
+  }
+
   // High arm overhead warning lights and tip
   const highEndTip = new THREE.Mesh(new THREE.SphereGeometry(highRadius * 1.2, 14, 14), mat(0xff1744, { emissive: 0xff1744, emissiveIntensity: 1.2 }));
   highEndTip.position.set(highArmLen - 1.1, 2.30, 0);
@@ -215,7 +223,7 @@ export function createShowdownVisuals(THREE, course) {
 
   // Counterweight on the opposite side of high arm
   const counterWeight = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.9, 1.2), darkMetal);
-  counterWeight.position.set(-2.8, 2.30, 0);
+  counterWeight.position.set(-3.3, 2.30, 0);
   counterWeight.castShadow = true;
   highBarPivot.add(counterWeight);
 
