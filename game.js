@@ -1,10 +1,10 @@
 /**
- * HEX-A-GONE 3D SHOW (v3.0 — True 3D WebGL / Three.js + CC0 GLB Models)
+ * ГЕКСА-АРЕНА 3D SHOW (v3.0 — True 3D WebGL / Three.js + CC0 GLB Models)
  *
  * Реализация по итогам /grill-me:
  * 1. Честное 3D на Three.js (PerspectiveCamera + аппаратный Z-buffer + мягкие тени) — никто никогда не просвечивает сквозь гексы.
  * 2. Непрерывная проверка коллизий с цилиндром гекса (+15% coyote ledge) — фасолинки стоят строго на верхней грани 3D-плиток и не проваливаются сквозь текстуры.
- * 3. Полноценная 3D-локация телешоу Fall Guys (Hex-A-GoneIntroLegacy.gif):
+ * 3. Полноценная 3D-локация телешоу Fall Guys (Гекса-аренаIntroLegacy.gif):
  *    - Стартовый пролёт 3D-камеры вдоль башни ярусов перед отсчётом 3..2..1..СТАРТ!
  *    - Огромное волнующееся море розовой слизи (Slime Sea) внизу, неоновые колонны по периметру, прожекторы, флаги и облака из CC0 .glb ассетов Kenney.
  * 4. Объёмные 3D-фасолинки с лицевым визором, глазками, 3D-шляпами/коронами, шарнирными ручками и ботиночками + скелетно-процедурные 3D-анимации.
@@ -86,7 +86,7 @@ const DIFFICULTIES = {
   }
 };
 
-// Цвета ярусов как в оригинальном Hex-A-Gone (Синий -> Жёлтый -> Фиолетовый -> Розовый/Зелёный)
+// Цвета ярусов как в оригинальном Гекса-арена (Синий -> Жёлтый -> Фиолетовый -> Розовый/Зелёный)
 const LAYER_THEMES = [
   { name: 'Голубой Верх',       top: 0x00d8ff, rim: 0x0077a8, steppedTop: 0xff9100, steppedRim: 0xb25000 },
   { name: 'Солнечный Ярус',     top: 0xffd600, rim: 0xc68400, steppedTop: 0xff3d71, steppedRim: 0xa00037 },
@@ -973,7 +973,7 @@ function loadCC0Assets() {
   }, undefined, () => {});
 }
 
-// ==================== 3D ОКРУЖЕНИЕ СТАДИОНА HEX-A-GONE ====================
+// ==================== 3D ОКРУЖЕНИЕ СТАДИОНА ГЕКСА-АРЕНА ====================
 let slimeSeaMesh = null;
 let stadiumPillars = [];
 let stadiumClouds = [];
@@ -1011,7 +1011,7 @@ function buildStadiumEnvironment() {
     stadiumGroup.add(ring);
   }
 
-  // 2. Огромные неоновые колонны телешоу вокруг арены (как в Hex-A-GoneIntroLegacy.gif)
+  // 2. Огромные неоновые колонны телешоу вокруг арены (как в Гекса-аренаIntroLegacy.gif)
   const numPillars = 12;
   const pillarRadius = 44;
   const pillarColors = [0x00e5ff, 0xff2a85, 0xffe600, 0xb388ff];
@@ -2492,7 +2492,7 @@ function startMatch(options = {}) {
   if (state.rolloutVisuals) { state.rolloutVisuals.dispose(); state.rolloutVisuals = null; }
   state.rollout = null;
   if (slimeSeaMesh) { slimeSeaMesh.material.color.setHex(0xff2a85); slimeSeaMesh.material.emissive.setHex(0xc80055); }
-  document.querySelector('.brand-pill .pill-title').textContent='HEX-A-GONE 3D';
+  document.querySelector('.brand-pill .pill-title').textContent='ГЕКСА-АРЕНА 3D';
   document.querySelector('.layer-pill .pill-label').textContent='ЯРУС';
   if (state.raceVisuals) { state.raceVisuals.dispose(); state.raceVisuals = null; }
   state.race = null;
@@ -2503,7 +2503,7 @@ function startMatch(options = {}) {
   state.config = config;
   state.elapsed = 0;
 
-  // Сначала 2.4 сек кинематографический пролёт камеры снизу вверх по 3D-башне (как в Hex-A-GoneIntroLegacy.gif), затем отсчёт 3..2..1!
+  // Сначала 2.4 сек кинематографический пролёт камеры снизу вверх по 3D-башне (как в Гекса-аренаIntroLegacy.gif), затем отсчёт 3..2..1!
   state.phase = 'intro_flyover';
   state.introTimer = 2.4;
   state.countdownTimer = 3.2;
@@ -2596,21 +2596,21 @@ function startMatch(options = {}) {
   const cdText = document.getElementById('countdown-text');
   const cdSub = document.getElementById('countdown-sub');
   cdOverlay.classList.remove('hidden');
-  cdBadge.textContent = `БАШНЯ HEX-A-GONE: ${config.layersCount} ЯРУСА • ${totalActors} ИГРОКОВ`;
+  cdBadge.textContent = `БАШНЯ ГЕКСА-АРЕНА: ${config.layersCount} ЯРУСА • ${totalActors} ИГРОКОВ`;
   cdText.textContent = '👀';
   cdSub.textContent = 'Обзор 3D-арены... Приготовьтесь к старту!';
 
-  beginLevelIntro('hex', 'HEX-A-GONE', 'Не падайте с исчезающих платформ!');
+  beginLevelIntro('hex', 'ГЕКСА-АРЕНА', 'Не падайте с исчезающих платформ!');
 
   updateHUD();
 }
 
-// ==================== BIG FANS: TEST COURSE ====================
+// ==================== БОЛЬШИЕ ВЕНТИЛЯТОРЫ: TEST COURSE ====================
 function startBigFans(mode = 'single') {
   state.lastMode = mode;
   startMatch({largeField: mode === 'championship'});
   state.showMode = mode;
-  document.querySelector('.brand-pill .pill-title').textContent = 'BIG FANS';
+  document.querySelector('.brand-pill .pill-title').textContent = 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ';
   document.querySelector('.layer-pill .pill-label').textContent = 'КОНТРОЛЬНЫЕ ТОЧКИ';
   stadiumPillars.forEach(pillar => { pillar.visible = false; });
   slimeSeaMesh.material.color.setHex(0x151c42); slimeSeaMesh.material.emissive.setHex(0x090d25);
@@ -2636,16 +2636,16 @@ function startBigFans(mode = 'single') {
   state.targetCamYaw = Math.PI;
   state.camYaw = Math.PI;
   state.camFocusPos.set(state.player.x, 1.3, state.player.z);
-  document.getElementById('countdown-badge').textContent = state.showMode === 'championship' ? 'BIG FANS • РАУНД 1' : 'BIG FANS';
+  document.getElementById('countdown-badge').textContent = state.showMode === 'championship' ? 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ • РАУНД 1' : 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ';
   document.getElementById('countdown-text').textContent = '3';
   document.getElementById('countdown-sub').textContent = 'Доберитесь до финиша через вращающиеся платформы!';
-  beginLevelIntro('big-fans', 'BIG FANS', 'Доберитесь до финиша через вращающиеся платформы!');
+  beginLevelIntro('big-fans', 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ', 'Доберитесь до финиша через вращающиеся платформы!');
   updateRaceHUD();
 }
 function updateRaceHUD() {
   const finished = state.actors.filter(a => a.raceFinished).length;
   const quota = Math.max(1, Math.ceil(state.actors.length * .7));
-  document.getElementById('hud-mode-label').textContent = state.showMode === 'championship' ? 'BIG FANS • РАУНД 1' : 'BIG FANS';
+  document.getElementById('hud-mode-label').textContent = state.showMode === 'championship' ? 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ • РАУНД 1' : 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ';
   document.getElementById('hud-alive').textContent = `${finished} / ${quota}`;
   document.getElementById('hud-layer').textContent = `${state.player.checkpoint} / 3`;
   document.getElementById('hud-timer').textContent = formatTime(state.elapsed);
@@ -2659,7 +2659,7 @@ function finishRace(result) {
       icon: '🏁',
       ribbon: 'РАУНД 1 ПРОЙДЕН!',
       title: 'РАУНД ПРОЙДЕН!',
-      subtitle: 'ТЫ ПРОШЁЛ! Переход в Раунд 2: Roll Out...',
+      subtitle: 'ТЫ ПРОШЁЛ! Переход в Раунд 2: Вращающиеся барабаны...',
       duration: 2.4,
       onComplete: () => {
         startRollOut('championship_rollout', qualifiers);
@@ -2671,7 +2671,7 @@ function finishRace(result) {
   const p = state.player;
   const place = result.finished.indexOf(p) + 1;
   const passed = playerQualified;
-  document.getElementById('result-ribbon').textContent = state.showMode === 'championship' ? 'BIG FANS • РАУНД 1' : 'BIG FANS';
+  document.getElementById('result-ribbon').textContent = state.showMode === 'championship' ? 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ • РАУНД 1' : 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ';
   document.getElementById('result-title').textContent = passed ? `ВЫ ПРОШЛИ! МЕСТО #${place}` : 'ЗАБЕГ ОКОНЧЕН';
   document.getElementById('result-subtitle').textContent = passed ? 'Вы достигли финиша в числе прошедших!' : 'Квота заполнена или время закончилось. Попробуйте ещё раз!';
   document.getElementById('spot-winner-name').textContent = result.finished[0]?.name || 'Финиширующих нет';
@@ -2721,7 +2721,7 @@ function updateBigFans(dt) {
     showCelebrationOverlay({
       type: 'qualified',
       icon: '🏁',
-      ribbon: state.showMode === 'championship' ? 'BIG FANS • РАУНД 1' : 'BIG FANS • ФИНИШ',
+      ribbon: state.showMode === 'championship' ? 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ • РАУНД 1' : 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ • ФИНИШ',
       title: 'ФИНИШ!',
       subtitle: `ТЫ ПРОШЁЛ! Место #${place} из ${result.quota} прошедших!`,
       duration: 3.0
@@ -2736,12 +2736,12 @@ function updateBigFans(dt) {
   if (result.done && !state.celebrationTimeout) finishRace(result);
 }
 
-// ==================== ROLL OUT: SURVIVAL ROUND ====================
+// ==================== ВРАЩАЮЩИЕСЯ БАРАБАНЫ: SURVIVAL ROUND ====================
 function startRollOut(mode = 'single_rollout', qualifiers = null) {
   if (mode === 'single_rollout') state.lastMode = mode;
   startMatch(qualifiers ? {qualifiers} : {largeField:true});
   state.showMode = mode;
-  document.querySelector('.brand-pill .pill-title').textContent='ROLL OUT';
+  document.querySelector('.brand-pill .pill-title').textContent='ВРАЩАЮЩИЕСЯ БАРАБАНЫ';
   document.querySelector('.layer-pill .pill-label').textContent='КВАЛИФИКАЦИЯ';
   stadiumPillars.forEach(pillar => { pillar.visible = false; });
   slimeSeaMesh.material.color.setHex(0x151c42); slimeSeaMesh.material.emissive.setHex(0x090d25);
@@ -2760,15 +2760,15 @@ function startRollOut(mode = 'single_rollout', qualifiers = null) {
   });
   state.phase='intro_flyover'; state.countdownTimer=3.2; state.elapsed=0;
   state.camYaw=state.targetCamYaw=Math.PI; state.camFocusPos.set(state.player.x,1.2,state.player.z);
-  document.getElementById('countdown-badge').textContent = mode === 'championship_rollout' ? 'ROLL OUT • РАУНД 2' : 'ROLL OUT • ТЕСТ';
+  document.getElementById('countdown-badge').textContent = mode === 'championship_rollout' ? 'ВРАЩАЮЩИЕСЯ БАРАБАНЫ • РАУНД 2' : 'ВРАЩАЮЩИЕСЯ БАРАБАНЫ • ТЕСТ';
   document.getElementById('countdown-text').textContent='3';
   document.getElementById('countdown-sub').textContent='Переходите между вращающимися секциями и не падайте!';
-  beginLevelIntro('roll-out', 'ROLL OUT', 'Переходите между вращающимися секциями и не падайте!');
+  beginLevelIntro('roll-out', 'ВРАЩАЮЩИЕСЯ БАРАБАНЫ', 'Переходите между вращающимися секциями и не падайте!');
   updateRolloutHUD();
 }
 function updateRolloutHUD() {
   const count=state.actors.filter(a=>a.alive).length;
-  document.getElementById('hud-mode-label').textContent = 'ROLL OUT • ВЫЖИВАНИЕ';
+  document.getElementById('hud-mode-label').textContent = 'ВРАЩАЮЩИЕСЯ БАРАБАНЫ • ВЫЖИВАНИЕ';
   document.getElementById('hud-alive').textContent = `${count} / ${state.actors.length}`;
   document.getElementById('hud-layer').textContent = `${state.rolloutQuota} проходят`;
   document.getElementById('hud-timer').textContent = formatTime(state.elapsed);
@@ -2782,7 +2782,7 @@ function finishRollOut() {
       icon: '🏁',
       ribbon: 'РАУНД 2 ПРОЙДЕН!',
       title: 'РАУНД ПРОЙДЕН!',
-      subtitle: 'ТЫ ПРОШЁЛ! Переход в финал: Jump Showdown...',
+      subtitle: 'ТЫ ПРОШЁЛ! Переход в финал: Прыжковый финал...',
       duration: 2.6,
       onComplete: () => {
         startJumpShowdown('championship_showdown', survivors);
@@ -2794,7 +2794,7 @@ function finishRollOut() {
     showCelebrationOverlay({
       type: 'qualified',
       icon: '🏁',
-      ribbon: 'ROLL OUT • ВЫЖИВАНИЕ',
+      ribbon: 'ВРАЩАЮЩИЕСЯ БАРАБАНЫ • ВЫЖИВАНИЕ',
       title: 'РАУНД ПРОЙДЕН!',
       subtitle: `ТЫ ПРОШЁЛ! Вы удержались на барабанах! Выжило: ${survivors.length}`,
       duration: 2.6,
@@ -2810,7 +2810,7 @@ function finishRollOut() {
 function showRollOutResultsModal(survivors) {
   state.phase='gameover';
   document.getElementById('spectator-bar').classList.add('hidden');
-  document.getElementById('result-ribbon').textContent='ROLL OUT • ВЫЖИВАНИЕ';
+  document.getElementById('result-ribbon').textContent='ВРАЩАЮЩИЕСЯ БАРАБАНЫ • ВЫЖИВАНИЕ';
   document.getElementById('result-title').textContent=state.player.alive?'ВЫ ПРОШЛИ! 🎉':'ВЫ ВЫБЫЛИ';
   document.getElementById('result-subtitle').textContent=`Участников прошло: ${survivors.length} из ${state.actors.length}`;
   document.getElementById('spot-winner-name').textContent=state.player.alive?'Вы удержались!':'Раунд окончен';
@@ -2901,7 +2901,7 @@ function finishSlimeClimb(){
      icon: '🏆',
      ribbon: 'РАУНД 3 ПРОЙДЕН!',
      title: 'КВАЛИФИЦИРОВАН!',
-     subtitle: 'ТЫ В ГРАНД-ФИНАЛЕ! Переход в Jump Showdown...',
+     subtitle: 'ТЫ В ГРАНД-ФИНАЛЕ! Переход в Прыжковый финал...',
      duration: 2.6,
      onComplete: () => {
        startJumpShowdown('championship_showdown', finished);
@@ -3071,12 +3071,12 @@ function updateSlimeClimb(dt){
  if(!active.length||state.elapsed>=SLIME_LIMIT)finishSlimeClimb();
 }
 
-// ==================== JUMP SHOWDOWN: GRAND FINAL ====================
+// ==================== ПРЫЖКОВЫЙ ФИНАЛ: GRAND FINAL ====================
 function startJumpShowdown(mode = 'single_showdown', qualifiers = null) {
   if (mode === 'single_showdown') state.lastMode = mode;
   startMatch(qualifiers ? { qualifiers } : { largeField: true });
   state.showMode = mode;
-  document.querySelector('.brand-pill .pill-title').textContent = 'JUMP SHOWDOWN';
+  document.querySelector('.brand-pill .pill-title').textContent = 'ПРЫЖКОВЫЙ ФИНАЛ';
   document.querySelector('.layer-pill .pill-label').textContent = 'ФИНАЛ';
   stadiumPillars.forEach(pillar => { pillar.visible = true; });
   slimeSeaMesh.material.color.setHex(0xff2a85);
@@ -3112,17 +3112,17 @@ function startJumpShowdown(mode = 'single_showdown', qualifiers = null) {
   state.camYaw = state.targetCamYaw = state.player.facing + Math.PI;
   state.camFocusPos.set(state.player.x, 1.2, state.player.z);
 
-  document.getElementById('countdown-badge').textContent = mode === 'championship_showdown' ? 'JUMP SHOWDOWN • ГРАНД-ФИНАЛ' : 'JUMP SHOWDOWN • ФИНАЛ';
+  document.getElementById('countdown-badge').textContent = mode === 'championship_showdown' ? 'ПРЫЖКОВЫЙ ФИНАЛ • ГРАНД-ФИНАЛ' : 'ПРЫЖКОВЫЙ ФИНАЛ • ФИНАЛ';
   document.getElementById('countdown-text').textContent = '3';
   document.getElementById('countdown-sub').textContent = 'Перепрыгивайте валики и не оставайтесь на падающих секциях!';
-  beginLevelIntro('jump-showdown', 'JUMP SHOWDOWN', 'Перепрыгивайте валики и не оставайтесь на падающих секциях!');
+  beginLevelIntro('jump-showdown', 'ПРЫЖКОВЫЙ ФИНАЛ', 'Перепрыгивайте валики и не оставайтесь на падающих секциях!');
   updateShowdownHUD();
 }
 
 function updateShowdownHUD() {
   const active = state.actors.filter(a => a.alive).length;
   const remainingSectors = state.showdown ? state.showdown.sectors.filter(s => s.state !== 'dropped').length : 8;
-  document.getElementById('hud-mode-label').textContent = 'JUMP SHOWDOWN • ФИНАЛ';
+  document.getElementById('hud-mode-label').textContent = 'ПРЫЖКОВЫЙ ФИНАЛ • ФИНАЛ';
   document.getElementById('hud-alive').textContent = `${active} / ${state.actors.length}`;
   document.getElementById('hud-layer').textContent = `${remainingSectors} секторов`;
   document.getElementById('hud-timer').textContent = formatTime(state.elapsed);
@@ -3255,7 +3255,7 @@ function updateJumpShowdown(dt) {
   update3DNameplates();
   updateShowdownHUD();
 
-  // Jump Showdown is a FINAL: when <= 1 alive or time reaches LIMIT, end round!
+  // Прыжковый финал is a FINAL: when <= 1 alive or time reaches LIMIT, end round!
   if (alive.length <= 1 || state.elapsed >= SHOWDOWN_LIMIT) {
     finishJumpShowdown(alive[0] || state.eliminationOrder[state.eliminationOrder.length - 1]);
   }
@@ -3572,7 +3572,7 @@ document.getElementById('chip-cam').addEventListener('click', () => {
   state.lastManualOrbitTime = state.elapsed;
 });
 
-// ==================== УМНЫЙ ИИ БОТОВ В 3D (HEX-A-GONE) ====================
+// ==================== УМНЫЙ ИИ БОТОВ В 3D (ГЕКСА-АРЕНА) ====================
 function updateBotAI3D(bot, dt, config) {
   bot.aiRetargetTimer -= dt;
   const currentLayerIdx = Math.min(state.layers.length - 1, Math.max(0, bot.currentLayer));
@@ -3718,7 +3718,7 @@ function updateWorld3D(dt, nowSec) {
     if (actor.alive) actor.update3DAnimation(dt);
   }
 
-  // 1. ФАЗА СТАРТОВОГО ПРОЛЁТА КАМЕРЫ ПО БАШНЕ (как в Hex-A-GoneIntroLegacy.gif)
+  // 1. ФАЗА СТАРТОВОГО ПРОЛЁТА КАМЕРЫ ПО БАШНЕ (как в Гекса-аренаIntroLegacy.gif)
   if (state.phase === 'intro_flyover') {
     state.introTimer -= dt;
     const progress = 1 - Math.max(0, state.introTimer / state.introDuration);
@@ -4359,7 +4359,7 @@ function showFinalResultsModal() {
     ? 'ПОБЕДА! КОРОНА ВАША! 👑'
     : `ВЫ ЗАНЯЛИ #${playerPlace} МЕСТО!`;
   document.getElementById('result-subtitle').textContent = isVictory
-    ? 'Блестящая победа на трёхмерной башне Hex-A-Gone!'
+    ? 'Блестящая победа на трёхмерной башне Гекса-арена!'
     : `Победитель шоу: ${winner ? winner.name : 'Бот'} 👑`;
 
   document.getElementById('spot-winner-name').textContent = winner ? `${winner.name} ${winner.isPlayer ? '(Вы)' : ''}` : 'Чемпион';
