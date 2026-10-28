@@ -825,6 +825,7 @@ function loadSaveData() {
     playerName: 'СуперФасолька',
     musicVolume: .5,
     effectsVolume: .5,
+    showNameplates: true,
     skinIndex: 0,
     eyeCount: 2, // 2 = два отдельных глаза в маске Миньона, 1 = один большой глаз-циклоп Миньона
     selectedColorId: 'c_pink_yellow',
@@ -4128,6 +4129,7 @@ function updateThirdPersonCamera(dt, forcedTarget = null) {
 // Проекция 3D координат макушки каждой фасолинки в 2D экранные координаты для чётких смешных ников
 const tempProjVec = new THREE.Vector3();
 function update3DNameplates() {
+  if (saveData.showNameplates === false) return;
   const halfW = window.innerWidth * 0.5;
   const halfH = window.innerHeight * 0.5;
 
@@ -5014,6 +5016,18 @@ for (const [id, key] of [['volume-music','musicVolume'],['volume-effects','effec
   slider.value=String(Math.round(saveData[key]*100)); update();
   slider.addEventListener('input',update); slider.addEventListener('change',saveGameData);
 }
+
+const nameplateToggle = document.getElementById('show-nameplates');
+function applyNameplateSetting() {
+  document.getElementById('labels-layer').classList.toggle('hidden', saveData.showNameplates === false);
+}
+nameplateToggle.checked = saveData.showNameplates !== false;
+applyNameplateSetting();
+nameplateToggle.addEventListener('change', () => {
+  saveData.showNameplates = nameplateToggle.checked;
+  applyNameplateSetting();
+  saveGameData();
+});
 
 document.getElementById('btn-level-select').addEventListener('click', () => document.getElementById('level-choices').classList.toggle('hidden'));
 document.getElementById('btn-championship').addEventListener('click', () => startBigFans('championship'));

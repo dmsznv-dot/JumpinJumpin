@@ -2168,6 +2168,22 @@ html, body {
   box-shadow: 0 12px 0 rgba(0,0,0,0.4);
 }
 
+.nameplate-setting-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: pointer;
+  font-weight: 700;
+}
+.nameplate-setting-label input {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  accent-color: #7b35d1;
+  cursor: pointer;
+}
+
 .settings-title {
   font-size: 24px;
   font-weight: 900;
@@ -2210,3 +2226,4 @@ html, body {
     display: none;
   }
 }
+
