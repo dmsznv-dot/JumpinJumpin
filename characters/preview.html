@@ -1,0 +1,21 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Новый персонаж — проверка рига</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#e9edf4;color:#27334e;font:16px system-ui}canvas{display:block;width:100%;height:100dvh}aside{position:absolute;left:24px;top:24px;width:300px;padding:22px;background:#fffffff0;border-radius:20px;box-shadow:0 8px 30px #24355012}h1{font-size:21px;margin:0 0 10px}p{font-size:14px;color:#647189;line-height:1.5}label{display:block;font-weight:600;margin-top:18px}select,button{font:inherit;padding:10px;border-radius:10px;border:1px solid #cbd2df;background:white;color:inherit;cursor:pointer}select{width:100%;margin-top:8px}.views{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}a{display:block;margin-top:14px;color:#6a4ed0}input{accent-color:#7353cc}footer{position:absolute;bottom:18px;left:24px;font-size:13px;color:#63708a}@media(max-width:650px){aside{top:12px;left:12px;width:240px;padding:16px}aside p{display:none}h1{font-size:17px}canvas{height:100dvh}footer{display:none}}</style>
+<canvas id="view"></canvas><aside><h1>Новый персонаж</h1><p>Базовая модель по скетчу: каре, крупные глаза, короткий корпус и выразительные кисти. 22 кости, 8 движений. Старые костюмы не перенесены.</p>
+<label for="pose">Движение</label><select id="pose"><option value="idle">Ожидание</option><option value="run">Бег</option><option value="jump">Прыжок</option><option value="fall">Падение</option><option value="dive">Нырок</option><option value="land">Приземление</option><option value="win">Победа</option><option value="wave">Приветствие</option></select>
+<label>Ракурс</label><div class="views"><button data-view="0">Анфас</button><button data-view="0.65">¾</button><button data-view="1.57">Сбоку</button><button data-view="3.14">Сзади</button></div>
+<label><input id="skeleton" type="checkbox"> Показать скелет</label><label><input id="spin" type="checkbox"> Вращать модель</label>
+<a href="../index.html">Проверить в игре →</a><a href="../assets/models/sketch-runner.glb" download>Скачать GLB с анимациями</a></aside><footer>Переключайте ракурсы и движения для проверки модели</footer>
+<script type="module">
+import * as THREE from '../vendor/three.module.min.js';import {createSketchCharacter} from './sketch-character.mjs';
+const scene=new THREE.Scene();scene.background=new THREE.Color(0xe9edf4);
+const renderer=new THREE.WebGLRenderer({canvas:document.querySelector('canvas'),antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;
+scene.add(new THREE.HemisphereLight(0xffffff,0x8f9bac,2.2));const sun=new THREE.DirectionalLight(0xfff1df,2.5);sun.position.set(3,5,5);scene.add(sun);
+const rig=createSketchCharacter(THREE);scene.add(rig.root);const helper=new THREE.SkeletonHelper(rig.root);helper.visible=false;scene.add(helper);
+const floor=new THREE.Mesh(new THREE.CylinderGeometry(1.15,1.2,.12,64),new THREE.MeshStandardMaterial({color:0xcdd5e2,roughness:.8}));floor.position.y=-.09;scene.add(floor);
+const camera=new THREE.PerspectiveCamera(33,1,.01,100);camera.position.set(0,1.35,5.7);camera.lookAt(0,1.12,0);
+function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.position.x=innerWidth>650?-.45:0;camera.lookAt(innerWidth>650?-.45:0,1.12,0);camera.updateProjectionMatrix();}addEventListener('resize',resize);resize();
+const pose=document.querySelector('#pose');let time=performance.now(),yaw=0;
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{yaw=Number(b.dataset.view);rig.root.rotation.y=yaw;});
+pose.onchange=()=>rig.resetAnimation();document.querySelector('#skeleton').onchange=e=>helper.visible=e.target.checked;
+function frame(now){const dt=Math.min(.05,(now-time)/1000);time=now;if(document.querySelector('#spin').checked){yaw+=dt*.4;rig.root.rotation.y=yaw;}rig.animate(dt,{pose:pose.value,speed:pose.value==='run'?7:0});renderer.render(scene,camera);requestAnimationFrame(frame);}requestAnimationFrame(frame);
+</script></html>

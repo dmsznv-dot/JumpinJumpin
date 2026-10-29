@@ -25,6 +25,7 @@ import { createShowdown, advanceShowdown, sampleSurface as showdownSurface, chec
 import { createShowdownVisuals } from './jump-showdown/visuals.mjs';
 import { TRACKS as MUSIC_TRACKS, chooseTrack } from './music/tracks.mjs';
 import { introFrame } from './presentation/intro.mjs';
+import { createSketchCharacter } from './characters/sketch-character.mjs';
 
 // ==================== 1. КОНФИГУРАЦИЯ СЛОЖНОСТИ И УСКОРЕННЫЙ РЕГЕН ====================
 const DIFFICULTIES = {
@@ -1141,9 +1142,10 @@ function rebuildLobbyBeanModel() {
   if (!lobbyPodiumGroup) return;
   if (lobbyBeanRig) {
     lobbyPodiumGroup.remove(lobbyBeanRig.root);
+    lobbyBeanRig.dispose?.();
   }
   const skin = getPlayerComposedSkin();
-  lobbyBeanRig = createBean3DMesh(skin);
+  lobbyBeanRig = createSketchCharacter(THREE, {shadowTexture:beanShadowTexture});
   lobbyBeanRig.root.position.set(0, 0, 0);
   lobbyPodiumGroup.add(lobbyBeanRig.root);
 }
@@ -1161,6 +1163,7 @@ function updateLobby3D(dt, nowSec) {
   lobbyBeanRig.bodyPivot.rotation.z = Math.sin(nowSec * 1.5) * 0.035;
   lobbyBeanRig.leftArm.rotation.x = Math.sin(nowSec * 2.5) * 0.18;
   lobbyBeanRig.rightArm.rotation.x = -Math.sin(nowSec * 2.5) * 0.18;
+  lobbyBeanRig.animate?.(dt, {pose:'wave'});
 
   // В зависимости от открытой вкладки Лобби пьедестал плавно смещается:
   // - В 'play' — строго по центру
@@ -2240,7 +2243,7 @@ class Actor3D {
     this.aiRetargetTimer = 0;
 
     // Создаём 3D-модель фасолинки
-    this.rig = createBean3DMesh(skin);
+    this.rig = isPlayer ? createSketchCharacter(THREE, {shadowTexture:beanShadowTexture}) : createBean3DMesh(skin);
     this.rig.root.position.set(this.x, this.y, this.z);
     actorsGroup.add(this.rig.root);
 
@@ -2255,6 +2258,7 @@ class Actor3D {
 
   destroy() {
     actorsGroup.remove(this.rig.root);
+    this.rig.dispose?.();
     if (this.labelEl && this.labelEl.parentNode) {
       this.labelEl.remove();
     }
@@ -2340,6 +2344,12 @@ class Actor3D {
     }
     shieldRing.visible = this.buffs.shield > 0;
     if (shieldRing.visible) shieldRing.rotation.z += dt * 3;
+
+    if (this.rig.animate) {
+      this.rig.animate(dt, {speed:horizSpeed,grounded:this.onGround,diving:this.isDiving,
+        celebrating:state.phase==='celebrating' && state.matchWinner===this,vy:this.vy,squash:this.squash});
+      return;
+    }
 
     // Squash & Stretch масштабирование
     const sx = 1 + this.squash * 0.52;
