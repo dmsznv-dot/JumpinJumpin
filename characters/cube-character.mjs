@@ -1,5 +1,5 @@
 import {applyCubePrint} from './cube-print.mjs';
-import {cubeShellGeometry,cubeFaceGeometry} from './cube-shape.mjs';
+import {CUBE,cubeShellGeometry,cubeFaceGeometry,cubeBootGeometry} from './cube-shape.mjs';
 import {createCubeAccessories} from './cube-wardrobe.mjs';
 import {createCharacterClips as bakeClips} from './sketch-character.mjs';
 // Original game-ready character based on the supplied cartoon model sheet.
@@ -8,20 +8,21 @@ export const POSES = ['idle','run','jump','fall','dive','land','win','wave','dan
 
 export function createCubeCharacter(THREE, {shadowTexture=null,skin=null}={}) {
   const root=new THREE.Group();root.name='CubeRunner';
-  const bodyPivot=new THREE.Group();bodyPivot.name='CharacterMotion';root.add(bodyPivot);
+  const bodyPivot=new THREE.Group();bodyPivot.name='CharacterMotion';bodyPivot.rotation.order='YXZ';root.add(bodyPivot);
   const bones=[], named={};
   function bone(name,parent,x,y,z){const b=new THREE.Bone();b.name=name;b.position.set(x,y,z);parent.add(b);bones.push(b);named[name]=b;return b;}
-  const hips=bone('Hips',bodyPivot,0,1.30,0);
+  const hipsY=CUBE.halfH+CUBE.legBelow,face=CUBE.face;
+  const hips=bone('Hips',bodyPivot,0,hipsY,0);
   const head=bone('Body',hips,0,0,0);
   for(const [side,sign] of [['Left',-1],['Right',1]]){
-    const leg=bone(side+'Leg',hips,sign*.25,-.68,0);
-    const shin=bone(side+'Shin',leg,0,-.22,0);
-    bone(side+'Foot',shin,0,-.22,.025);
+    const leg=bone(side+'Leg',hips,sign*.21,-.70,0);
+    const shin=bone(side+'Shin',leg,0,-.15,0);
+    bone(side+'Foot',shin,0,-.14,0);
   }
   const mats={
-    shell:new THREE.MeshStandardMaterial({color:0xffdb20,roughness:.43}),
-    skin:new THREE.MeshStandardMaterial({color:0xffcda7,roughness:.6}),
-    shoe:new THREE.MeshStandardMaterial({color:0xf53867,roughness:.48}),
+    shell:new THREE.MeshStandardMaterial({color:0xffdb20,roughness:.5}),
+    skin:new THREE.MeshStandardMaterial({color:0xf7cdac,roughness:.62}),
+    shoe:new THREE.MeshStandardMaterial({color:0xf2596e,roughness:.5}),
     dark:new THREE.MeshStandardMaterial({color:0x292e31,roughness:.48})
   };
   const pieces=[];
@@ -30,29 +31,20 @@ export function createCubeCharacter(THREE, {shadowTexture=null,skin=null}={}) {
     pieces.push({b,material,geometry,transform:transform.matrix});
   }
   const sphere=(b,m,p,s)=>part(b,m,new THREE.SphereGeometry(1,20,14),p,s);
-  function roundedShape(w,h,r) {
-    const shape=new THREE.Shape(),x=-w/2,y=-h/2;
-    shape.moveTo(x+r,y);shape.lineTo(x+w-r,y);shape.quadraticCurveTo(x+w,y,x+w,y+r);
-    shape.lineTo(x+w,y+h-r);shape.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-    shape.lineTo(x+r,y+h);shape.quadraticCurveTo(x,y+h,x,y+h-r);
-    shape.lineTo(x,y+r);shape.quadraticCurveTo(x,y,x+r,y);return shape;
-  }
-  function rounded(w,h,depth,r,bevel) {
-    return new THREE.ExtrudeGeometry(roundedShape(w,h,r),{depth,bevelEnabled:true,bevelThickness:bevel,bevelSize:bevel,bevelSegments:6,curveSegments:12,steps:1});
-  }
   part(head,'shell',cubeShellGeometry(THREE));
-  part(head,'skin',cubeFaceGeometry(THREE),[0,0,.54]);
+  part(head,'skin',cubeFaceGeometry(THREE),[0,0,face.z]);
   const eyes=[];
   for(const [side,sign] of [['Left',-1],['Right',1]]){
-    const eye=bone(side+'Eye',head,skin?.eyeCount===1?0:sign*.35,.045,.552);eyes.push(eye);
+    const eye=bone(side+'Eye',head,skin?.eyeCount===1?0:sign*.35,.025,face.z+.012);eyes.push(eye);
     if(skin?.eyeCount!==1||side==='Left')sphere(eye,'dark',[0,0,0],skin?.eyeCount===1?[.078,.082,.009]:[.057,.058,.008]);
-    part(named[side+'Leg'],'skin',new THREE.CapsuleGeometry(.092,.17,6,16),[0,-.08,0]);
-    part(named[side+'Shin'],'skin',new THREE.CapsuleGeometry(.088,.10,6,16),[0,-.09,0]);
-    part(named[side+'Foot'],'shoe',new THREE.CapsuleGeometry(.098,.095,6,18),[0,.015,.015],[1,1,1.12]);
+    // Thin straight legs; the coral boot is the lower 44% of the leg with a crisp cuff (model sheet).
+    part(named[side+'Leg'],'skin',new THREE.CapsuleGeometry(.08,.22,4,12),[0,-.10,0]);
+    part(named[side+'Shin'],'skin',new THREE.CapsuleGeometry(.08,.08,4,12),[0,-.06,0]);
+    part(named[side+'Foot'],'shoe',cubeBootGeometry(THREE,.086,.085));
   }
   // Tiny puckered mouth, matching the supplied model card.
-  sphere(head,'skin',[0,-.12,.549],[.019,.013,.004]);
-  sphere(head,'dark',[.005,-.12,.554],[.008,.006,.001]);
+  sphere(head,'skin',[0,-.13,face.z+.009],[.024,.017,.014]);
+  sphere(head,'dark',[.006,-.134,face.z+.021],[.009,.006,.003]);
   root.updateMatrixWorld(true);
   const skeleton=new THREE.Skeleton(bones);const meshes=[];
   for(const [key,material] of Object.entries(mats)){
@@ -75,8 +67,8 @@ export function createCubeCharacter(THREE, {shadowTexture=null,skin=null}={}) {
   }
   const accessory=createCubeAccessories(THREE,skin?.hat||'none');head.add(accessory.group);
   if(accessory.full)for(const m of meshes)if(m.material===mats.shell)m.visible=false;
-  function applyColors({shell=skin?.c1??0xffdb20,face=0xffcda7,boots=skin?.c2??0xf53867,pattern=skin?.pattern||'plain',secondary=skin?.c2??0xf53867}={}) {
-    applyCubePrint(THREE,mats.shell,{pattern,primary:shell,secondary});
+  function applyColors({shell=skin?.c1??0xffdb20,face=0xf7cdac,boots=skin?.c2??0xf2596e,pattern=skin?.pattern||'plain',secondary=skin?.c2??0xf2596e}={}) {
+    applyCubePrint(THREE,mats.shell,{pattern,primary:shell,secondary,center:[0,hipsY,0]});
     for(const {material,base} of accessory.printMaterials||[])applyCubePrint(THREE,material,{pattern,primary:base,secondary,center:[0,0,0]});
     mats.skin.color.set(face);mats.shoe.color.set(boots);
   }

@@ -13,7 +13,7 @@ const renderer=new THREE.WebGLRenderer({canvas:document.querySelector('canvas'),
 scene.add(new THREE.HemisphereLight(0xffffff,0x8f9bac,2.2));const sun=new THREE.DirectionalLight(0xfff1df,2.5);sun.position.set(3,5,5);scene.add(sun);
 let color='#ffdb20';const costume=document.querySelector('#costume'),pattern=document.querySelector('#pattern');
 CUBE_COSMETICS.forEach(c=>costume.add(new Option(c.icon+' '+c.title,c.hat)));
-['plain','belly','stripes','polka','flames','stars','lightning','rings','diamonds','clouds','leaves','circuit','hexagons'].forEach((id,i)=>pattern.add(new Option(['Чистый цвет','Пятно','Полосы','Горошек','Пламя','Звёзды','Молнии','Кольца','Ромбы','Облака','Листья','Микросхема','Соты'][i],id)));
+['plain','belly','stripes','polka','flames','stars','lightning','rings','diamonds','clouds','leaves','circuit','hexagons'].forEach((id,i)=>pattern.add(new Option(['Чистый цвет','Абстрактное конфетти','Диагональные полосы','Горошек','Карамельные волны','Звёзды','Ломаный ритм','Волны гипноза','Арлекин','Пушистые облака','Тропические листья','Микросхема','Медовые соты'][i],id)));
 let rig,helper;
 function rebuild(){if(rig){scene.remove(rig.root,helper);helper.dispose();rig.dispose();}rig=createCubeCharacter(THREE,{skin:{hat:costume.value||'none',c1:parseInt(color.slice(1),16),c2:0xf53867,pattern:pattern.value||'plain'}});scene.add(rig.root);helper=new THREE.SkeletonHelper(rig.root);helper.visible=document.querySelector('#skeleton').checked;scene.add(helper);}
 rebuild();costume.onchange=pattern.onchange=rebuild;

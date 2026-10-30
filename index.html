@@ -111,7 +111,7 @@
         <div class="player-nameplate-card">
           <div class="pnc-crown">👑</div>
           <div class="pnc-info">
-            <input type="text" id="player-name-input" class="pnc-input" maxlength="18" value="СуперФасолька" title="Кликните, чтобы изменить имя">
+            <input type="text" id="player-name-input" class="pnc-input" maxlength="18" value="СуперКубик" title="Кликните, чтобы изменить имя">
             <span class="pnc-rank" id="lobby-rank-title">Звезда Арены</span>
           </div>
           <button class="pnc-dice" id="btn-random-nick" title="Случайный смешной ник">🎲</button>
@@ -210,7 +210,7 @@
       <section class="lobby-tab-pane hidden" id="pane-settings">
         <div class="settings-card">
           <p class="settings-sub" id="controller-status" role="status">🎮 Подключите геймпад и нажмите любую кнопку</p><p class="settings-sub">Левый стик / крестовина — движение · правый — камера · A / × — прыжок · B / ○ или X / □ — нырок · Y / △ — вид камеры · Start — меню. В меню: крестовина и A / ×. На телефоне: стик слева, действия справа, свайп по трассе — камера.</p>
-          <p class="settings-sub">Принты: <a href="https://heropatterns.com/" target="_blank" rel="noopener">Hero Patterns — Steve Schoger</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Цвета и нанесение адаптированы для игры.</p>
+          <p class="settings-sub">Принты: Hero Patterns — Steve Schoger (heropatterns.com), лицензия CC BY 4.0. Цвета и нанесение адаптированы для игры.</p>
           <h2 class="settings-title">⚙️ НАСТРОЙКИ ШОУ И СЛОЖНОСТИ АРЕНЫ</h2>
           <p class="settings-sub">Выберите параметры башни, количество ботов и чувствительность 3D-камеры</p>
           <div class="section-block nameplate-setting">
@@ -415,13 +415,13 @@
       <div class="fg-modal result-dialog">
         <div class="modal-ribbon" id="result-ribbon">ИТОГИ ФИНАЛА!</div>
         <h2 class="modal-title" id="result-title">ПОБЕДА! КОРОНА ВАША! 👑</h2>
-        <p class="modal-desc" id="result-subtitle">Победитель шоу: СуперФасолька</p>
+        <p class="modal-desc" id="result-subtitle">Победитель шоу: СуперКубик</p>
 
         <div class="winner-spotlight" id="winner-spotlight">
           <div class="spot-trophy">👑</div>
           <div class="winner-spot-info">
             <span class="spot-label">ЧЕМПИОН ЭТОГО РАУНДА:</span>
-            <strong class="spot-name" id="spot-winner-name">СуперФасолька</strong>
+            <strong class="spot-name" id="spot-winner-name">СуперКубик</strong>
             <span class="spot-meta" id="spot-winner-meta">Выжил на 3D-арене и забрал Золотую Корону!</span>
           </div>
         </div>
@@ -496,6 +496,19 @@
     </div>
   </div>
 
+  <script>
+    // Если модуль игры не загрузился (404, нет WebGL, исключение при старте) — показать понятный экран вместо мёртвого лобби
+    window.__bootFail = function (m) {
+      if (window.__gameStarted || document.getElementById('boot-error')) return;
+      var d = document.createElement('div'); d.id = 'boot-error';
+      d.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center;background:#1b1446;color:#fff;font:600 18px system-ui;text-align:center;padding:24px';
+      d.innerHTML = '<div>Не удалось запустить игру</div><div style="font-size:13px;opacity:.7"></div><button style="font:inherit;padding:10px 22px;border:0;border-radius:12px" onclick="location.reload()">Перезагрузить</button>';
+      d.children[1].textContent = String(m || '').slice(0, 200);
+      document.body.appendChild(d);
+    };
+    addEventListener('error', function (e) { __bootFail(e.message || (e.target && (e.target.src || e.target.href))); }, true);
+    addEventListener('unhandledrejection', function (e) { __bootFail(e.reason); });
+  </script>
   <script type="module" src="game.js"></script>
 </body>
 </html>

@@ -34,3 +34,16 @@ Outer corner radius increased from 0.37 to 0.48 m without changing the gameplay 
 Twelve original SVG artworks from Hero Patterns are rasterized locally to shared 1024² R8 masks with mipmaps and anisotropic filtering. Palette colors are uniforms, so contestants share both mask textures and shader programs. Fully enclosing suits use the same print method with coordinates baked into body space. No external runtime requests. Attribution: PRINT-LICENSE.md and settings.
 
 The downloadable GLB contains the base character and skeletal clips. Palette-driven prints are runtime materials.
+
+## Model sheet v2 (turnaround match)
+
+Proportions are now measured from the four-view model sheet (front / left side / back / three-quarter) and checked with `characters/turnaround.html` (`?hat=dino&pattern=polka&c1=65bd7a`). Dimensions live in `CUBE` (`cube-shape.mjs`):
+
+- Body 1.62 × 1.57 × 1.34 m. The previous 1.16 m depth was too flat; the side view gives depth ≈ 0.85 × height.
+- Every edge is a superellipse: radius 0.61, power 3.3. The sheet silhouettes fit it within 2 px, while the old circular 0.48 corner was off by up to 22 px.
+- The face window (1.075 × 0.605) sits 0.085 behind a raised yellow lip.
+- Straight legs 0.16 m thick, ±0.21 m apart. 0.377 m of leg shows under the body, of which the lower 44% is a coral boot (#f2596e) with a crisp cuff. Feet touch y = 0.
+
+Full-body costumes are the body shell inflated by 0.06 (`cubeShellGeometry(T,{grow})`), so they keep the pillowy silhouette and open exactly around the face. Front and back accessory parts follow the deeper body. Print wrapping uses the new horizontal section (`WRAP` in `cube-print.mjs`).
+
+Base character is now 6,616 triangles and 3,760 vertices, down from 8,328 and 4,694.

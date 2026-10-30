@@ -1,0 +1,25 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Куб — лист разворота</title>
+<style>body{margin:0;background:#e9e9e9;font:12px/1 system-ui;color:#555}canvas{display:block;width:100vw;height:40vw}.labels{display:flex;justify-content:space-around;letter-spacing:.35em;margin-top:-5vw}</style>
+<!-- Dev page: renders the cube in the four model-sheet views (front, left side, back, three-quarter) to compare against the sheet.
+     Query: ?hat=dino&pattern=polka&c1=60cce5&pose=idle -->
+<canvas></canvas><div class="labels"><span>FRONT</span><span>LEFT SIDE</span><span>BACK</span><span>THREE-QUARTER</span></div>
+<script type="module">
+import * as THREE from '../vendor/three.module.min.js';import {createCubeCharacter} from './cube-character.mjs';import {printsReady} from './cube-print.mjs';
+const q=new URLSearchParams(location.search),canvas=document.querySelector('canvas');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene();scene.background=new THREE.Color(0xe9e9e9);
+scene.add(new THREE.HemisphereLight(0xffffff,0xb9b9b9,2.1));
+const key=new THREE.DirectionalLight(0xfff4e6,2.2);key.position.set(2.5,6,4);key.castShadow=true;key.shadow.mapSize.set(1024,1024);key.shadow.radius=6;scene.add(key);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(20,20),new THREE.ShadowMaterial({opacity:.18}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
+const skin={hat:q.get('hat')||'none',pattern:q.get('pattern')||'plain',c1:parseInt(q.get('c1')||'ffdb20',16),c2:parseInt(q.get('c2')||'f2596e',16)};
+const rig=createCubeCharacter(THREE,{skin});scene.add(rig.root);rig.root.traverse(o=>{if(o.isMesh&&o!==rig.blobShadow&&o!==rig.shieldRing)o.castShadow=true;});rig.blobShadow.visible=false;
+rig.animate(0,{pose:q.get('pose')||'idle'});
+const camera=new THREE.PerspectiveCamera(16,1,.1,100);
+const views=[0,-Math.PI/2,Math.PI,.55];
+function draw(){
+ const w=canvas.clientWidth,h=canvas.clientHeight;renderer.setSize(w,h,false);renderer.setScissorTest(true);
+ const vw=w/4;camera.aspect=vw/h;camera.updateProjectionMatrix();camera.position.set(0,1.25,11.5);camera.lookAt(0,1.0,0);
+ views.forEach((yaw,i)=>{rig.root.rotation.y=yaw;rig.root.updateMatrixWorld(true);renderer.setViewport(i*vw,0,vw,h);renderer.setScissor(i*vw,0,vw,h);renderer.render(scene,camera);});
+}
+addEventListener('resize',draw);draw();printsReady().then(draw); // print masks rasterize asynchronously
+</script></html>

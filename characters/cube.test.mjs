@@ -11,7 +11,7 @@ test('every accessory fits a cube rig, full costumes replace the whole original 
 });
 import {cubeShellGeometry,cubeFaceGeometry} from './cube-shape.mjs';
 test('rounded shell matches card proportions and leaves a real shallow face recess',()=>{
- const g=cubeShellGeometry(THREE);g.computeBoundingBox();const size=g.boundingBox.getSize(new THREE.Vector3());assert.ok(Math.abs(size.x-1.62)<.001);assert.ok(Math.abs(size.y-1.57)<.001);assert.ok(Math.abs(size.z-1.16)<.001);
+ const g=cubeShellGeometry(THREE);g.computeBoundingBox();const size=g.boundingBox.getSize(new THREE.Vector3());assert.ok(Math.abs(size.x-1.62)<.001);assert.ok(Math.abs(size.y-1.57)<.001);assert.ok(Math.abs(size.z-1.34)<.001);
  const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial());m.updateMatrixWorld(true);
  const centerRay=new THREE.Raycaster(new THREE.Vector3(0,0,2),new THREE.Vector3(0,0,-1));const sideRay=new THREE.Raycaster(new THREE.Vector3(.70,0,2),new THREE.Vector3(0,0,-1));
  assert.ok(centerRay.intersectObject(m).every(h=>h.point.z<0));assert.ok(sideRay.intersectObject(m)[0].point.z>.5);

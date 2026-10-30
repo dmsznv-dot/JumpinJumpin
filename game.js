@@ -21,7 +21,7 @@ import { createCourseVisuals } from './big-fans/visuals.mjs';
 import { initializeRacer, updateRace } from './big-fans/race.mjs';
 import { createRollout, advanceRollout, sampleSurface, carryRacer, hitWall, botDecision, RING_WIDTH } from './roll-out/rollout.mjs';
 import { createRolloutVisuals } from './roll-out/visuals.mjs';
-import { createCourse as createSlimeCourse, advanceCourse as advanceSlimeCourse, surface as slimeSurface, courseY as slimeCourseY, slimeY as risingSlimeY, obstaclesAt as slimeObstacles, obstacleContact as slimeObstacleContact, botDecision as slimeBotDecision, LENGTH as SLIME_LENGTH, LIMIT as SLIME_LIMIT } from './slime-climb/course.mjs';
+import { createCourse as createSlimeCourse, advanceCourse as advanceSlimeCourse, surface as slimeSurface, courseY as slimeCourseY, slimeY as risingSlimeY, obstaclesAt as slimeObstacles, obstacleContact as slimeObstacleContact, botDecision as slimeBotDecision, LIMIT as SLIME_LIMIT } from './slime-climb/course.mjs';
 import { createVisuals as createSlimeVisuals } from './slime-climb/visuals.mjs';
 import { createShowdown, advanceShowdown, sampleSurface as showdownSurface, checkSweeperHit as showdownSweeperHit, botDecision as showdownBotDecision, LIMIT as SHOWDOWN_LIMIT } from './jump-showdown/showdown.mjs';
 import { createShowdownVisuals } from './jump-showdown/visuals.mjs';
@@ -133,10 +133,10 @@ COLOR_PALETTES.unshift({id:'c_cube_yellow',title:'Солнечный куб',c1:
 
 const PATTERN_ITEMS = [
   {id:'pat_plain',title:'Чистый цвет',icon:'🟨',pattern:'plain',rarity:'ОБЫЧНЫЙ',unlockType:'free',cost:0},
-  { id: 'pat_belly',     title: 'Абстрактное конфетти',    icon: '🐧', pattern: 'belly',     rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
-  { id: 'pat_stripes',   title: 'Диагональные полосы',    icon: '🐯', pattern: 'stripes',   rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
+  { id: 'pat_belly',     title: 'Абстрактное конфетти',    icon: '🎊', pattern: 'belly',     rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
+  { id: 'pat_stripes',   title: 'Диагональные полосы',    icon: '🍭', pattern: 'stripes',   rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
   { id: 'pat_polka',     title: 'Конфетти Горошек',   icon: '⚪', pattern: 'polka',     rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
-  { id: 'pat_flames',    title: 'Карамельные волны',  icon: '🔥', pattern: 'flames',    rarity: 'РЕДКИЙ',    unlockType: 'ad',     cost: 0 },
+  { id: 'pat_flames',    title: 'Карамельные волны',  icon: '🌊', pattern: 'flames',    rarity: 'РЕДКИЙ',    unlockType: 'ad',     cost: 0 },
   { id: 'pat_stars',     title: 'Звёздный Шоумен',    icon: '⭐', pattern: 'stars',     rarity: 'РЕДКИЙ',    unlockType: 'ad',     cost: 0 },
   { id: 'pat_lightning', title: 'Ломаный ритм',    icon: '⚡', pattern: 'lightning', rarity: 'РЕДКИЙ',    unlockType: 'kudos',  cost: 450 },
   { id: 'pat_rings',     title: 'Волны Гипноза',      icon: '🌀', pattern: 'rings',     rarity: 'ЭПИЧЕСКИЙ', unlockType: 'kudos',  cost: 750 },
@@ -179,23 +179,23 @@ EXTRA_COSTUMES.forEach(([hat,title,icon,color]) => COSTUME_ITEMS.push({
 COSTUME_ITEMS.splice(0,COSTUME_ITEMS.length,...CUBE_COSMETICS);
 
 const SEASON_TIERS = [
-  { level: 1, xpReq: 0,    title: 'Старт Сезона',       icon: '🥽', rewardText: 'Очки Миньона' },
+  { level: 1, xpReq: 0,    title: 'Старт Сезона',       icon: '🟨', rewardText: 'Солнечный куб' },
   { level: 2, xpReq: 300,  title: 'Бонус Лавров',       icon: '🟣', rewardText: '+300 Лавров' },
-  { level: 3, xpReq: 700,  title: 'Карамельные волны',  icon: '🔥', rewardText: 'Паттерн Пламя' },
-  { level: 4, xpReq: 1200, title: 'Ти-Рекс Динозавр',   icon: '🦖', rewardText: 'Полный Костюм' },
+  { level: 3, xpReq: 700,  title: 'Карамельные волны',  icon: '🌊', rewardText: 'Принт «Карамельные волны»' },
+  { level: 4, xpReq: 1200, title: 'Кубозавр',           icon: '🦖', rewardText: 'Полный костюм' },
   { level: 5, xpReq: 1800, title: 'Кубок Чемпиона',     icon: '👑', rewardText: '+1 Корона' },
-  { level: 6, xpReq: 2500, title: 'Кибер-Самурай',      icon: '👹', rewardText: 'Броня + Маска' },
-  { level: 7, xpReq: 3500, title: 'Император Короны',   icon: '🏆', rewardText: 'Мантия + Корона' }
+  { level: 6, xpReq: 2500, title: 'Кубо-самурай',       icon: '👹', rewardText: 'Полный костюм' },
+  { level: 7, xpReq: 3500, title: 'Император Короны',   icon: '🏆', rewardText: 'Золотая корона' }
 ];
 
 // Разнообразные скины ботов (с 1 и 2 глазами-очками миньона, разными паттернами и полными костюмами)
 const SKINS = [
-  { id: 0, title: 'Ти-Рекс Завр',       icon: '🦖', c1: 0x00e676, c2: 0xffe600, css1: '#00e676', css2: '#ffe600', pattern: 'stripes',   hat: 'dino',      eyeCount: 2 },
+  { id: 0, title: 'Кубозавр',           icon: '🦖', c1: 0x00e676, c2: 0xffe600, css1: '#00e676', css2: '#ffe600', pattern: 'stripes',   hat: 'dino',      eyeCount: 2 },
   { id: 1, title: 'Сочный Хот-Дог',     icon: '🌭', c1: 0xff2a85, c2: 0xffe600, css1: '#ff2a85', css2: '#ffe600', pattern: 'belly',     hat: 'hotdog',    eyeCount: 1 },
   { id: 2, title: 'Капитан Пират',      icon: '🏴‍☠️', c1: 0x00e5ff, c2: 0x1e40af, css1: '#00e5ff', css2: '#1e40af', pattern: 'stripes',   hat: 'pirate',    eyeCount: 1 },
   { id: 3, title: 'Боевой Петушок',     icon: '🐓', c1: 0xff9100, c2: 0xffffff, css1: '#ff9100', css2: '#ffffff', pattern: 'polka',     hat: 'chicken',   eyeCount: 2 },
-  { id: 4, title: 'Звёздный Астронавт', icon: '👩‍🚀', c1: 0xd500f9, c2: 0x76ff03, css1: '#d500f9', css2: '#76ff03', pattern: 'stars',     hat: 'astronaut', eyeCount: 1 },
-  { id: 5, title: 'Кибер-Самурай',      icon: '👹', c1: 0xff1744, c2: 0xffd700, css1: '#ff1744', css2: '#ffd700', pattern: 'flames',    hat: 'samurai',   eyeCount: 2 },
+  { id: 4, title: 'Кубонавт',           icon: '👩‍🚀', c1: 0xd500f9, c2: 0x76ff03, css1: '#d500f9', css2: '#76ff03', pattern: 'stars',     hat: 'astronaut', eyeCount: 1 },
+  { id: 5, title: 'Кубо-самурай',       icon: '👹', c1: 0xff1744, c2: 0xffd700, css1: '#ff1744', css2: '#ffd700', pattern: 'flames',    hat: 'samurai',   eyeCount: 2 },
   { id: 6, title: 'Верховный Чародей',  icon: '🧙‍♂️', c1: 0x26c6da, c2: 0xff80ab, css1: '#26c6da', css2: '#ff80ab', pattern: 'stars',     hat: 'wizard',    eyeCount: 2 },
   { id: 7, title: 'Тропический Ананас', icon: '🍍', c1: 0xffd700, c2: 0x00e676, css1: '#ffd700', css2: '#00e676', pattern: 'diamonds',  hat: 'pineapple', eyeCount: 1 },
   { id: 8, title: 'Император Короны',   icon: '👑', c1: 0xffd700, c2: 0xb71c1c, css1: '#ffd700', css2: '#b71c1c', pattern: 'diamonds',  hat: 'king',      eyeCount: 2 }
@@ -845,10 +845,14 @@ function loadSaveData() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('hex_fall_guys_save_v4') || localStorage.getItem('hex_fall_guys_save_v3');
     if (raw) data = JSON.parse(raw);
-  } catch (e) {}
+  } catch (e) {
+    // Битое сохранение не теряем молча: сырую строку откладываем в резервный ключ
+    console.warn('[save] не удалось прочитать сохранение, используются значения по умолчанию', e);
+    try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) localStorage.setItem(STORAGE_KEY + '_corrupt', raw); } catch {}
+  }
 
   const defaults = {
-    playerName: 'СуперФасолька',
+    playerName: 'СуперКубик',
     musicVolume: .5,
     effectsVolume: .5,
     showNameplates: false,
@@ -900,10 +904,13 @@ function loadSaveData() {
 function saveGameData() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(saveData));
-  } catch (e) {}
+  } catch (e) {
+    console.warn('[save] не удалось сохранить прогресс (приватный режим или переполнена квота)', e);
+  }
 }
 
 let saveData = loadSaveData();
+if (saveData.playerName === 'СуперФасолька') saveData.playerName = 'СуперКубик'; // имя по умолчанию до кубического героя
 sfx.volume = Number.isFinite(saveData.effectsVolume) ? Math.max(0,Math.min(1,saveData.effectsVolume)) : .5;
 music.volume = Number.isFinite(saveData.musicVolume) ? Math.max(0,Math.min(1,saveData.musicVolume)) : .5;
 
@@ -948,7 +955,14 @@ dirLight.shadow.camera.right = dCam;
 dirLight.shadow.camera.top = dCam;
 dirLight.shadow.camera.bottom = -dCam;
 dirLight.shadow.bias = -0.0008;
+dirLight.shadow.normalBias = 0.03; // против полос shadow acne на изогнутых полах (барабаны, слизь)
 scene.add(dirLight);
+
+// Студийный свет на персонажа в лобби (как на модельном листе). В матчах гасится интенсивностью, а не удаляется:
+// изменение числа источников перекомпилировало бы все шейдеры при каждом входе в забег
+const lobbyKeyLight = new THREE.DirectionalLight(0xfff6ea, 0);
+lobbyKeyLight.position.set(1.6, 3.2, 7);
+scene.add(lobbyKeyLight);
 
 // Розовая подсветка снизу от озера слизи
 const slimeGlowLight = new THREE.PointLight(0xff2a85, 2.5, 90);
@@ -968,6 +982,7 @@ scene.add(fxGroup);
 scene.add(lobbyGroup);
 
 // ==================== ПОДГРУЗКА CC0 3D-АССЕТОВ (.GLB KENNEY) ====================
+THREE.Cache.enabled = true;
 const gltfLoader = new GLTFLoader();
 const loadedGLB = {
   coin: null,
@@ -978,17 +993,17 @@ const loadedGLB = {
 function loadCC0Assets() {
   gltfLoader.load('./assets/models/coin.glb', (gltf) => {
     loadedGLB.coin = gltf.scene;
-  }, undefined, () => {});
+  }, undefined, (e) => console.warn('[assets] не загрузилась модель', e));
 
   gltfLoader.load('./assets/models/flag.glb', (gltf) => {
     loadedGLB.flag = gltf.scene;
     decorateStadiumWithFlags();
-  }, undefined, () => {});
+  }, undefined, (e) => console.warn('[assets] не загрузилась модель', e));
 
   gltfLoader.load('./assets/models/cloud.glb', (gltf) => {
     loadedGLB.cloud = gltf.scene;
     decorateStadiumWithClouds();
-  }, undefined, () => {});
+  }, undefined, (e) => console.warn('[assets] не загрузилась модель', e));
 }
 
 // ==================== 3D ОКРУЖЕНИЕ СТАДИОНА ГЕКСА-АРЕНА ====================
@@ -1014,19 +1029,23 @@ function buildStadiumEnvironment() {
   slimeSeaMesh.receiveShadow = true;
   stadiumGroup.add(slimeSeaMesh);
 
-  // Светящиеся концентрические кольца на поверхности слизи
+  // Светящиеся концентрические кольца на поверхности слизи. Кольца — дочерние к морю: оно покачивается на ±0.25,
+  // и неподвижные кольца в 0.1 над поверхностью то пропадали в ней, то вылезали (мерцающие «кружки» на полу)
+  const ringMat = new THREE.MeshBasicMaterial({
+    color: 0xff80b5,
+    transparent: true,
+    opacity: 0.35,
+    depthWrite: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -2,
+    polygonOffsetUnits: -2
+  });
   for (let i = 1; i <= 4; i++) {
     const ringGeo = new THREE.RingGeometry(i * 15, i * 15 + 0.6, 64);
     ringGeo.rotateX(-Math.PI / 2);
-    const ringMat = new THREE.MeshBasicMaterial({
-      color: 0xff80b5,
-      transparent: true,
-      opacity: 0.35,
-      side: THREE.DoubleSide
-    });
     const ring = new THREE.Mesh(ringGeo, ringMat);
-    ring.position.y = -13.9;
-    stadiumGroup.add(ring);
+    ring.position.y = 2.02; // верхняя грань цилиндра моря высотой 4
+    slimeSeaMesh.add(ring);
   }
 
   // 2. Огромные неоновые колонны телешоу вокруг арены (как в Гекса-аренаIntroLegacy.gif)
@@ -1206,8 +1225,8 @@ function updateLobby3D(dt, nowSec) {
   lobbyPodiumGroup.position.x += (targetX - lobbyPodiumGroup.position.x) * Math.min(1, dt * 8);
   lobbyPodiumGroup.position.y += (targetY - lobbyPodiumGroup.position.y) * Math.min(1, dt * 8);
 
-  // Камера крупным планом смотрит прямо на пьедестал
-  camera.position.set(0, 1.25, 5.1);
+  // Длиннофокусная камера: в кадре тот же размер, что раньше при FOV 52 с 5.1 м, но без перспективного искажения куба
+  camera.position.set(0, 1.3, 9.3);
   camera.lookAt(0, 0.95, 0);
 }
 
@@ -1232,6 +1251,62 @@ const sharedHexInnerRingGeo = new THREE.RingGeometry(
 );
 sharedHexInnerRingGeo.rotateX(-Math.PI / 2);
 sharedHexInnerRingGeo.rotateY(Math.PI / 6);
+
+// Целые соты рисуются InstancedMesh'ами (3 на ярус вместо 3 мешей и 3 материалов на каждую соту).
+// Сота, на которую наступили / падающая / восстанавливающаяся, берёт из пула отдельный меш со своими материалами.
+const hexTopSharedMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.40, metalness: 0.04 });
+const hexRimSharedMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.56, metalness: 0.06 });
+const HEX_RING_MAT_OPTS = { color: 0xffffff, transparent: true, opacity: 0.35, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 };
+const hexRingSharedMat = new THREE.MeshBasicMaterial(HEX_RING_MAT_OPTS);
+const HEX_PART_Y = [-HEX_THICKNESS * 0.325, -HEX_THICKNESS * 0.775, 0.02];
+const HEX_HIDDEN_MATRIX = new THREE.Matrix4().makeScale(0, 0, 0);
+const _hexMatrix = new THREE.Matrix4(), _hexColor = new THREE.Color();
+const hexVisualPool = [];
+let hexBatches = [];
+
+function createHexVisual() {
+  const group = new THREE.Group();
+  const topMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.40, metalness: 0.04, transparent: false, opacity: 1 });
+  const rimMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.56, metalness: 0.06, transparent: false, opacity: 1 });
+  const topMesh = new THREE.Mesh(sharedHexTopGeo, topMat);
+  topMesh.position.y = HEX_PART_Y[0];
+  topMesh.receiveShadow = true;
+  topMesh.castShadow = true;
+  const rimMesh = new THREE.Mesh(sharedHexRimGeo, rimMat);
+  rimMesh.position.y = HEX_PART_Y[1];
+  const innerRing = new THREE.Mesh(sharedHexInnerRingGeo, new THREE.MeshBasicMaterial(HEX_RING_MAT_OPTS));
+  innerRing.position.y = HEX_PART_Y[2];
+  group.add(topMesh, rimMesh, innerRing);
+  return { group, topMat, rimMat, innerRing };
+}
+
+function createHexLayerBatch(list) {
+  const meshes = [
+    new THREE.InstancedMesh(sharedHexTopGeo, hexTopSharedMat, list.length),
+    new THREE.InstancedMesh(sharedHexRimGeo, hexRimSharedMat, list.length),
+    new THREE.InstancedMesh(sharedHexInnerRingGeo, hexRingSharedMat, list.length)
+  ];
+  meshes[0].castShadow = meshes[0].receiveShadow = true;
+  const batch = {
+    setVisible(i, visible) {
+      const t = list[i];
+      meshes.forEach((m, k) => {
+        m.setMatrixAt(i, visible ? _hexMatrix.makeTranslation(t.x, t.baseY + HEX_PART_Y[k], t.z) : HEX_HIDDEN_MATRIX);
+        m.instanceMatrix.needsUpdate = true;
+      });
+    },
+    dispose() { meshes.forEach(m => { m.removeFromParent(); m.dispose(); }); }
+  };
+  list.forEach((t, i) => {
+    t.batch = batch;
+    t.instanceId = i;
+    meshes[0].setColorAt(i, _hexColor.setHex(t.baseTopCol));
+    meshes[1].setColorAt(i, _hexColor.setHex(t.baseRimCol));
+    batch.setVisible(i, true);
+  });
+  meshes.forEach(m => { m.computeBoundingSphere(); arenaGroup.add(m); });
+  return batch;
+}
 
 // ==================== СОСТОЯНИЕ ИГРЫ И 3D-КАМЕРЫ ====================
 const CAM_PRESETS = [
@@ -1301,10 +1376,6 @@ class HexTile3D {
     this.alpha = 1;
     this.lastTouchedBy = null;
 
-    // 3D меш соты
-    this.group = new THREE.Group();
-    this.group.position.set(this.x, this.baseY, this.z);
-
     let initTopCol = this.theme.top;
     let initRimCol = this.theme.rim;
     if (specialType === 'spring') {
@@ -1320,47 +1391,50 @@ class HexTile3D {
     this.baseTopCol = initTopCol;
     this.baseRimCol = initRimCol;
 
-    this.topMat = new THREE.MeshStandardMaterial({
-      color: initTopCol,
-      roughness: 0.40,
-      metalness: 0.04,
-      transparent: false,
-      opacity: 1
-    });
-    this.rimMat = new THREE.MeshStandardMaterial({
-      color: initRimCol,
-      roughness: 0.56,
-      metalness: 0.06,
-      transparent: false,
-      opacity: 1
-    });
+    // Отдельный меш (group/topMat/rimMat/innerRing) есть только у «активной» соты, см. attachVisual()
+    this.vis = null;
+    this.group = this.topMat = this.rimMat = this.innerRing = null;
+    this.batch = null;
+    this.instanceId = -1;
+  }
 
-    // Смещаем цилиндры внутри группы так, чтобы верхняя крышка лежала ровно на y = 0 (т.е. worldY = this.baseY)
-    const topMesh = new THREE.Mesh(sharedHexTopGeo, this.topMat);
-    topMesh.position.y = -HEX_THICKNESS * 0.325;
-    topMesh.receiveShadow = true;
-    topMesh.castShadow = true;
-    this.group.add(topMesh);
-
-    const rimMesh = new THREE.Mesh(sharedHexRimGeo, this.rimMat);
-    rimMesh.position.y = -HEX_THICKNESS * 0.775;
-    this.group.add(rimMesh);
-
-    // Внутренний светлый шестиугольный контур на крышке (как в Fall Guys)
-    const ringMat = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.35,
-      depthWrite: false,
-      polygonOffset: true,
-      polygonOffsetFactor: -1,
-      polygonOffsetUnits: -1
-    });
-    this.innerRing = new THREE.Mesh(sharedHexInnerRingGeo, ringMat);
-    this.innerRing.position.y = 0.02;
-    this.group.add(this.innerRing);
-
+  attachVisual() {
+    if (this.vis) return;
+    const v = this.vis = hexVisualPool.pop() || createHexVisual();
+    this.group = v.group; this.topMat = v.topMat; this.rimMat = v.rimMat; this.innerRing = v.innerRing;
+    this.topMat.color.setHex(this.baseTopCol);
+    this.topMat.emissive.setHex(0x000000);
+    this.topMat.emissiveIntensity = 0;
+    this.rimMat.color.setHex(this.baseRimCol);
+    this.group.position.set(this.x, this.baseY + this.offsetY, this.z);
+    this.group.scale.set(1, 1, 1);
+    this.group.visible = true;
+    this.setTransparency(1);
     arenaGroup.add(this.group);
+    this.batch?.setVisible(this.instanceId, false);
+  }
+
+  detachVisual(showInstance) {
+    if (this.vis) {
+      this.group.removeFromParent();
+      hexVisualPool.push(this.vis);
+      this.vis = null;
+      this.group = this.topMat = this.rimMat = this.innerRing = null;
+    }
+    if (showInstance) this.batch?.setVisible(this.instanceId, true);
+  }
+
+  beginRestore() {
+    this.status = 'restoring';
+    this.timer = 0.42;
+    this.attachVisual();
+    this.topMat.color.setHex(this.baseTopCol);
+    this.topMat.emissive.setHex(0x000000);
+    this.topMat.emissiveIntensity = 0;
+    this.rimMat.color.setHex(this.baseRimCol);
+    this.group.position.y = this.baseY - 2.5;
+    this.group.scale.set(0.75, 1, 0.75);
+    this.setTransparency(0);
   }
 
   setTransparency(alpha) {
@@ -1396,6 +1470,7 @@ class HexTile3D {
     this.fallDuration = config.fallDuration;
     this.lastTouchedBy = actor;
 
+    this.attachVisual();
     this.topMat.color.setHex(this.theme.steppedTop);
     this.topMat.emissive.setHex(this.theme.steppedTop);
     this.topMat.emissiveIntensity = 0.25;
@@ -1410,6 +1485,7 @@ class HexTile3D {
 
   startFalling(config, layerMap) {
     if (this.status === 'falling' || this.status === 'waiting') return;
+    this.attachVisual();
     this.status = 'falling';
     this.fallDuration = config.fallDuration;
     this.timer = this.fallDuration;
@@ -1438,13 +1514,7 @@ class HexTile3D {
 
   instantRepair() {
     if (this.status !== 'solid') {
-      this.status = 'restoring';
-      this.timer = 0.42;
-      this.group.visible = true;
-      this.topMat.color.setHex(this.baseTopCol);
-      this.topMat.emissive.setHex(0x000000);
-      this.topMat.emissiveIntensity = 0;
-      this.rimMat.color.setHex(this.baseRimCol);
+      this.beginRestore();
       state.regenQueue = state.regenQueue.filter(item => item.tile !== this);
     }
   }
@@ -1470,7 +1540,7 @@ class HexTile3D {
 
       if (this.timer <= 0) {
         this.status = 'waiting';
-        this.group.visible = false;
+        this.detachVisual(false);
       }
     } else if (this.status === 'restoring') {
       this.timer -= dt;
@@ -1487,9 +1557,7 @@ class HexTile3D {
         this.status = 'solid';
         this.offsetY = 0;
         this.alpha = 1;
-        this.group.position.y = this.baseY;
-        this.group.scale.set(1, 1, 1);
-        this.setTransparency(1);
+        this.detachVisual(true);
       }
     }
   }
@@ -1509,165 +1577,8 @@ function processRegenQueue() {
   while (state.regenQueue.length > 0 && state.elapsed >= state.regenQueue[0].restoreAt) {
     const entry = state.regenQueue.shift();
     const t = entry.tile;
-    if (t && (t.status === 'waiting' || t.status === 'falling')) {
-      t.status = 'restoring';
-      t.timer = 0.42;
-      t.group.visible = true;
-      t.topMat.color.setHex(t.baseTopCol);
-      t.topMat.emissive.setHex(0x000000);
-      t.topMat.emissiveIntensity = 0;
-      t.rimMat.color.setHex(t.baseRimCol);
-    }
+    if (t && (t.status === 'waiting' || t.status === 'falling')) t.beginRestore();
   }
-}
-
-// ==================== ГЕНЕРАЦИЯ ПРОЦЕДУРНЫХ ПАТТЕРНОВ ДЛЯ РАСКРАСКИ ФАСОЛЬКИ ====================
-const patternTextureCache = new Map();
-
-function hexToCss(hexNum) {
-  return '#' + Number(hexNum).toString(16).padStart(6, '0');
-}
-
-function drawStarShape(ctx, cx, cy, spikes, outerR, innerR) {
-  let rot = Math.PI / 2 * 3;
-  const step = Math.PI / spikes;
-  ctx.beginPath();
-  ctx.moveTo(cx, cy - outerR);
-  for (let i = 0; i < spikes; i++) {
-    ctx.lineTo(cx + Math.cos(rot) * outerR, cy + Math.sin(rot) * outerR);
-    rot += step;
-    ctx.lineTo(cx + Math.cos(rot) * innerR, cy + Math.sin(rot) * innerR);
-    rot += step;
-  }
-  ctx.closePath();
-  ctx.fill();
-}
-
-function getBeanPatternTexture(c1Hex, c2Hex, patternId = 'belly') {
-  const key = `${c1Hex}_${c2Hex}_${patternId}`;
-  if (patternTextureCache.has(key)) return patternTextureCache.get(key);
-
-  const cnv = document.createElement('canvas');
-  cnv.width = 512;
-  cnv.height = 512;
-  const ctx = cnv.getContext('2d');
-
-  const col1 = hexToCss(c1Hex);
-  const col2 = hexToCss(c2Hex);
-
-  // Базовая заливка цветом 1
-  ctx.fillStyle = col1;
-  ctx.fillRect(0, 0, 512, 512);
-  ctx.fillStyle = col2;
-  ctx.strokeStyle = col2;
-
-  if (patternId === 'belly') {
-    // Овальное контрастное пузико спереди и сердечко/эмблема
-    ctx.beginPath();
-    ctx.ellipse(256, 305, 92, 130, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Полоска на макушке
-    ctx.fillRect(0, 0, 512, 55);
-  } else if (patternId === 'stripes') {
-    // Выразительные тигровые диагональные и поперечные полосы
-    for (let y = -120; y < 620; y += 64) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.quadraticCurveTo(160, y + 28, 320, y - 12);
-      ctx.quadraticCurveTo(420, y - 30, 512, y + 10);
-      ctx.lineTo(512, y + 34);
-      ctx.quadraticCurveTo(360, y + 4, 200, y + 44);
-      ctx.lineTo(0, y + 28);
-      ctx.closePath();
-      ctx.fill();
-    }
-  } else if (patternId === 'polka') {
-    // Крупный праздничный горошек / конфетти по всему телу
-    const rows = 6;
-    const cols = 6;
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const px = (c + (r % 2) * 0.5) * (512 / cols);
-        const py = (r + 0.5) * (512 / rows);
-        ctx.beginPath();
-        ctx.arc(px % 512, py, 26, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-  } else if (patternId === 'flames') {
-    // Языки гоночного пламени снизу вверх + воротник сверху
-    ctx.fillRect(0, 390, 512, 122);
-    const flameCount = 10;
-    const fw = 512 / flameCount;
-    for (let i = 0; i < flameCount; i++) {
-      const fx = i * fw;
-      const fh = (i % 2 === 0) ? 185 : 135;
-      ctx.beginPath();
-      ctx.moveTo(fx, 410);
-      ctx.quadraticCurveTo(fx + fw * 0.35, 410 - fh * 0.6, fx + fw * 0.5, 410 - fh);
-      ctx.quadraticCurveTo(fx + fw * 0.65, 410 - fh * 0.6, fx + fw, 410);
-      ctx.closePath();
-      ctx.fill();
-    }
-    ctx.fillRect(0, 0, 512, 65);
-  } else if (patternId === 'stars') {
-    // Россыпь пятиконечных звёзд
-    const starCoords = [
-      [80, 90, 28], [220, 75, 24], [380, 95, 30], [460, 170, 22],
-      [130, 195, 32], [270, 185, 36], [395, 220, 26], [60, 290, 25],
-      [185, 310, 34], [320, 300, 32], [445, 325, 28], [110, 410, 26],
-      [256, 415, 34], [385, 420, 28]
-    ];
-    for (const [sx, sy, sr] of starCoords) {
-      drawStarShape(ctx, sx, sy, 5, sr, sr * 0.45);
-    }
-  } else if (patternId === 'lightning') {
-    // Острые зигзаги-молнии вокруг корпуса
-    ctx.lineWidth = 26;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    for (let yBase = 95; yBase <= 415; yBase += 105) {
-      ctx.beginPath();
-      for (let x = 0; x <= 512; x += 64) {
-        const dy = ((x / 64) % 2 === 0) ? -28 : 28;
-        if (x === 0) ctx.moveTo(x, yBase + dy);
-        else ctx.lineTo(x, yBase + dy);
-      }
-      ctx.stroke();
-    }
-  } else if (patternId === 'rings') {
-    // Гипнотические концентрические мишени и волны
-    ctx.lineWidth = 20;
-    const centers = [[256, 265], [0, 265], [512, 265]];
-    for (const [cx, cy] of centers) {
-      for (let rad = 32; rad <= 145; rad += 38) {
-        ctx.beginPath();
-        ctx.arc(cx, cy, rad, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-    }
-  } else if (patternId === 'diamonds') {
-    // Королевский ромбовидный узор Арлекин
-    const size = 64;
-    for (let y = 0; y < 512; y += size) {
-      for (let x = 0; x < 512; x += size) {
-        ctx.beginPath();
-        ctx.moveTo(x + size / 2, y);
-        ctx.lineTo(x + size, y + size / 2);
-        ctx.lineTo(x + size / 2, y + size);
-        ctx.lineTo(x, y + size / 2);
-        ctx.closePath();
-        ctx.fill();
-      }
-    }
-  }
-
-  const tex = new THREE.CanvasTexture(cnv);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.ClampToEdgeWrapping;
-  tex.needsUpdate = true;
-  patternTextureCache.set(key, tex);
-  return tex;
 }
 
 // A soft shared shadow keeps feet readable without the hard black discs that
@@ -1682,532 +1593,6 @@ beanShadowGradient.addColorStop(1, 'rgba(12,18,46,0)');
 beanShadowContext.fillStyle = beanShadowGradient;
 beanShadowContext.fillRect(0, 0, 128, 128);
 const beanShadowTexture = new THREE.CanvasTexture(beanShadowCanvas);
-
-// ==================== СОЗДАНИЕ 3D-МОДЕЛИ ФАСОЛИНКИ (ОЧКИ МИНЬОНА + ПАТТЕРН + ПОЛНЫЙ КОСТЮМ ВЕРХ И НИЗ) ====================
-function createBean3DMesh(skin) {
-  const root = new THREE.Group();
-  const bodyPivot = new THREE.Group();
-  root.add(bodyPivot);
-
-  const patTex = getBeanPatternTexture(skin.c1, skin.c2, skin.pattern || 'belly');
-
-  // Материал туловища с процедурным 2D-паттерном поверх белой базы, чтобы оба цвета паттерна были яркими и сочными!
-  const mainMat = new THREE.MeshStandardMaterial({
-    color: 0xffffff,
-    map: patTex,
-    roughness: 0.30,
-    metalness: 0.06
-  });
-  const primarySolidMat = new THREE.MeshStandardMaterial({
-    color: skin.c1,
-    roughness: 0.32,
-    metalness: 0.06
-  });
-  const subMat = new THREE.MeshStandardMaterial({
-    color: skin.c2,
-    roughness: 0.36,
-    metalness: 0.08
-  });
-  const whiteMat = new THREE.MeshStandardMaterial({
-    color: 0xffffff,
-    roughness: 0.18
-  });
-  const darkMat = new THREE.MeshStandardMaterial({
-    color: 0x161224,
-    roughness: 0.25
-  });
-  const chromeMat = new THREE.MeshStandardMaterial({
-    color: 0xd0d7de,
-    metalness: 0.72,
-    roughness: 0.22
-  });
-  const goldMat = new THREE.MeshStandardMaterial({
-    color: 0xffd700,
-    metalness: 0.68,
-    roughness: 0.22
-  });
-
-  // 1. Туловище-капсула (Bean Torso) с паттерном раскраски
-  const torsoGeo = new THREE.CapsuleGeometry(0.62, 0.56, 16, 28);
-  const torsoMesh = new THREE.Mesh(torsoGeo, mainMat);
-  torsoMesh.position.y = 1.12;
-  torsoMesh.castShadow = true;
-  torsoMesh.receiveShadow = true;
-  bodyPivot.add(torsoMesh);
-
-  // Soft, dimensional goggles: each eye mode builds its own frame.
-  const faceGroup = new THREE.Group();
-  bodyPivot.add(faceGroup);
-  const strap = new THREE.Mesh(new THREE.CylinderGeometry(.635, .635, .095, 32, 1, true), darkMat);
-  strap.position.y = 1.40; faceGroup.add(strap);
-  const irisMat = new THREE.MeshStandardMaterial({ color: 0x76513c, roughness: .3 });
-  const eyeFrame = (x, radius) => {
-    const unit = new THREE.Group(); unit.position.set(x, 1.40, .605);
-    const rim = new THREE.Mesh(new THREE.TorusGeometry(radius, .055, 12, 32), chromeMat);
-    unit.add(rim);
-    const white = new THREE.Mesh(new THREE.SphereGeometry(radius*.86, 24, 16), whiteMat);
-    white.scale.z = .5; white.position.z = .01; unit.add(white);
-    const iris = new THREE.Mesh(new THREE.SphereGeometry(radius*.34, 20, 12), irisMat);
-    iris.scale.z = .32; iris.position.set(0,-.015,radius*.43); unit.add(iris);
-    const pupil = new THREE.Mesh(new THREE.SphereGeometry(radius*.18, 16, 12), darkMat);
-    pupil.scale.z = .35; pupil.position.set(0,-.015,radius*.53); unit.add(pupil);
-    const shine = new THREE.Mesh(new THREE.SphereGeometry(radius*.075, 12, 8), whiteMat);
-    shine.position.set(-radius*.10,radius*.09,radius*.59); unit.add(shine);
-    faceGroup.add(unit);
-  };
-  if (skin.eyeCount === 1) eyeFrame(0, .24);
-  else { eyeFrame(-.20, .18); eyeFrame(.20, .18); }
-
-  // 3. Шарнирные ножки с ботиночками
-  const legGeo = new THREE.CapsuleGeometry(0.17, 0.24, 8, 12);
-  const leftLeg = new THREE.Group();
-  leftLeg.position.set(-0.27, 0.42, 0);
-  const leftFoot = new THREE.Mesh(legGeo, subMat);
-  leftFoot.position.y = -0.15;
-  leftFoot.castShadow = true;
-  leftLeg.add(leftFoot);
-  bodyPivot.add(leftLeg);
-
-  const rightLeg = new THREE.Group();
-  rightLeg.position.set(0.27, 0.42, 0);
-  const rightFoot = new THREE.Mesh(legGeo, subMat);
-  rightFoot.position.y = -0.15;
-  rightFoot.castShadow = true;
-  rightLeg.add(rightFoot);
-  bodyPivot.add(rightLeg);
-
-  // 4. Шарнирные ручки
-  const armGeo = new THREE.CapsuleGeometry(0.145, 0.34, 8, 12);
-  const leftArm = new THREE.Group();
-  leftArm.position.set(-0.68, 1.18, 0);
-  const leftHand = new THREE.Mesh(armGeo, primarySolidMat);
-  leftHand.position.y = -0.18;
-  leftHand.castShadow = true;
-  leftArm.add(leftHand);
-  leftArm.rotation.z = 0.22;
-  bodyPivot.add(leftArm);
-
-  const rightArm = new THREE.Group();
-  rightArm.position.set(0.68, 1.18, 0);
-  const rightHand = new THREE.Mesh(armGeo, primarySolidMat);
-  rightHand.position.y = -0.18;
-  rightHand.castShadow = true;
-  rightArm.add(rightHand);
-  rightArm.rotation.z = -0.22;
-  bodyPivot.add(rightArm);
-
-  // ==================== 5. ПОЛНЫЕ ВЫРАЗИТЕЛЬНЫЕ 3D-КОСТЮМЫ (ВЕРХ + НИЗ + МАСКИ / ХВОСТЫ / ДОСПЕХИ) ====================
-  const costumeGroup = new THREE.Group();
-  bodyPivot.add(costumeGroup);
-
-  const hatGroup = new THREE.Group();
-  hatGroup.position.set(0, 1.92, 0);
-  bodyPivot.add(hatGroup);
-
-  // Базовые штанишки/пояс (переопределяются полными костюмами)
-  const pantsGeo = new THREE.CylinderGeometry(0.642, 0.585, 0.40, 24);
-  const pantsMat = new THREE.MeshStandardMaterial({ color: skin.c2, roughness: 0.38 });
-  const pantsMesh = new THREE.Mesh(pantsGeo, pantsMat);
-  pantsMesh.position.y = 0.72;
-  // Separate trouser legs move with the character's existing leg joints.
-  const trouserGeo = new THREE.CapsuleGeometry(.22, .20, 8, 16);
-  const leftTrouser = new THREE.Mesh(trouserGeo, pantsMat);
-  leftTrouser.position.y = -.12; leftLeg.add(leftTrouser);
-  const rightTrouser = new THREE.Mesh(trouserGeo, pantsMat);
-  rightTrouser.position.y = -.12; rightLeg.add(rightTrouser);
-
-  const cType = skin.hat || 'none';
-
-  if (cType === 'dino') {
-    // 🦖 КОСТЮМ ТИ-РЕКСА (ВЕРХ: пасть динозавра с белыми 3D-зубами + спинной гребень | НИЗ: зелёный пояс + длинный хвост)
-    const dinoMat = new THREE.MeshStandardMaterial({ color: 0x00c853, roughness: 0.35 });
-    const bellyScaleMat = new THREE.MeshStandardMaterial({ color: 0xffe082, roughness: 0.4 });
-    pantsMat.color.setHex(0x009624);
-
-    // Верхняя челюсть-капюшон над очками
-    const snout = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), dinoMat);
-    snout.scale.set(.40,.24,.40);
-    snout.position.set(0, -0.02, 0.16);
-    hatGroup.add(snout);
-
-    // Ноздри и глаза динозавра на капюшоне
-    const nostrilL = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), darkMat);
-    nostrilL.position.set(-0.20, 0.14, 0.44);
-    const nostrilR = nostrilL.clone();
-    nostrilR.position.x = 0.20;
-    hatGroup.add(nostrilL, nostrilR);
-
-    // Ряд белых острых зубов под верхней челюстью
-    for (let i = -2; i <= 2; i++) {
-      const tooth = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.14, 6), whiteMat);
-      tooth.rotation.x = Math.PI;
-      tooth.position.set(i * 0.13, -0.22, 0.46);
-      hatGroup.add(tooth);
-    }
-
-    // Гребень из жёлтых шипов от макушки вдоль спины до хвоста
-    for (let s = 0; s < 5; s++) {
-      const spike = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.32, 8), bellyScaleMat);
-      spike.rotation.x = -0.85;
-      spike.position.set(0, 1.82 - s * 0.25, -0.52 - (s === 2 ? 0.08 : 0));
-      costumeGroup.add(spike);
-    }
-
-    // Длинный изогнутый 3D-хвост динозавра сзади (Низ)
-    const tail = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.95, 12), dinoMat);
-    tail.rotation.x = -Math.PI * 0.42;
-    tail.position.set(0, 0.68, -0.86);
-    costumeGroup.add(tail);
-  } else if (cType === 'hotdog') {
-    // 🌭 ПОЛНЫЙ КОСТЮМ СОЧНОГО ХОТ-ДОГА (Боковые половинки пышной булочки + волна горчицы + шорты)
-    const bunMat = new THREE.MeshStandardMaterial({ color: 0xe69a45, roughness: 0.48 });
-    const sausageMat = new THREE.MeshStandardMaterial({ color: 0xc62828, roughness: 0.32 });
-    const mustardMat = new THREE.MeshStandardMaterial({ color: 0xffea00, roughness: 0.25 });
-    pantsMat.color.setHex(0xb71c1c);
-
-    // Левая и правая половинки пышной булочки по бокам туловища
-    const bunGeo = new THREE.CapsuleGeometry(0.32, 0.72, 12, 18);
-    const leftBun = new THREE.Mesh(bunGeo, bunMat);
-    leftBun.position.set(-0.48, 1.12, -0.05);
-    const rightBun = new THREE.Mesh(bunGeo, bunMat);
-    rightBun.position.set(0.48, 1.12, -0.05);
-    costumeGroup.add(leftBun, rightBun);
-
-    // Верхушка сосиски на голове
-    const topDog = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), sausageMat);
-    topDog.scale.set(.40,.22,.40);
-    topDog.position.y = -0.02;
-    hatGroup.add(topDog);
-
-    // Зигзаг горчицы на животике
-    for (let i = 0; i < 4; i++) {
-      const zig = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.085, 0.12), mustardMat);
-      zig.position.set((i % 2 === 0 ? -0.04 : 0.04), 1.05 - i * 0.12, 0.61);
-      zig.rotation.z = (i % 2 === 0) ? 0.28 : -0.28;
-      costumeGroup.add(zig);
-    }
-  } else if (cType === 'pirate') {
-    // 🏴‍☠️ КАПИТАН ПИРАТ (ВЕРХ: треуголка с золотым кантом и пером + эполеты | НИЗ: широкий пояс с пряжкой и камзол)
-    const tricornMat = new THREE.MeshStandardMaterial({ color: 0x1b162a, roughness: 0.4 });
-    const coatMat = new THREE.MeshStandardMaterial({ color: 0x8e0000, roughness: 0.38 });
-    pantsMat.color.setHex(0x1f2937);
-
-    // Широкая треуголка
-    const hatBrim = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.52, 0.26, 3), tricornMat);
-    hatBrim.rotation.y = Math.PI;
-    hatBrim.position.y = 0.02;
-    hatGroup.add(hatBrim);
-
-    // Золотой кант и красное перо на треуголке
-    const feather = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.52, 8), new THREE.MeshStandardMaterial({ color: 0xff1744 }));
-    feather.position.set(0.36, 0.24, 0);
-    feather.rotation.z = -0.35;
-    hatGroup.add(feather);
-
-    // Золотые эполеты на плечах (Верх)
-    const epL = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.12, 0.34), goldMat);
-    epL.position.set(-0.62, 1.44, 0);
-    const epR = epL.clone();
-    epR.position.x = 0.62;
-    costumeGroup.add(epL, epR);
-
-    // Полы капитанского камзола и широкий кожаный ремень с золотой пряжкой (Низ)
-    // Short rounded coat panels leave the legs and belt visible.
-    for (const side of [-1, 1]) {
-      const panel = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), coatMat);
-      panel.scale.set(.19,.32,.16); panel.position.set(side*.44,1.05,.40);
-      costumeGroup.add(panel);
-    }
-
-    const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.625, 0.625, 0.09, 32, 1, true), darkMat);
-    belt.position.y = 0.88;
-    const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.20, 0.10), goldMat);
-    buckle.position.set(0, 0.88, 0.625);
-    costumeGroup.add(belt, buckle);
-  } else if (cType === 'chicken') {
-    // 🐓 БОЕВОЙ ПЕТУШОК (ВЕРХ: красный гребешок + жёлтый клюв + крылышки | НИЗ: пуховые штанишки + хвост + оранжевые лапки)
-    const combMat = new THREE.MeshStandardMaterial({ color: 0xff1744, roughness: 0.3 });
-    const beakMat = new THREE.MeshStandardMaterial({ color: 0xffab00, roughness: 0.25 });
-    pantsMat.color.setHex(0xffffff);
-    leftFoot.material = beakMat;
-    rightFoot.material = beakMat;
-
-    // Трёхзубчатый красный гребешок на макушке
-    for (let i = -1; i <= 1; i++) {
-      const lobe = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 12), combMat);
-      lobe.scale.set(0.65, 1.35, 1.0);
-      lobe.position.set(0, 0.08 + (1 - Math.abs(i)) * 0.06, i * 0.20);
-      hatGroup.add(lobe);
-    }
-
-    // Объёмный жёлтый клюв под очками Миньона и красная бородка
-    const beak = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.34, 8), beakMat);
-    beak.rotation.x = Math.PI / 2;
-    beak.position.set(0, 1.12, 0.74);
-    const wattle = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 10), combMat);
-    wattle.position.set(0, 0.99, 0.66);
-    costumeGroup.add(beak, wattle);
-
-    // Пышный перьевой хвост сзади (Низ)
-    for (let t = -1; t <= 1; t++) {
-      const tailFeather = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.48, 8), whiteMat);
-      tailFeather.rotation.x = -0.8;
-      tailFeather.rotation.z = t * 0.32;
-      tailFeather.position.set(t * 0.14, 0.78, -0.72);
-      costumeGroup.add(tailFeather);
-    }
-  } else if (cType === 'astronaut') {
-    // 👩‍🚀 ЗВЁЗДНЫЙ АСТРОНАВТ (ВЕРХ: прозрачный купол шлема + реактивный джетпак + нагрудный пульт | НИЗ: пояс скафандра)
-    const suitMat = new THREE.MeshStandardMaterial({ color: 0xeceff1, roughness: 0.25, metalness: 0.15 });
-    pantsMat.color.setHex(0xcfd8dc);
-
-    // Прозрачный стеклянный купол гермошлема вокруг головы
-    const glassMat = new THREE.MeshStandardMaterial({
-      color: 0x80d8ff,
-      transparent: true,
-      opacity: 0.34,
-      roughness: 0.08,
-      metalness: 0.2
-    });
-    const helmetDome = new THREE.Mesh(new THREE.SphereGeometry(0.74, 24, 20), glassMat);
-    helmetDome.position.set(0, 1.40, 0.04);
-    costumeGroup.add(helmetDome);
-
-    // Золотое шейное кольцо скафандра
-    const neckRing = new THREE.Mesh(new THREE.TorusGeometry(0.64, 0.065, 12, 28), goldMat);
-    neckRing.rotation.x = Math.PI / 2;
-    neckRing.position.y = 1.05;
-    costumeGroup.add(neckRing);
-
-    // Двухсопловый реактивный джетпак за спиной
-    const packBox = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.62, 0.34), suitMat);
-    packBox.position.set(0, 1.22, -0.68);
-    const thrusterL = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.24, 12), darkMat);
-    thrusterL.position.set(-0.20, 0.84, -0.68);
-    const thrusterR = thrusterL.clone();
-    thrusterR.position.x = 0.20;
-    costumeGroup.add(packBox, thrusterL, thrusterR);
-
-    // Нагрудная панель управления
-    const chestPad = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.26, 0.10), suitMat);
-    chestPad.position.set(0, 0.94, 0.60);
-    costumeGroup.add(chestPad);
-  } else if (cType === 'samurai') {
-    // 👹 КИБЕР-САМУРАЙ (ВЕРХ: шлем Кабуто с рогами-полумесяцем + демоническая маска Мэнгу + наплечники | НИЗ: юбка-доспех)
-    const armorMat = new THREE.MeshStandardMaterial({ color: 0xb71c1c, roughness: 0.3, metalness: 0.25 });
-    pantsMat.color.setHex(0x1b162a);
-
-    // Купол шлема Кабуто и боковые пластины Сикоро
-    const kabuto = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.72, 0.32, 16), darkMat);
-    kabuto.position.y = 0.02;
-    hatGroup.add(kabuto);
-
-    // Золотой рогатый полумесяц Кувагата на лбу шлема
-    const hornL = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.48, 8), goldMat);
-    hornL.position.set(-0.26, 0.22, 0.38);
-    hornL.rotation.z = 0.48;
-    const hornR = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.48, 8), goldMat);
-    hornR.position.set(0.26, 0.22, 0.38);
-    hornR.rotation.z = -0.48;
-    hatGroup.add(hornL, hornR);
-
-    // Детализированная маска демона Они (Мэнгу) на нижней половине лица с белыми клыками
-    const mengu = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), armorMat);
-    mengu.scale.set(.31,.14,.14);
-    mengu.position.set(0, 1.08, 0.56);
-    const fangL = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.13, 6), whiteMat);
-    fangL.position.set(-0.18, 1.16, 0.68);
-    const fangR = fangL.clone();
-    fangR.position.x = 0.18;
-    costumeGroup.add(mengu, fangL, fangR);
-
-    // Самурайские наплечники (Содэ) и боевая юбка-доспех (Кусадзури) внизу
-    const sodeL = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.32, 0.42), armorMat);
-    sodeL.position.set(-0.72, 1.28, 0);
-    const sodeR = sodeL.clone();
-    sodeR.position.x = 0.72;
-
-    const armorSkirt = new THREE.Group();
-    for (const side of [-1, 1]) {
-      const plate = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), armorMat);
-      plate.scale.set(.23,.20,.12); plate.position.set(side*.33,.76,.48); armorSkirt.add(plate);
-    }
-    const goldBelt = new THREE.Mesh(new THREE.CylinderGeometry(0.66, 0.66, 0.10, 24), goldMat);
-    goldBelt.position.y = 0.90;
-    costumeGroup.add(sodeL, sodeR, armorSkirt, goldBelt);
-  } else if (cType === 'wizard') {
-    // 🧙‍♂️ ВЕРХОВНЫЙ ЧАРОДЕЙ (ВЕРХ: высокая шляпа мага + пушистая белая борода + плащ | НИЗ: мантия и пояс со сферой)
-    const wizMat = new THREE.MeshStandardMaterial({ color: 0x4a148c, roughness: 0.38 });
-    pantsMat.color.setHex(0x311b92);
-
-    // Широкие поля и высокий конус шляпы волшебника
-    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.88, 0.88, 0.06, 24), wizMat);
-    brim.position.y = -0.05;
-    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.46, 0.88, 18), wizMat);
-    cone.position.y = 0.38;
-    cone.rotation.z = -0.12;
-    const hatBand = new THREE.Mesh(new THREE.CylinderGeometry(0.47, 0.48, 0.10, 18), goldMat);
-    hatBand.position.y = 0.02;
-    hatGroup.add(brim, cone, hatBand);
-
-    // Пышная белоснежная 3D-борода под очками Миньона
-    const beardMain = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), whiteMat);
-    beardMain.scale.set(.32,.34,.14);
-    beardMain.rotation.x = Math.PI;
-    beardMain.position.set(0, 0.92, 0.56);
-    costumeGroup.add(beardMain);
-
-    // Магический плащ за спиной и золотой пояс со светящейся сферой (Низ)
-    const cape = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.78, 1.05, 16, 1, true, Math.PI * 0.6, Math.PI * 0.8), wizMat);
-    cape.position.set(0, 1.05, -0.08);
-    const orb = new THREE.Mesh(new THREE.SphereGeometry(0.13, 14, 14), new THREE.MeshBasicMaterial({ color: 0x00e5ff }));
-    orb.position.set(0, 0.84, 0.66);
-    costumeGroup.add(cape, orb);
-  } else if (cType === 'pineapple') {
-    // 🍍 ТРОПИЧЕСКИЙ АНАНАС (ВЕРХ: корона зелёных листьев + неоновые очки-жалюзи | НИЗ: гавайская травяная юбочка)
-    const leafMat = new THREE.MeshStandardMaterial({ color: 0x00e676, roughness: 0.32 });
-    const shadesMat = new THREE.MeshStandardMaterial({ color: 0xff2a85, roughness: 0.2 });
-    pantsMat.color.setHex(0x00c853);
-
-    // Пышный пучок листьев ананаса на макушке
-    for (let i = 0; i < 7; i++) {
-      const ang = (i / 7) * Math.PI * 2;
-      const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.62, 6), leafMat);
-      leaf.position.set(Math.cos(ang) * 0.16, 0.22, Math.sin(ang) * 0.16);
-      leaf.rotation.x = Math.sin(ang) * 0.45;
-      leaf.rotation.z = -Math.cos(ang) * 0.45;
-      hatGroup.add(leaf);
-    }
-
-    // Модные тропические козырьки над окулярами
-    const visorBar = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.08, 0.16), shadesMat);
-    visorBar.position.set(0, 1.49, 0.60);
-    costumeGroup.add(visorBar);
-
-    // Small leaf accents on the waistband keep the legs visible.
-    for (let k = 0; k < 5; k++) {
-      const frond = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), leafMat);
-      frond.scale.set(.06,.13,.035); frond.rotation.z=(k-2)*.14;
-      frond.position.set((k-2)*.13,.76,.59); costumeGroup.add(frond);
-    }
-  } else if (cType === 'king' || cType === 'crown') {
-    // 👑 ИМПЕРАТОР КОРОНЫ (ВЕРХ: большая золотая корона с рубинами + горностаевый воротник + мантия | НИЗ: царский кушак)
-    const velvetMat = new THREE.MeshStandardMaterial({ color: 0xb71c1c, roughness: 0.35 });
-    pantsMat.color.setHex(0x880e4f);
-
-    // Большая золотая корона с бархатным куполом и самоцветами
-    const crownCyl = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.36, 0.32, 8), goldMat);
-    crownCyl.position.y = 0.10;
-    const innerVelvet = new THREE.Mesh(new THREE.SphereGeometry(0.36, 14, 12), velvetMat);
-    innerVelvet.position.y = 0.14;
-    hatGroup.add(crownCyl, innerVelvet);
-
-    // Пышный белый горностаевый воротник вокруг плеч и пурпурная мантия за спиной
-    const furCollar = new THREE.Mesh(new THREE.TorusGeometry(0.58, 0.14, 12, 24), whiteMat);
-    furCollar.rotation.x = Math.PI / 2;
-    furCollar.position.y = 1.54;
-
-    const royalCape = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.56, 0.84, 1.15, 18, 1, true, Math.PI * 0.55, Math.PI * 0.9),
-      velvetMat
-    );
-    royalCape.position.set(0, 1.02, -0.10);
-
-    const goldSash = new THREE.Mesh(new THREE.CylinderGeometry(0.66, 0.66, 0.14, 24), goldMat);
-    goldSash.position.y = 0.86;
-    costumeGroup.add(furCollar, royalCape, goldSash);
-  }
-
-  const extra = EXTRA_COSTUMES.find(item => item[0] === cType);
-  if (extra) {
-    const tone = new THREE.MeshStandardMaterial({color:extra[3],roughness:.48});
-    const accent = new THREE.MeshStandardMaterial({color: cType === 'bee' ? 0x4b342a : 0xffd7cb,roughness:.55});
-    pantsMat.color.setHex(extra[3]);
-    // Rounded hood sits behind the goggles; the face remains visible.
-    const hood = new THREE.Mesh(new THREE.SphereGeometry(1,24,18),tone);
-    hood.scale.set(.58,.32,.53); hood.position.set(0,.04,-.03); hatGroup.add(hood);
-    const addOval = (x,y,z,sx,sy,sz,mat=tone) => {
-      const m=new THREE.Mesh(new THREE.SphereGeometry(1,20,14),mat);
-      m.scale.set(sx,sy,sz); m.position.set(x,y,z); hatGroup.add(m); return m;
-    };
-    if (['fox','cat','rabbit','bear','panda','cow','owl'].includes(cType)) {
-      const long = cType === 'rabbit';
-      for (const side of [-1,1]) {
-        const ear=addOval(side*.36,long?.43:.23,-.02,long?.16:.20,long?.42:.24,.14);
-        ear.rotation.z = -side*.28;
-        const inner=addOval(side*.36,long?.45:.24,.11,long?.085:.10,long?.27:.12,.035,accent);
-        inner.rotation.z=-side*.28;
-      }
-    }
-    if (['frog','shark','dragon'].includes(cType)) {
-      if(cType==='frog') for(const side of [-1,1]) {
-        addOval(side*.32,.25,.10,.18,.17,.16);
-        addOval(side*.32,.28,.24,.09,.09,.035,whiteMat);
-        addOval(side*.32,.28,.275,.045,.05,.02,darkMat);
-      }
-      else {
-        const fin = new THREE.Mesh(new THREE.ConeGeometry(.19,.47,8),tone);
-        fin.position.set(0,.36,-.08); hatGroup.add(fin);
-        const nose=addOval(0,-.02,.37,.36,.15,.24);
-        for(let i=-2;i<=2;i++) { const tooth=new THREE.Mesh(new THREE.ConeGeometry(.035,.11,8),whiteMat); tooth.rotation.x=Math.PI; tooth.position.set(i*.12,-.17,.53);hatGroup.add(tooth); }
-      }
-    }
-    if(cType==='bee') {
-      for(const side of [-1,1]) {
-        const antenna=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.32,10),darkMat); antenna.position.set(side*.22,.34,0); antenna.rotation.z=-side*.35;hatGroup.add(antenna);
-        addOval(side*.27,.50,0,.07,.07,.07,darkMat);
-        const wing=new THREE.Mesh(new THREE.SphereGeometry(1,16,12),whiteMat); wing.scale.set(.25,.36,.08); wing.position.set(side*.43,1.18,-.56);wing.rotation.z=side*.55;costumeGroup.add(wing);
-      }
-    }
-    if(cType==='robot'||cType==='diver') {
-      const antenna=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,.28,12),chromeMat); antenna.position.y=.36;hatGroup.add(antenna);addOval(0,.53,0,.09,.09,.09,cType==='diver'?primarySolidMat:goldMat);
-    }
-    if(cType==='cow') for(const side of [-1,1]) { const horn=new THREE.Mesh(new THREE.ConeGeometry(.09,.24,12),whiteMat);horn.position.set(side*.28,.32,-.04);hatGroup.add(horn); }
-  }
-
-  // Тень-блоб под ногами (проектируется ровно на поверхность соты под персонажем для 100% читаемости прыжка!)
-  const shadowGeo = new THREE.PlaneGeometry(1.55, 1.55);
-  shadowGeo.rotateX(-Math.PI / 2);
-  const shadowMat = new THREE.MeshBasicMaterial({
-    color: 0xffffff,
-    map: beanShadowTexture,
-    transparent: true,
-    opacity: 0.72,
-    depthWrite: false,
-    polygonOffset: true,
-    polygonOffsetFactor: -1,
-    polygonOffsetUnits: -1
-  });
-  const blobShadow = new THREE.Mesh(shadowGeo, shadowMat);
-  blobShadow.position.y = 0.03;
-  root.add(blobShadow);
-
-  // The soft projected contact shadow is easier to read than a second,
-  // sharply offset silhouette from the directional light on small platforms.
-  root.traverse(part => { if (part.isMesh) part.castShadow = false; });
-
-  // Кольцо щита «Батут-спасение»
-  const shieldRing = new THREE.Mesh(
-    new THREE.TorusGeometry(0.95, 0.06, 10, 28),
-    new THREE.MeshBasicMaterial({ color: 0xffd740 })
-  );
-  shieldRing.rotation.x = Math.PI / 2;
-  shieldRing.position.y = 1.0;
-  shieldRing.visible = false;
-  root.add(shieldRing);
-
-  return {
-    root,
-    bodyPivot,
-    leftLeg,
-    rightLeg,
-    leftArm,
-    rightArm,
-    blobShadow,
-    shieldRing,
-    mainMat
-  };
-}
 
 // ==================== КЛАСС УЧАСТНИКА 3D (ИГРОК И БОТЫ) ====================
 class Actor3D {
@@ -2353,12 +1738,21 @@ class Actor3D {
     root.position.set(this.x, this.y, this.z);
     bodyPivot.rotation.y = this.visualFacing;
 
-    // Прозрачность при «Призрачном шаге»
+    // Прозрачность при «Призрачном шаге» — на всех материалах персонажа: в полных костюмах оболочка mainMat скрыта
     const ghostActive = this.buffs.ghost > 0;
-    if (mainMat.transparent !== ghostActive) {
-      mainMat.transparent = ghostActive;
-      mainMat.opacity = ghostActive ? 0.6 : 1.0;
-      mainMat.needsUpdate = true;
+    if (!!this.ghostApplied !== ghostActive) {
+      this.ghostApplied = ghostActive;
+      if (!this.rig.ghostMats) {
+        const mats = new Set();
+        root.traverse(o => { if (o.material && o !== this.rig.blobShadow && o !== shieldRing) [].concat(o.material).forEach(m => mats.add(m)); });
+        mats.add(mainMat);
+        this.rig.ghostMats = [...mats].map(m => ({ m, transparent: m.transparent, opacity: m.opacity }));
+      }
+      for (const g of this.rig.ghostMats) {
+        g.m.transparent = ghostActive || g.transparent;
+        g.m.opacity = ghostActive ? g.opacity * 0.6 : g.opacity;
+        g.m.needsUpdate = true;
+      }
     }
     shieldRing.visible = this.buffs.shield > 0;
     if (shieldRing.visible) shieldRing.rotation.z += dt * 3;
@@ -2453,6 +1847,9 @@ function findSupportingTileOnLayer(layer, wx, wz, actorRadius) {
 
 // ==================== ПОСТРОЕНИЕ 3D-БАШНИ И СТАРТ ШОУ ====================
 function buildArena3D(config) {
+  for (const layer of state.layers || []) for (const t of layer.list || []) t.detachVisual?.(false);
+  hexBatches.forEach(b => b.dispose());
+  hexBatches = [];
   arenaGroup.clear();
   state.layers = [];
   state.regenQueue = [];
@@ -2480,6 +1877,7 @@ function buildArena3D(config) {
         list.push(tile);
       }
     }
+    hexBatches.push(createHexLayerBatch(list));
     state.layers.push({ index: l, yHeight, map, list });
   }
 }
@@ -2581,7 +1979,7 @@ function startMatch(options = {}) {
   const pTile = spawnRing[0] || topLayer.list[0];
   const player = new Actor3D(
     'player',
-    saveData.playerName || 'СуперФасолька',
+    saveData.playerName || 'СуперКубик',
     true,
     playerSkin,
     pTile.x,
@@ -2674,10 +2072,10 @@ function startBigFans(mode = 'single') {
 function updateRaceHUD() {
   const finished = state.actors.filter(a => a.raceFinished).length;
   const quota = Math.max(1, Math.ceil(state.actors.length * .7));
-  document.getElementById('hud-mode-label').textContent = state.showMode === 'championship' ? 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ • РАУНД 1' : 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ';
-  document.getElementById('hud-alive').textContent = `${finished} / ${quota}`;
-  document.getElementById('hud-layer').textContent = `${state.player.checkpoint} / 3`;
-  document.getElementById('hud-timer').textContent = formatTime(state.elapsed);
+  setText('hud-mode-label', state.showMode === 'championship' ? 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ • РАУНД 1' : 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ');
+  setText('hud-alive', `${finished} / ${quota}`);
+  setText('hud-layer', `${state.player.checkpoint} / 3`);
+  setText('hud-timer', formatTime(state.elapsed));
 }
 function finishRace(result) {
   const qualifiers = result.finished.slice(0, result.quota);
@@ -2754,7 +2152,8 @@ function updateBigFans(dt) {
       ribbon: state.showMode === 'championship' ? 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ • РАУНД 1' : 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ • ФИНИШ',
       title: 'ФИНИШ!',
       subtitle: `ТЫ ПРОШЁЛ! Место #${place} из ${result.quota} прошедших!`,
-      duration: 3.0
+      duration: 3.0,
+      freeze: false
     });
   }
   state.raceVisuals.update();
@@ -2798,10 +2197,10 @@ function startRollOut(mode = 'single_rollout', qualifiers = null) {
 }
 function updateRolloutHUD() {
   const count=state.actors.filter(a=>a.alive).length;
-  document.getElementById('hud-mode-label').textContent = 'ВРАЩАЮЩИЕСЯ БАРАБАНЫ • ВЫЖИВАНИЕ';
-  document.getElementById('hud-alive').textContent = `${count} / ${state.actors.length}`;
-  document.getElementById('hud-layer').textContent = `${state.rolloutQuota} проходят`;
-  document.getElementById('hud-timer').textContent = formatTime(state.elapsed);
+  setText('hud-mode-label', 'ВРАЩАЮЩИЕСЯ БАРАБАНЫ • ВЫЖИВАНИЕ');
+  setText('hud-alive', `${count} / ${state.actors.length}`);
+  setText('hud-layer', `${state.rolloutQuota} проходят`);
+  setText('hud-timer', formatTime(state.elapsed));
 }
 function finishRollOut() {
   const survivors=state.actors.filter(a=>a.alive);
@@ -2918,10 +2317,10 @@ function startSlimeClimb(mode='single_slime', qualifiers=null) {
 }
 function updateSlimeHUD(){
  const finished=state.actors.filter(a=>a.climbFinished).length,active=state.actors.filter(a=>a.alive&&!a.climbFinished).length;
- document.getElementById('hud-mode-label').textContent='SLIME CLIMB • ГОНКА';
- document.getElementById('hud-alive').textContent=`${active} / ${state.actors.length}`;
- document.getElementById('hud-layer').textContent=`${finished} финиш`;
- document.getElementById('hud-timer').textContent=formatTime(Math.max(0,SLIME_LIMIT-state.elapsed));
+ setText('hud-mode-label', 'SLIME CLIMB • ГОНКА');
+ setText('hud-alive', `${active} / ${state.actors.length}`);
+ setText('hud-layer', `${finished} финиш`);
+ setText('hud-timer', formatTime(Math.max(0,SLIME_LIMIT-state.elapsed)));
 }
 function finishSlimeClimb(){
  const finished=state.actors.filter(a=>a.climbFinished).sort((a,b)=>a.climbTime-b.climbTime);
@@ -3089,7 +2488,8 @@ function updateSlimeClimb(dt){
      ribbon: state.showMode === 'championship_slime' ? 'SLIME CLIMB • РАУНД 3' : 'SLIME CLIMB • ВЕРШИНА',
      title: 'КВАЛИФИЦИРОВАН!',
      subtitle: `ТЫ ПРОШЁЛ! Место #${place}! Вы обогнали розовую слизь!`,
-     duration: 3.0
+     duration: 3.0,
+     freeze: false
    });
  }
 
@@ -3100,7 +2500,7 @@ function updateSlimeClimb(dt){
  }
  for(const a of active)a.bumpCooldown=Math.max(0,a.bumpCooldown-dt);
  updateFX(dt);updateThirdPersonCamera(dt);update3DNameplates();updateSlimeHUD();
- if(!active.length||state.elapsed>=SLIME_LIMIT)finishSlimeClimb();
+ if((!active.length||state.elapsed>=SLIME_LIMIT)&&!state.celebrationTimeout)finishSlimeClimb();
 }
 
 // ==================== ПРЫЖКОВЫЙ ФИНАЛ: GRAND FINAL ====================
@@ -3154,10 +2554,10 @@ function startJumpShowdown(mode = 'single_showdown', qualifiers = null) {
 function updateShowdownHUD() {
   const active = state.actors.filter(a => a.alive).length;
   const remainingSectors = state.showdown ? state.showdown.sectors.filter(s => s.state !== 'dropped').length : 8;
-  document.getElementById('hud-mode-label').textContent = 'ПРЫЖКОВЫЙ ФИНАЛ • ФИНАЛ';
-  document.getElementById('hud-alive').textContent = `${active} / ${state.actors.length}`;
-  document.getElementById('hud-layer').textContent = `${remainingSectors} секторов`;
-  document.getElementById('hud-timer').textContent = formatTime(state.elapsed);
+  setText('hud-mode-label', 'ПРЫЖКОВЫЙ ФИНАЛ • ФИНАЛ');
+  setText('hud-alive', `${active} / ${state.actors.length}`);
+  setText('hud-layer', `${remainingSectors} секторов`);
+  setText('hud-timer', formatTime(state.elapsed));
 }
 
 function updateJumpShowdown(dt) {
@@ -3300,6 +2700,18 @@ function finishJumpShowdown(winner) {
 }
 
 // ==================== 3D БОНУСЫ, ЧАСТИЦЫ И УДАРНЫЕ ВОЛНЫ ====================
+// Общие геометрии и материалы бонусов: раньше на каждый спавн создавались новые и никогда не освобождались
+const powerupOrbGeo = new THREE.OctahedronGeometry(0.65, 1);
+const powerupRingGeo = new THREE.TorusGeometry(0.75, 0.07, 8, 24);
+const powerupLooks = new Map();
+function powerupLook(type) {
+  if (!powerupLooks.has(type.hex)) powerupLooks.set(type.hex, {
+    orb: new THREE.MeshStandardMaterial({ color: type.hex, emissive: type.hex, emissiveIntensity: 0.4 }),
+    ring: new THREE.MeshBasicMaterial({ color: type.hex })
+  });
+  return powerupLooks.get(type.hex);
+}
+
 function spawnPowerup3D() {
   const aliveActors = state.actors.filter(a => a.alive);
   if (aliveActors.length === 0) return;
@@ -3317,24 +2729,19 @@ function spawnPowerup3D() {
 
   const group = new THREE.Group();
   group.position.set(tile.x, layer.yHeight + 1.2, tile.z);
+  const looks = powerupLook(type);
 
   if (loadedGLB.coin) {
     const cMesh = loadedGLB.coin.clone();
     cMesh.scale.set(2.4, 2.4, 2.4);
     group.add(cMesh);
   } else {
-    const orb = new THREE.Mesh(
-      new THREE.OctahedronGeometry(0.65, 1),
-      new THREE.MeshStandardMaterial({ color: type.hex, emissive: type.hex, emissiveIntensity: 0.4 })
-    );
+    const orb = new THREE.Mesh(powerupOrbGeo, looks.orb);
     group.add(orb);
   }
 
   // Светящееся кольцо вокруг бонуса цвета его типа
-  const ring = new THREE.Mesh(
-    new THREE.TorusGeometry(0.75, 0.07, 8, 24),
-    new THREE.MeshBasicMaterial({ color: type.hex })
-  );
+  const ring = new THREE.Mesh(powerupRingGeo, looks.ring);
   ring.rotation.x = Math.PI / 2;
   group.add(ring);
 
@@ -3456,6 +2863,15 @@ const keys = {};
 const padMove = {dx:0,dy:0};
 const readGamepad = createGamepadReader();
 let padMenuIndex = -1;
+let padStartPressedAt = -Infinity;
+let eventBannerTimer = null;
+function flashEventBanner(text, ms) {
+  const banner = document.getElementById('event-banner');
+  banner.textContent = text;
+  banner.classList.remove('hidden');
+  clearTimeout(eventBannerTimer);
+  eventBannerTimer = setTimeout(() => banner.classList.add('hidden'), ms);
+}
 function pollController(dt) {
   let pad;
   try { pad = readGamepad(navigator.getGamepads?.()); } catch { pad = null; }
@@ -3474,9 +2890,17 @@ function pollController(dt) {
     state.camPitchOffset = Math.max(-3.5, Math.min(6, state.camPitchOffset + pad.lookY * dt * 4));
     if (pad.lookX || pad.lookY) state.lastManualOrbitTime = state.elapsed;
     if (pad.pressed[3]) cycleCamPreset();
-    if (pad.pressed[9]) openStartModal();
+    if (pad.pressed[9]) {
+      // Выход в лобби только по двойному START: случайное нажатие больше не обрывает забег
+      const now = performance.now();
+      if (now - padStartPressedAt < 2000) { padStartPressedAt = -Infinity; openStartModal(); }
+      else { padStartPressedAt = now; flashEventBanner('🎮 Нажмите START ещё раз, чтобы выйти в лобби', 2000); }
+    }
   } else {
-    const buttons = [...document.querySelectorAll("button,input,select")].filter(b=>b.getClientRects().length && !b.disabled && !b.closest(".hidden"));
+    // Навигация по меню только в лобби или в открытом окне — иначе в отсчёт/результатах крестовина и A нажимали 🏠 в HUD
+    const modal = [...document.querySelectorAll("#ad-modal,#result-modal,#lb-modal")].find(m=>!m.classList.contains("hidden"));
+    if (!modal && state.phase !== "menu") return;
+    const buttons = [...(modal || document).querySelectorAll("button,input,select")].filter(b=>b.getClientRects().length && !b.disabled && !b.closest(".hidden"));
     const direction = pad.pressed[13] || pad.pressed[15] ? 1 : pad.pressed[12] || pad.pressed[14] ? -1 : 0;
     if (direction && buttons.length) {
       padMenuIndex = (padMenuIndex + direction + buttons.length) % buttons.length;
@@ -3603,6 +3027,7 @@ function handleJoystickMove(clientX, clientY) {
     dy = (dy / dist) * maxR;
   }
   joyStick.style.transform = `translate(${dx}px, ${dy}px)`;
+  joystick.lastX = clientX; joystick.lastY = clientY;
   joystick.dx = dx / maxR;
   joystick.dy = dy / maxR;
 }
@@ -3647,10 +3072,15 @@ function clearInputs() {
   padMove.dx = padMove.dy = 0;
 }
 window.addEventListener('blur', clearInputs);
-document.addEventListener('visibilitychange', () => {if(document.hidden) clearInputs();});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { clearInputs(); sfx.ctx?.suspend().catch(() => {}); }
+  else sfx.ctx?.resume().catch(() => {});
+});
 joyBase.addEventListener('lostpointercapture', resetJoystick);
 canvas.addEventListener('pointercancel', () => {camDrag.active=false;});
-window.addEventListener('resize', resetJoystick);
+// Скрытие адресной строки на телефоне тоже шлёт resize: палец остаётся на стике, поэтому пересчитываем, а не сбрасываем
+window.addEventListener('resize', () => { if (joystick.active && joystick.lastX != null) handleJoystickMove(joystick.lastX, joystick.lastY); });
+window.addEventListener('orientationchange', resetJoystick);
 
 // ==================== УМНЫЙ ИИ БОТОВ В 3D (ГЕКСА-АРЕНА) ====================
 function updateBotAI3D(bot, dt, config) {
@@ -4292,6 +3722,8 @@ let screenConfettiTimer=null;
 function clearCelebrationEffects(){
   if(state.celebrationTimeout!=null)clearTimeout(state.celebrationTimeout);
   state.celebrationTimeout=null;
+  if(state.bannerTimeout!=null)clearTimeout(state.bannerTimeout);
+  state.bannerTimeout=null;
   if(screenConfettiTimer!=null)clearTimeout(screenConfettiTimer);
   screenConfettiTimer=null;
   document.querySelectorAll('.confetti-container').forEach(el=>el.remove());
@@ -4342,9 +3774,10 @@ function launchScreenConfetti(type = 'champion') {
   screenConfettiTimer=setTimeout(() => {container.remove();screenConfettiTimer=null;}, 3600);
 }
 
-function showCelebrationOverlay({ type = 'champion', icon = '👑', ribbon = '', title = '', subtitle = '', duration = 3.0, onComplete = null } = {}) {
+function showCelebrationOverlay({ type = 'champion', icon = '👑', ribbon = '', title = '', subtitle = '', duration = 3.0, onComplete = null, freeze = true } = {}) {
   if (state.celebrationTimeout != null || state.phase === 'round_result' || state.phase === 'gameover') return false;
-  if (state.phase !== 'celebrating') state.phase = 'round_result';
+  // freeze:false — промежуточная плашка посреди раунда: гонка продолжается, финальная плашка может её перекрыть
+  if (freeze && state.phase !== 'celebrating') state.phase = 'round_result';
   const overlay = document.getElementById('winner-banner-overlay');
   const card = document.getElementById('winner-plashka-card');
   const iconEl = document.getElementById('winner-crown-anim');
@@ -4379,12 +3812,14 @@ function showCelebrationOverlay({ type = 'champion', icon = '👑', ribbon = '',
   // Запуск экранного праздничного конфетти
   launchScreenConfetti(type);
 
-  if (state.celebrationTimeout) clearTimeout(state.celebrationTimeout);
-  state.celebrationTimeout = setTimeout(() => {
-    state.celebrationTimeout = null;
+  if (state.bannerTimeout != null) clearTimeout(state.bannerTimeout);
+  state.bannerTimeout = null;
+  const timer = setTimeout(() => {
+    if (freeze) state.celebrationTimeout = null; else state.bannerTimeout = null;
     overlay.classList.add('hidden');
     if (onComplete) onComplete();
   }, duration * 1000);
+  if (freeze) state.celebrationTimeout = timer; else state.bannerTimeout = timer;
 }
 
 function triggerWinnerCelebration(winner) {
@@ -4493,24 +3928,36 @@ function formatTime(sec) {
   return `${String(mins).padStart(2, '0')}:${String(s).padStart(2, '0')}.${tenths}`;
 }
 
+// HUD обновляется каждый кадр: пишем в DOM только изменившиеся значения, иначе каждый кадр пересчитываются стили
+// и перерисовываются плашки с backdrop-filter поверх WebGL (ощутимо на телефонах). Чтение textContent/style layout не вызывает.
+let lastBuffsHtml = null;
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el && el.textContent !== value) el.textContent = value;
+}
+function setStyle(id, prop, value) {
+  const el = document.getElementById(id);
+  if (el && el.style[prop] !== value) el.style[prop] = value;
+}
+
 function updateHUD() {
   const aliveCount = state.actors.filter(a => a.alive).length;
   const totalCount = state.actors.length || (1 + state.config.botsCount);
 
-  document.getElementById('hud-mode-label').textContent = state.config.name;
-  document.getElementById('hud-alive').textContent = `${aliveCount} / ${totalCount}`;
+  setText('hud-mode-label', state.config.name);
+  setText('hud-alive', `${aliveCount} / ${totalCount}`);
 
   const p = state.player;
   const curLayer = p ? p.currentLayer + 1 : 1;
-  document.getElementById('hud-layer').textContent = `${curLayer} / ${state.config.layersCount}`;
-  document.getElementById('hud-timer').textContent = formatTime(state.elapsed);
-  document.getElementById('hud-crowns').textContent = String(saveData.crowns);
+  setText('hud-layer', `${curLayer} / ${state.config.layersCount}`);
+  setText('hud-timer', formatTime(state.elapsed));
+  setText('hud-crowns', String(saveData.crowns));
 
   // Валюты в шапке Лобби
-  document.getElementById('lobby-crowns').textContent = String(saveData.crowns || 0);
-  document.getElementById('lobby-kudos').textContent = String(saveData.kudos || 0);
-  document.getElementById('lobby-rank-title').textContent = getRankTitle(saveData.crowns);
-  document.getElementById('home-mode-name').textContent = state.config.name;
+  setText('lobby-crowns', String(saveData.crowns || 0));
+  setText('lobby-kudos', String(saveData.kudos || 0));
+  setText('lobby-rank-title', getRankTitle(saveData.crowns));
+  setText('home-mode-name', state.config.name);
 
   // Уровень и шкала славы сезона
   const xp = saveData.seasonXP || 0;
@@ -4525,15 +3972,14 @@ function updateHUD() {
     }
   }
   if (curLvl >= 7) nextXp = 3500;
-  document.getElementById('lobby-lvl-badge').textContent = String(curLvl);
-  document.getElementById('lobby-xp-text').textContent = `${xp} / ${nextXp}`;
-  document.getElementById('lobby-xp-fill').style.width = `${Math.min(100, (xp / nextXp) * 100)}%`;
+  setText('lobby-lvl-badge', String(curLvl));
+  setText('lobby-xp-text', `${xp} / ${nextXp}`);
+  setStyle('lobby-xp-fill', 'width', `${Math.min(100, (xp / nextXp) * 100)}%`);
 
-  const cdDiveEl = document.getElementById('cd-dive');
   if (p && p.diveCooldown > 0) {
-    cdDiveEl.style.height = `${(p.diveCooldown / 2.1) * 100}%`;
+    setStyle('cd-dive', 'height', `${(p.diveCooldown / 2.1) * 100}%`);
   } else {
-    cdDiveEl.style.height = '0%';
+    setStyle('cd-dive', 'height', '0%');
   }
 
   const buffsContainer = document.getElementById('active-buffs');
@@ -4555,9 +4001,9 @@ function updateHUD() {
         `;
       }
     }
-    buffsContainer.innerHTML = html;
-  } else {
-    buffsContainer.innerHTML = '';
+    if (lastBuffsHtml !== html) buffsContainer.innerHTML = lastBuffsHtml = html;
+  } else if (lastBuffsHtml !== '') {
+    buffsContainer.innerHTML = lastBuffsHtml = '';
   }
 }
 
@@ -4859,7 +4305,8 @@ function renderAllLobbyPanels() {
   const featRow = document.getElementById('shop-featured-row');
   if (featRow) {
     featRow.innerHTML = '';
-    const featuredCostumes = COSTUME_ITEMS.filter(c => c.unlockType === 'crowns').slice(0, 3);
+    let featuredCostumes = COSTUME_ITEMS.filter(c => c.unlockType === 'crowns').slice(0, 3);
+    if (!featuredCostumes.length) featuredCostumes = COSTUME_ITEMS.filter(c => c.full).slice(0, 3);
     featuredCostumes.forEach(cos => {
       const unlocked = isCostumeUnlocked(cos);
       const card = document.createElement('div');
@@ -4881,9 +4328,11 @@ function renderAllLobbyPanels() {
   const regRow = document.getElementById('shop-regular-row');
   if (regRow) {
     regRow.innerHTML = '';
+    const paid = c => c.unlockType === 'ad' || c.unlockType === 'kudos';
+    const pick = (list, fallback) => (list.some(paid) ? list.filter(paid) : list.filter(fallback)).slice(0, 2);
     const adAndKudosItems = [
-      ...COSTUME_ITEMS.filter(c => c.unlockType === 'ad' || c.unlockType === 'kudos').slice(0, 2),
-      ...COLOR_PALETTES.filter(c => c.unlockType === 'ad' || c.unlockType === 'kudos').slice(0, 2)
+      ...pick(COSTUME_ITEMS, c => !c.full && c.hat !== 'none'),
+      ...pick(COLOR_PALETTES, c => c.id !== COLOR_PALETTES[0].id)
     ];
     adAndKudosItems.forEach(item => {
       const isColor = Boolean(item.css1);
@@ -4949,7 +4398,7 @@ function openLeaderboard() {
   const combined = [
     ...saveData.rivalStandings.map(r => ({ ...r, isMe: false })),
     {
-      name: saveData.playerName || 'СуперФасолька',
+      name: saveData.playerName || 'СуперКубик',
       crowns: saveData.crowns,
       bestTime: saveData.bestSurvivalSec,
       score: saveData.totalScore,
@@ -5107,9 +4556,9 @@ document.getElementById('btn-watch-ad-kudos').addEventListener('click', () => {
 });
 
 const nameInput = document.getElementById('player-name-input');
-nameInput.value = saveData.playerName || 'СуперФасолька';
+nameInput.value = saveData.playerName || 'СуперКубик';
 nameInput.addEventListener('input', () => {
-  saveData.playerName = nameInput.value.trim() || 'СуперФасолька';
+  saveData.playerName = nameInput.value.trim() || 'СуперКубик';
   saveGameData();
 });
 
@@ -5149,7 +4598,7 @@ document.getElementById('btn-level-select').addEventListener('click', () => docu
 document.getElementById('btn-championship').addEventListener('click', () => startBigFans('championship'));
 document.getElementById('btn-start-match').addEventListener('click', () => {
   state.lastMode = 'hex'; state.showMode = 'single';
-  saveData.playerName = nameInput.value.trim() || 'СуперФасолька';
+  saveData.playerName = nameInput.value.trim() || 'СуперКубик';
   saveGameData();
   startMatch();
 });
@@ -5211,19 +4660,24 @@ buildLobbyPedestalScene();
 openStartModal();
 
 let lastTime = performance.now();
-let lastRenderedTime=0;
+let nextFrameDue=0;
 function animate(now) {
   requestAnimationFrame(animate);
   if(document.hidden){lastTime=now;return;}
   const frameInterval=1000/(state.phase==='playing'||state.phase==='countdown'||state.phase==='intro_flyover'?60:30);
-  if(now-lastRenderedTime < frameInterval-.8)return;
-  lastRenderedTime=now;
+  // Кадры по расписанию, а не «прошло ≥ интервала»: на 90/144 Гц в среднем держит 60 fps вместо 45/48
+  if(now < nextFrameDue-2)return;
+  nextFrameDue=Math.max(nextFrameDue+frameInterval, now);
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
   const nowSec = now * 0.001;
   pollController(dt);
 
-  if (state.phase === 'menu') {
+  const lobbyView = state.phase === 'menu';
+  const wantFov = lobbyView ? 30 : 52;
+  if (camera.fov !== wantFov) { camera.fov = wantFov; camera.updateProjectionMatrix(); }
+  lobbyKeyLight.intensity = lobbyView ? 1.7 : 0;
+  if (lobbyView) {
     updateLobby3D(dt, nowSec);
   } else {
     updateWorld3D(dt, nowSec);
@@ -5235,3 +4689,5 @@ function animate(now) {
 requestAnimationFrame(animate);
 
 
+
+window.__gameStarted = true;

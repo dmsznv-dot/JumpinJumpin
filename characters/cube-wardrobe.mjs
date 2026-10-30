@@ -1,4 +1,7 @@
 // Original accessories designed around a 1.6 m rounded cube, attached to Body.
+import {CUBE,cubeShellGeometry} from './cube-shape.mjs';
+// Accessories were laid out for a 1.16-deep body with the face at z 0.54; the sheet body is deeper.
+const FACE_DZ=CUBE.face.z-.54,DEPTH=CUBE.halfD/.58,SUIT=.06;
 export const CUBE_COSMETICS = [
  ['none','Без украшения','🟨'],['cherry','Вишенка','🍒'],['strawberry','Клубничка','🍓'],['orange','Мандарин','🍊'],['lemon','Лимончик','🍋'],['sprout','Росток','🌱'],['mushroom','Мухомор','🍄'],['cap','Бейсболка','🧢'],['beanie','Шапка с помпоном','🧶'],['party','Праздничный колпак','🎉'],['king','Корона','👑'],['wizard','Шляпа волшебника','🧙'],['pirate','Пиратская треуголка','🏴‍☠️'],['flower','Ромашка','🌼'],['headphones','Наушники','🎧'],['propeller','Пропеллер','🚁'],['pineapple','Ананасовая корона','🍍'],
  ['fox','Лисьи ушки','🦊'],['rabbit','Заячьи ушки','🐰'],['cat','Кошачьи ушки','🐱'],['bear','Медвежьи ушки','🐻'],['frog','Лягушачьи глазки','🐸'],['chicken','Петушиный гребень','🐓'],['bee','Усики пчёлки','🐝'],['cow','Рожки','🐮'],['panda','Ушки панды','🐼'],['owl','Совёнок','🦉'],
@@ -9,7 +12,7 @@ export function createCubeAccessories(T, type='none') {
  const group=new T.Group();group.name='CubeAccessory_'+type;const printMaterials=[];
  const materials=new Map();
  const mat=(c,metal=0)=>{const k=c+':'+metal;if(!materials.has(k))materials.set(k,new T.MeshStandardMaterial({color:c,roughness:.45,metalness:metal}));return materials.get(k);};
- function mesh(g,c,p=[0,0,0],s=[1,1,1],r=[0,0,0],metal=0){const m=new T.Mesh(g,mat(c,metal));m.position.fromArray(p);m.scale.fromArray(s);m.rotation.set(...r);m.castShadow=true;group.add(m);return m;}
+ function mesh(g,c,p=[0,0,0],s=[1,1,1],r=[0,0,0],metal=0){const m=new T.Mesh(g,mat(c,metal));m.position.fromArray(p);m.scale.fromArray(s);m.rotation.set(...r);group.add(m);return m;}
  const ball=(c,p,s)=>mesh(new T.SphereGeometry(1,20,14),c,p,s);
  const cone=(c,p,r=.18,h=.35)=>mesh(new T.ConeGeometry(r,h,24),c,p);
  const cyl=(c,p,r=.25,h=.12)=>mesh(new T.CylinderGeometry(r,r,h,28),c,p);
@@ -34,7 +37,7 @@ export function createCubeAccessories(T, type='none') {
   cyl(0xffe4bd,[0,top+.12,0],.095,.25);mesh(new T.SphereGeometry(.36,28,16,0,Math.PI*2,0,Math.PI/2),0xef4861,[0,top+.20,0],[1,.65,1]);
   for(let i=0;i<8;i++){const a=i*2.4;ball(0xfff4e3,[Math.cos(a)*.24,top+.34,Math.sin(a)*.24],[.055,.018,.055]);}
  }else if(type==='cap'){
-  mesh(new T.SphereGeometry(.36,28,16,0,Math.PI*2,0,Math.PI/2),0x4485dd,[0,top,0]);ball(0x2e64b3,[0,top+.025,.30],[.34,.035,.25]);cyl(0xf4d258,[0,top+.36,0],.035,.035);
+  mesh(new T.SphereGeometry(.36,28,16,0,Math.PI*2,0,Math.PI/2),0x4485dd,[0,top,0]);ball(0x2e64b3,[0,top+.025,.30+FACE_DZ],[.34,.035,.25]);cyl(0xf4d258,[0,top+.36,0],.035,.035);
  }else if(type==='beanie'){
   ball(0xb88ce5,[0,top+.15,0],[.34,.25,.32]);cyl(0x8a66bd,[0,top+.035,0],.35,.12);ball(0xffd9ec,[0,top+.43,0],[.11,.11,.11]);
  }else if(type==='party'||type==='wizard'){
@@ -44,7 +47,7 @@ export function createCubeAccessories(T, type='none') {
  }else if(type==='king'){
   cyl(0xf2b832,[0,top+.09,0],.32,.18);for(let i=0;i<7;i++){const a=i*Math.PI*2/7;cone(0xffd454,[Math.cos(a)*.28,top+.25,Math.sin(a)*.28],.08,.23);ball(0xe64775,[Math.cos(a)*.31,top+.09,Math.sin(a)*.31],[.045,.045,.045]);}
  }else if(type==='pirate'){
-  ball(0x343147,[0,top+.12,0],[.37,.22,.28]);for(let i=0;i<3;i++){const a=i*Math.PI*2/3;ball(0x343147,[Math.sin(a)*.27,top+.06,Math.cos(a)*.27],[.30,.065,.17]);}ball(0xffe9cf,[0,top+.16,.27],[.08,.07,.025]);
+  ball(0x343147,[0,top+.12,0],[.37,.22,.28]);for(let i=0;i<3;i++){const a=i*Math.PI*2/3;ball(0x343147,[Math.sin(a)*.27,top+.06,Math.cos(a)*.27],[.30,.065,.17]);}ball(0xffe9cf,[0,top+.16,.27+FACE_DZ],[.08,.07,.025]);
  }else if(type==='headphones'){
   const pts=[];for(let i=0;i<=24;i++){const a=Math.PI*i/24;pts.push([Math.cos(a)*.69,top-.18+Math.sin(a)*.44,0]);}tube(pts,0x4b4368,.065);for(const s of [-1,1])ball(0xa58aef,[s*.73,top-.17,0],[.12,.19,.19]);
  }else if(type==='propeller'){
@@ -60,20 +63,19 @@ export function createCubeAccessories(T, type='none') {
  if(full){
   function shape(w,h,r){const s=new T.Shape(),x=-w/2,y=-h/2;s.moveTo(x+r,y);s.lineTo(-x-r,y);s.quadraticCurveTo(-x,y,-x,y+r);s.lineTo(-x,-y-r);s.quadraticCurveTo(-x,-y,-x-r,-y);s.lineTo(x+r,-y);s.quadraticCurveTo(x,-y,x,-y-r);s.lineTo(x,y+r);s.quadraticCurveTo(x,y,x+r,y);return s;}
   const c={astronaut:0xe6eff7,diver:0xd6ac63,robot:0x8bacc2,dino:0x65bd7a,shark:0x75a3c6,dragon:0xb48adc,samurai:0x544366,hotdog:0xe3a562}[type];
-  const shell=shape(1.57,1.57,.43);shell.holes.push(shape(1.14,.67,.14));
-  const suit=mesh(new T.ExtrudeGeometry(shell,{depth:1.28,bevelEnabled:true,bevelThickness:.06,bevelSize:.06,bevelSegments:6,curveSegments:16}),c,[0,0,-.61]);
+  // The suit is the body itself inflated by SUIT: same pillowy silhouette, opening exactly around the face.
+  const suit=mesh(cubeShellGeometry(T,{grow:SUIT}),c);
   printMaterials.push({material:suit.material,base:c});
-  mesh(new T.ExtrudeGeometry(shape(1.57,1.57,.43),{depth:.045,bevelEnabled:true,bevelThickness:.05,bevelSize:.05,bevelSegments:4,curveSegments:12}),c,[0,0,-.67]);
   if(['astronaut','diver','robot','samurai'].includes(type)){
-   const visor=mesh(new T.ExtrudeGeometry(shape(1.16,.69,.14),{depth:.015,bevelEnabled:false,curveSegments:16}),0x91d4e8,[0,0,.745]);visor.material= new T.MeshPhysicalMaterial({color:0x9cdaed,transparent:true,opacity:.18,roughness:.12,depthWrite:false});materials.set('visor',visor.material);
-   for(const s of [-1,1])cyl(0x657b95,[s*.85,0,0],.14,.10).rotation.z=Math.PI/2;
-   mesh(new T.BoxGeometry(.68,.88,.20),0x657b95,[0,-.05,-.82]);
-   for(let i=0;i<3;i++)ball([0xf4717c,0x67dab5,0xffd65b][i],[-.18+i*.18,-.58,.75],[.045,.035,.025]);
+   const visor=mesh(new T.ExtrudeGeometry(shape(1.20,.74,.17),{depth:.015,bevelEnabled:false,curveSegments:16}),0x91d4e8,[0,0,CUBE.halfD+SUIT+.004]);visor.material= new T.MeshPhysicalMaterial({color:0x9cdaed,transparent:true,opacity:.18,roughness:.12,depthWrite:false});materials.set('visor',visor.material);
+   for(const s of [-1,1])cyl(0x657b95,[s*(CUBE.halfW+SUIT+.02),0,0],.14,.10).rotation.z=Math.PI/2;
+   mesh(new T.BoxGeometry(.68,.88,.20),0x657b95,[0,-.05,-(CUBE.halfD+SUIT+.09)]);
+   for(let i=0;i<3;i++)ball([0xf4717c,0x67dab5,0xffd65b][i],[-.18+i*.18,-.56,.705],[.045,.035,.025]);
   } else if(type==='hotdog'){
-   for(const s of [-1,1])ball(0xe5b077,[s*.70,0,.28],[.13,.73,.23]);tube([[-.40,-.5,.49],[-.15,-.57,.49],[.1,-.48,.49],[.4,-.56,.49]],0xffcf37,.035);
+   for(const s of [-1,1])ball(0xe5b077,[s*(CUBE.halfW+SUIT+.04),0,0],[.14,.74,.58]);tube([[-.40,-.48,.72],[-.15,-.55,.71],[.1,-.46,.72],[.4,-.54,.71]],0xffcf37,.035);
   } else {
-   for(let i=0;i<5;i++)cone(type==='shark'?0x4d7a9d:0xf4c77a,[0,top+.16,-.32+i*.13],.11,.28);
-   for(const s of [-1,1])cone(0xffeddb,[s*.45,.32,.49],.06,.12).rotation.z=Math.PI;
+   for(let i=0;i<5;i++)cone(type==='shark'?0x4d7a9d:0xf4c77a,[0,top+.16,(-.32+i*.13)*DEPTH],.11,.28);
+   for(const s of [-1,1])cone(0xffeddb,[s*.42,.27,CUBE.face.z+.04],.06,.12).rotation.z=Math.PI;
    if(type==='dragon')for(const s of [-1,1])cone(0xffdc91,[s*.5,top+.17,0],.11,.35);
   }
  }

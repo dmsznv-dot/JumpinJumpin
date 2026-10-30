@@ -5,3 +5,7 @@ const pad=(axes=[],pressed=[],index=0)=>({connected:true,index,id:'test',mapping
 test('deadzone suppresses drift and preserves analog range',()=>{assert.equal(deadzone(.1),0);assert.equal(deadzone(-1),-1);assert.equal(deadzone(NaN),0);assert.ok(deadzone(.6)>0&&deadzone(.6)<1);});
 test('dpad works and diagonal movement is normalized',()=>{const s=sampleGamepad(pad([1,1],[12,15]));assert.ok(Math.abs(Math.hypot(s.x,s.y)-1)<1e-9);assert.ok(s.x>0&&s.y<0);});
 test('held buttons fire once; disconnect clears movement; reconnect works',()=>{const read=createGamepadReader();assert.equal(read([pad([], [0])]).pressed[0],true);assert.equal(read([pad([], [0])]).pressed[0],false);assert.equal(read([]),null);assert.equal(read([pad([], [0],2)]).pressed[0],true);});
+test('non-standard pad: triggers resting at -1 neither spin the camera nor steal control',()=>{const read=createGamepadReader();const odd={...pad([0,0,-1,-1],[],1),mapping:''};const std=pad([0,0],[],0);
+ let s=read([std,odd]);assert.equal(s.lookX,0);assert.equal(s.lookY,0);
+ s=read([std,odd]);assert.equal(s.id,'test');assert.equal(s.lookX,0);
+ const moved={...odd,axes:[.9,0,-1,-1]};s=read([std,moved]);assert.ok(s.x>0);});
