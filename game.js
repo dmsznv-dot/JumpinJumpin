@@ -1,3 +1,4 @@
+import { createGamepadReader } from './controls/gamepad.mjs';
 /**
  * ГЕКСА-АРЕНА 3D SHOW (v3.0 — True 3D WebGL / Three.js + CC0 GLB Models)
  *
@@ -2705,6 +2706,7 @@ function updateBigFans(dt) {
   if (!p.raceFinished) {
     let right = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
     let forward = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
+    right += padMove.dx; forward -= padMove.dy;
     if (joystick.active) { right += joystick.dx; forward -= joystick.dy; }
     const length = Math.hypot(right, forward);
     if (length > .05 && !p.isDiving) {
@@ -2838,7 +2840,8 @@ function updateRollOut(dt) {
   if (p.alive && !p.isDiving) {
     let right=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0);
     let forward=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0);
-    if(joystick.active){right+=joystick.dx;forward-=joystick.dy;}
+    right+=padMove.dx;forward-=padMove.dy;
+  if(joystick.active){right+=joystick.dx;forward-=joystick.dy;}
     const len=Math.hypot(right,forward);
     if(len>.05){right/=Math.max(1,len);forward/=Math.max(1,len);
       const dx=-Math.sin(state.camYaw)*forward+Math.cos(state.camYaw)*right;
@@ -2958,6 +2961,7 @@ function updateSlimeClimb(dt){
  const playerClimbedBefore = p ? p.climbFinished : false;
  if(p&&p.alive&&!p.climbFinished&&!p.isDiving){
   let right=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0), forward=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0);
+  right+=padMove.dx;forward-=padMove.dy;
   if(joystick.active){right+=joystick.dx;forward-=joystick.dy;}
   const len=Math.hypot(right,forward);
   if(len>.05){right/=Math.max(1,len);forward/=Math.max(1,len);const dx=-Math.sin(state.camYaw)*forward+Math.cos(state.camYaw)*right,dz=-Math.cos(state.camYaw)*forward-Math.sin(state.camYaw)*right;p.facing=Math.atan2(dx,dz);const rate=Math.min(1,dt*(p.onGround?11:6));p.vx+=(dx*7.2-p.vx)*rate;p.vz+=(dz*7.2-p.vz)*rate;}
@@ -3147,6 +3151,7 @@ function updateJumpShowdown(dt) {
   if (p && p.alive && !p.isDiving) {
     let right = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
     let forward = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
+    right += padMove.dx; forward -= padMove.dy;
     if (joystick.active) { right += joystick.dx; forward -= joystick.dy; }
     const len = Math.hypot(right, forward);
     if (len > 0.05) {
@@ -3430,6 +3435,42 @@ function addFeedItem(text, borderColor = '#ff2a85') {
 
 // ==================== УПРАВЛЕНИЕ И 3D КАМЕРА ====================
 const keys = {};
+const padMove = {dx:0,dy:0};
+const readGamepad = createGamepadReader();
+let padMenuIndex = -1;
+function pollController(dt) {
+  let pad;
+  try { pad = readGamepad(navigator.getGamepads?.()); } catch { pad = null; }
+  padMove.dx = pad?.x || 0; padMove.dy = pad?.y || 0;
+  document.body.classList.toggle("gamepad-active", !!pad);
+  const status = document.getElementById('controller-status');
+  if (status) {
+    const text = pad ? '🎮 ' + pad.id + (pad.mapping === 'standard' ? '' : ' · совместимая раскладка, проверьте кнопки') : '🎮 Подключите геймпад и нажмите любую кнопку';
+    if (status.textContent !== text) status.textContent = text;
+  }
+  if (!pad || document.hidden || !document.hasFocus()) {padMove.dx=padMove.dy=0;return;}
+  if (state.phase === "playing") {
+    if (pad.pressed[0]) state.player?.jump();
+    if (pad.pressed[1] || pad.pressed[2]) state.player?.dive();
+    state.targetCamYaw -= pad.lookX * dt * 2.4;
+    state.camPitchOffset = Math.max(-3.5, Math.min(6, state.camPitchOffset + pad.lookY * dt * 4));
+    if (pad.lookX || pad.lookY) state.lastManualOrbitTime = state.elapsed;
+    if (pad.pressed[3]) cycleCamPreset();
+    if (pad.pressed[9]) openStartModal();
+  } else {
+    const buttons = [...document.querySelectorAll("button,input,select")].filter(b=>b.getClientRects().length && !b.disabled && !b.closest(".hidden"));
+    const direction = pad.pressed[13] || pad.pressed[15] ? 1 : pad.pressed[12] || pad.pressed[14] ? -1 : 0;
+    if (direction && buttons.length) {
+      padMenuIndex = (padMenuIndex + direction + buttons.length) % buttons.length;
+      buttons[padMenuIndex].focus(); buttons[padMenuIndex].scrollIntoView({block:"nearest"});
+    }
+    if (pad.pressed[0]) {
+      const active = document.activeElement;
+      if (buttons.includes(active)) active.click();
+      else if (buttons.length) {padMenuIndex=0; buttons[0].focus();}
+    }
+  }
+}
 const joystick = { active: false, dx: 0, dy: 0, pointerId: null };
 const camDrag = { active: false, lastX: 0, lastY: 0, pointerId: null };
 
@@ -3570,10 +3611,10 @@ joyBase.addEventListener('pointerup', resetJoystick);
 joyBase.addEventListener('pointercancel', resetJoystick);
 
 document.getElementById('btn-touch-jump').addEventListener('pointerdown', (e) => {
-  e.preventDefault(); e.stopPropagation(); state.player?.jump();
+  e.preventDefault(); e.stopPropagation(); if(state.phase === "playing") state.player?.jump();
 });
 document.getElementById('btn-touch-dive').addEventListener('pointerdown', (e) => {
-  e.preventDefault(); e.stopPropagation(); state.player?.dive();
+  e.preventDefault(); e.stopPropagation(); if(state.phase === "playing") state.player?.dive();
 });
 document.getElementById('chip-jump').addEventListener('click', () => state.player?.jump());
 document.getElementById('chip-dive').addEventListener('click', () => state.player?.dive());
@@ -3581,6 +3622,17 @@ document.getElementById('chip-cam').addEventListener('click', () => {
   state.targetCamYaw += 0.6;
   state.lastManualOrbitTime = state.elapsed;
 });
+
+function clearInputs() {
+  for (const key of Object.keys(keys)) keys[key] = false;
+  resetJoystick(); camDrag.active = false;
+  padMove.dx = padMove.dy = 0;
+}
+window.addEventListener('blur', clearInputs);
+document.addEventListener('visibilitychange', () => {if(document.hidden) clearInputs();});
+joyBase.addEventListener('lostpointercapture', resetJoystick);
+canvas.addEventListener('pointercancel', () => {camDrag.active=false;});
+window.addEventListener('resize', resetJoystick);
 
 // ==================== УМНЫЙ ИИ БОТОВ В 3D (ГЕКСА-АРЕНА) ====================
 function updateBotAI3D(bot, dt, config) {
@@ -3830,8 +3882,8 @@ function updateWorld3D(dt, nowSec) {
   // Управление игроком относительно направления взгляда 3D-камеры
   const p = state.player;
   if (p && p.alive) {
-    let inputRight = 0;
-    let inputForward = 0;
+    let inputRight = padMove.dx;
+    let inputForward = -padMove.dy;
 
     if (keys['KeyW'] || keys['ArrowUp']) inputForward += 1;
     if (keys['KeyS'] || keys['ArrowDown']) inputForward -= 1;
@@ -5126,6 +5178,7 @@ function animate(now) {
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
   const nowSec = now * 0.001;
+  pollController(dt);
 
   if (state.phase === 'menu') {
     updateLobby3D(dt, nowSec);

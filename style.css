@@ -2227,3 +2227,70 @@ html, body {
   }
 }
 
+
+/* Responsive playfield: safe areas, dynamic browser bars and two-thumb controls. */
+#app {height:100dvh;}
+#game-canvas {touch-action:none;}
+button:focus-visible, input:focus-visible, select:focus-visible {outline:3px solid #ffe600;outline-offset:3px;}
+.hud-top {top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));}
+.hud-bottom {bottom:max(14px,env(safe-area-inset-bottom));left:max(14px,env(safe-area-inset-left));right:max(14px,env(safe-area-inset-right));}
+.action-btn {touch-action:none;}
+@media (pointer:coarse), (max-width:900px) {
+  .fg-topbar {height:auto;min-height:54px;padding:6px 10px;gap:6px;flex-wrap:wrap;flex-shrink:0;padding-top:max(6px,env(safe-area-inset-top));}
+  .fg-screen-title {font-size:16px;}
+  .fg-topbar-tabs {gap:4px;}
+  .fg-nav-tab {min-width:44px;min-height:44px;padding:6px;}
+  .fg-nav-tab span {display:inline;}
+  .bumper-hint,.pedestal-rotate-hint {display:none;}
+  .fg-topbar-currencies {gap:5px;}
+  .lobby-tab-pane {min-height:0;padding:12px;overflow:auto;overscroll-behavior:contain;}
+  .settings-card {padding:16px;max-width:100%;}
+  .fg-modal {max-width:calc(100vw - 20px);max-height:90dvh;overflow:auto;}
+  .player-bars,.joystick-hint {display:none;}
+  .hud-top {gap:5px;}
+  .pill-card {padding:5px 7px;gap:4px;min-width:0;}
+  .pill-val {font-size:15px;}
+  .pill-label,.pill-sub {font-size:9px;}
+  .pill-icon {font-size:18px;}
+  .hud-right {justify-content:flex-end;gap:4px;max-width:130px;}
+  .hud-right .pill-card {display:none;}
+  .hud-left {gap:4px;max-width:60%;}
+  .timer-val {font-size:17px;}
+  .timer-badge {padding:6px;}
+  .touch-actions {gap:10px;align-items:flex-end;}
+  .action-btn {width:74px;height:74px;min-width:0;min-height:0;border-radius:50%;padding:6px;}
+  .dive-btn {width:60px;height:60px;}
+  .act-icon {font-size:24px;}
+  .act-text {font-size:9px;}
+  .joystick-base {width:104px;height:104px;}
+}
+@media (max-width:600px) and (orientation:portrait) {
+  .fg-topbar-currencies {display:none;}
+  .fg-topbar {justify-content:center;}
+  .fg-screen-title {display:none;}
+  #pane-play {overflow:hidden;}
+  .lobby-left-col {max-width:145px;gap:8px;}
+  .fg-logo-stack {transform:scale(.65);transform-origin:top left;margin-bottom:-40px;}
+  .season-progress-widget {display:none;}
+  .player-nameplate-card {bottom:155px;left:12px;min-width:0;padding:5px 8px;}
+  .play-cta-wrap {bottom:max(16px,env(safe-area-inset-bottom));left:12px;right:12px;align-items:stretch;}
+  .fg-giant-play-btn {justify-content:center;font-size:22px;padding:12px;}
+  .play-sub-hint {font-size:11px;text-align:center;}
+  .hud-left {flex-direction:column;align-items:flex-start;max-width:50%;}
+  .hud-center {position:absolute;right:0;top:80px;}
+  .hud-right {max-width:125px;}
+}
+@media (max-height:500px) and (orientation:landscape) {
+  .fg-topbar {min-height:44px;padding:2px 10px;}
+  .fg-nav-tab {min-height:38px;}
+  .lobby-left-col {gap:5px;max-width:190px;}
+  .fg-logo-stack,.season-progress-widget,.play-sub-hint {display:none;}
+  .player-nameplate-card {left:12px;bottom:12px;min-width:210px;padding:4px 8px;}
+  .play-cta-wrap {bottom:12px;right:max(12px,env(safe-area-inset-right));gap:5px;}
+  .fg-giant-play-btn {font-size:18px;padding:8px 12px;}
+  .joystick-base {width:88px;height:88px;}
+  .action-btn {width:64px;height:64px;}
+  .dive-btn {width:54px;height:54px;}
+  .hud-left .pill-card:first-child {display:none;}
+  .hud-bottom {bottom:max(8px,env(safe-area-inset-bottom));}
+}
