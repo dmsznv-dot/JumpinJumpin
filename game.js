@@ -136,48 +136,21 @@ const PATTERN_ITEMS = [
   {id:'pat_plain',title:'Чистый цвет',icon:'🟨',pattern:'plain',rarity:'ОБЫЧНЫЙ',unlockType:'free',cost:0},
   { id: 'pat_belly',     title: 'Абстрактное конфетти',    icon: '🎊', pattern: 'belly',     rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
   { id: 'pat_stripes',   title: 'Диагональные полосы',    icon: '🍭', pattern: 'stripes',   rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
-  { id: 'pat_polka',     title: 'Конфетти Горошек',   icon: '⚪', pattern: 'polka',     rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
+  { id: 'pat_polka',     title: 'Горошек',   icon: '⚪', pattern: 'polka',     rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
   { id: 'pat_flames',    title: 'Карамельные волны',  icon: '🌊', pattern: 'flames',    rarity: 'РЕДКИЙ',    unlockType: 'ad',     cost: 0 },
   { id: 'pat_stars',     title: 'Звёздный Шоумен',    icon: '⭐', pattern: 'stars',     rarity: 'РЕДКИЙ',    unlockType: 'ad',     cost: 0 },
   { id: 'pat_lightning', title: 'Ломаный ритм',    icon: '⚡', pattern: 'lightning', rarity: 'РЕДКИЙ',    unlockType: 'kudos',  cost: 450 },
-  { id: 'pat_rings',     title: 'Волны Гипноза',      icon: '🌀', pattern: 'rings',     rarity: 'ЭПИЧЕСКИЙ', unlockType: 'kudos',  cost: 750 },
+  { id: 'pat_rings',     title: 'Гипнотические кольца',      icon: '🌀', pattern: 'rings',     rarity: 'ЭПИЧЕСКИЙ', unlockType: 'kudos',  cost: 750 },
   { id: 'pat_diamonds',  title: 'Королевский Арлекин',icon: '♦️', pattern: 'diamonds',  rarity: 'ЛЕГЕНДА',   unlockType: 'crowns', cost: 1 }
 ];
 
 [
- ['clouds','Пушистые облака','☁️'],['leaves','Тропические листья','🌿'],['circuit','Микросхема','🔌'],['hexagons','Медовые соты','🍯']
+ ['clouds','Пушистые облака','☁️'],['leaves','Листья','🌿'],['circuit','Микросхема','🔌'],['hexagons','Медовые соты','🍯']
 ].forEach(([pattern,title,icon])=>PATTERN_ITEMS.push({id:'pat_'+pattern,title,icon,pattern,rarity:'ОБЫЧНЫЙ',unlockType:'free',cost:0}));
 // Every print is available for this test build.
 PATTERN_ITEMS.forEach(p=>{p.unlockType='free';p.cost=0;});
 
-const COSTUME_ITEMS = [
-  { id: 'hat_none',      title: 'Классическая Фасоль', sub: 'Очки Миньона + Кеды',            icon: '🥽', hat: 'none',      rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
-  { id: 'hat_dino',      title: 'Ти-Рекс Динозавр',    sub: 'Пасть с зубами + Шипы + Хвост',  icon: '🦖', hat: 'dino',      rarity: 'РЕДКИЙ',    unlockType: 'ad',     cost: 0 },
-  { id: 'hat_hotdog',    title: 'Сочный Хот-Дог',      sub: 'Булочка + Горчица + Шорты',      icon: '🌭', hat: 'hotdog',    rarity: 'РЕДКИЙ',    unlockType: 'ad',     cost: 0 },
-  { id: 'hat_pirate',    title: 'Капитан Пират',       sub: 'Треуголка + Камзол + Ремень',    icon: '🏴‍☠️', hat: 'pirate',    rarity: 'РЕДКИЙ',    unlockType: 'ad',     cost: 0 },
-  { id: 'hat_chicken',   title: 'Боевой Петушок',      sub: 'Гребешок + Клюв + Крылья + Хвост',icon: '🐓', hat: 'chicken',   rarity: 'РЕДКИЙ',    unlockType: 'kudos',  cost: 450 },
-  { id: 'hat_astronaut', title: 'Звёздный Астронавт',  sub: 'Купол-шлем + Джетпак + Скафандр',icon: '👩‍🚀', hat: 'astronaut', rarity: 'ЭПИЧЕСКИЙ', unlockType: 'kudos',  cost: 750 },
-  { id: 'hat_samurai',   title: 'Кибер-Самурай',       sub: 'Шлем Кабуто + Маска Они + Броня',icon: '👹', hat: 'samurai',   rarity: 'ЭПИЧЕСКИЙ', unlockType: 'crowns', cost: 1 },
-  { id: 'hat_wizard',    title: 'Верховный Чародей',   sub: 'Шляпа со звёздами + Борода + Плащ',icon: '🧙‍♂️', hat: 'wizard',  rarity: 'ЭПИЧЕСКИЙ', unlockType: 'crowns', cost: 1 },
-  { id: 'hat_pineapple', title: 'Тропический Ананас',  sub: 'Корона листьев + Очки + Юбка',   icon: '🍍', hat: 'pineapple', rarity: 'ЛЕГЕНДА',   unlockType: 'crowns', cost: 2 },
-  { id: 'hat_king',      title: 'Император Короны',    sub: 'Золотая Корона + Царская Мантия',icon: '👑', hat: 'king',      rarity: 'ЛЕГЕНДА',   unlockType: 'crowns', cost: 3 }
-];
-
-// Original costume pieces shaped for the bean rig, available for test previews.
-const EXTRA_COSTUMES = [
- ['fox','Лисёнок','🦊',0xe98242],['rabbit','Кролик','🐰',0xe9b8d0],
- ['cat','Котёнок','🐱',0x798aa8],['bear','Медвежонок','🐻',0xaa744e],
- ['frog','Лягушонок','🐸',0x62c87b],['shark','Акула','🦈',0x648db2],
- ['dragon','Дракончик','🐉',0x9869c4],['bee','Пчёлка','🐝',0xf3ca4d],
- ['robot','Робот','🤖',0x8ba7ba],['diver','Водолаз','🤿',0x37a6a3],
- ['cow','Коровка','🐮',0xe8e4dc],['panda','Панда','🐼',0xdfe2e5],
- ['owl','Совёнок','🦉',0xb38664]
-];
-EXTRA_COSTUMES.forEach(([hat,title,icon,color]) => COSTUME_ITEMS.push({
- id:'hat_'+hat,title,icon,hat,color,sub:'Объёмный костюм',rarity:'ОБЫЧНЫЙ',unlockType:'free',cost:0
-}));
-
-COSTUME_ITEMS.splice(0,COSTUME_ITEMS.length,...CUBE_COSMETICS);
+const COSTUME_ITEMS = [...CUBE_COSMETICS];
 
 const SEASON_TIERS = [
   { level: 1, xpReq: 0,    title: 'Старт Сезона',       icon: '🟨', rewardText: 'Солнечный куб' },
@@ -185,7 +158,7 @@ const SEASON_TIERS = [
   { level: 3, xpReq: 700,  title: 'Карамельные волны',  icon: '🌊', rewardText: 'Принт «Карамельные волны»' },
   { level: 4, xpReq: 1200, title: 'Кубозавр',           icon: '🦖', rewardText: 'Полный костюм' },
   { level: 5, xpReq: 1800, title: 'Кубок Чемпиона',     icon: '👑', rewardText: '+1 Корона' },
-  { level: 6, xpReq: 2500, title: 'Кубо-самурай',       icon: '👹', rewardText: 'Полный костюм' },
+  { level: 6, xpReq: 2500, title: 'Мастер киянки',     icon: '🔨', rewardText: 'Аксессуар за спиной' },
   { level: 7, xpReq: 3500, title: 'Император Короны',   icon: '🏆', rewardText: 'Золотая корона' }
 ];
 
@@ -194,15 +167,15 @@ const SKINS = [
   { id: 0, title: 'Кубозавр',           icon: '🦖', c1: 0x00e676, c2: 0xffe600, css1: '#00e676', css2: '#ffe600', pattern: 'stripes',   hat: 'dino',      eyeCount: 2 },
   { id: 1, title: 'Сочный Хот-Дог',     icon: '🌭', c1: 0xff2a85, c2: 0xffe600, css1: '#ff2a85', css2: '#ffe600', pattern: 'belly',     hat: 'hotdog',    eyeCount: 1 },
   { id: 2, title: 'Капитан Пират',      icon: '🏴‍☠️', c1: 0x00e5ff, c2: 0x1e40af, css1: '#00e5ff', css2: '#1e40af', pattern: 'stripes',   hat: 'pirate',    eyeCount: 1 },
-  { id: 3, title: 'Боевой Петушок',     icon: '🐓', c1: 0xff9100, c2: 0xffffff, css1: '#ff9100', css2: '#ffffff', pattern: 'polka',     hat: 'chicken',   eyeCount: 2 },
+  { id: 3, title: 'Строитель',          icon: '👷', c1: 0xff9100, c2: 0xffffff, css1: '#ff9100', css2: '#ffffff', pattern: 'polka',     hat: 'hardhat',   eyeCount: 2 },
   { id: 4, title: 'Кубонавт',           icon: '👩‍🚀', c1: 0xd500f9, c2: 0x76ff03, css1: '#d500f9', css2: '#76ff03', pattern: 'stars',     hat: 'astronaut', eyeCount: 1 },
-  { id: 5, title: 'Кубо-самурай',       icon: '👹', c1: 0xff1744, c2: 0xffd700, css1: '#ff1744', css2: '#ffd700', pattern: 'flames',    hat: 'samurai',   eyeCount: 2 },
+  { id: 5, title: 'Мастер киянки',     icon: '🔨', c1: 0xff1744, c2: 0xffd700, css1: '#ff1744', css2: '#ffd700', pattern: 'flames',    hat: 'mallet',   eyeCount: 2 },
   { id: 6, title: 'Верховный Чародей',  icon: '🧙‍♂️', c1: 0x26c6da, c2: 0xff80ab, css1: '#26c6da', css2: '#ff80ab', pattern: 'stars',     hat: 'wizard',    eyeCount: 2 },
   { id: 7, title: 'Тропический Ананас', icon: '🍍', c1: 0xffd700, c2: 0x00e676, css1: '#ffd700', css2: '#00e676', pattern: 'diamonds',  hat: 'pineapple', eyeCount: 1 },
   { id: 8, title: 'Император Короны',   icon: '👑', c1: 0xffd700, c2: 0xb71c1c, css1: '#ffd700', css2: '#b71c1c', pattern: 'diamonds',  hat: 'king',      eyeCount: 2 },
   // Костюмы из ассетов SimReady (цвета берутся из самого костюма, принт не нужен)
   { id: 9,  title: 'Бананокуб',  icon: '🍌', c1: 0xffd93b, c2: 0xffffff, css1: '#ffd93b', css2: '#ffffff', pattern: 'plain', hat: 'banana', eyeCount: 2 },
-  { id: 10, title: 'Пончик',     icon: '🍩', c1: 0xff8fc8, c2: 0xffffff, css1: '#ff8fc8', css2: '#ffffff', pattern: 'plain', hat: 'donut',  eyeCount: 2 },
+  { id: 10, title: 'Круассан',   icon: '🥐', c1: 0xff8fc8, c2: 0xffffff, css1: '#ff8fc8', css2: '#ffffff', pattern: 'plain', hat: 'croissant',  eyeCount: 2 },
   { id: 11, title: 'Кукурузка',  icon: '🌽', c1: 0xffd93b, c2: 0xffffff, css1: '#ffd93b', css2: '#ffffff', pattern: 'plain', hat: 'corn',   eyeCount: 1 },
   { id: 12, title: 'Бочка',      icon: '🛢️', c1: 0x3a7bd5, c2: 0xffffff, css1: '#3a7bd5', css2: '#ffffff', pattern: 'plain', hat: 'barrel', eyeCount: 2 },
   { id: 13, title: 'Коробка',    icon: '📦', c1: 0xc8925a, c2: 0xffffff, css1: '#c8925a', css2: '#ffffff', pattern: 'plain', hat: 'box',    eyeCount: 1 }
@@ -917,6 +890,8 @@ function saveGameData() {
 }
 
 let saveData = loadSaveData();
+// Retired cosmetic IDs preserve all progression; select the base appearance.
+if (!COSTUME_ITEMS.some(c => c.id === saveData.selectedCostumeId)) saveData.selectedCostumeId = 'hat_none';
 if (saveData.playerName === 'СуперФасолька') saveData.playerName = 'СуперКубик'; // имя по умолчанию до кубического героя
 sfx.volume = Number.isFinite(saveData.effectsVolume) ? Math.max(0,Math.min(1,saveData.effectsVolume)) : .5;
 music.volume = Number.isFinite(saveData.musicVolume) ? Math.max(0,Math.min(1,saveData.musicVolume)) : .5;

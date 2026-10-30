@@ -15,3 +15,11 @@ export const HERO_PATTERNS = {
   "Slanted Stars": "<svg width=\"30\" height=\"30\" viewBox=\"0 0 30 30\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M0 15l15 15H0V15zM15 0l15 15V0H15z\" fill=\"#000\" fill-rule=\"evenodd\"/></svg>"
 };
 
+
+// Game-authored motifs (CC0): explicit silhouettes instead of misleading pattern aliases.
+const svg=(body)=>`<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"><g fill="#000">${body}</g></svg>`;
+HERO_PATTERNS['Five Point Stars']=svg('<path d="M20 5l4.5 10 11 1-8 7.5 2.5 11L20 29l-10 5.5 2.5-11-8-7.5 11-1zM60 45l4.5 10 11 1-8 7.5 2.5 11L60 69l-10 5.5 2.5-11-8-7.5 11-1z"/>');
+HERO_PATTERNS['Fluffy Clouds']=svg('<path d="M8 31a7 7 0 0 1 0-14 10 10 0 0 1 19-3 8 8 0 0 1 5 17zM48 71a7 7 0 0 1 0-14 10 10 0 0 1 19-3 8 8 0 0 1 5 17z"/>');
+HERO_PATTERNS['Hypnotic Rings']=svg('<g fill="none" stroke="#000" stroke-width="2.5"><circle cx="20" cy="20" r="16"/><circle cx="20" cy="20" r="10"/><circle cx="20" cy="20" r="4"/><circle cx="60" cy="60" r="16"/><circle cx="60" cy="60" r="10"/><circle cx="60" cy="60" r="4"/></g>');
+HERO_PATTERNS['Candy Waves']=svg('<path fill="none" stroke="#000" stroke-width="8" d="M-40 20Q-20 0 0 20T40 20T80 20T120 20M-40 60Q-20 40 0 60T40 60T80 60T120 60"/>');
+HERO_PATTERNS['Harlequin Diamonds']=svg('<path d="M20 0L40 20 20 40 0 20zM60 40L80 60 60 80 40 60z"/>');

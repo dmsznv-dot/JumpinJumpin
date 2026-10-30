@@ -1,6 +1,6 @@
 import {HERO_PATTERNS} from './hero-patterns.mjs';
 export const PRINTS={
- belly:['Random Shapes',2.6],stripes:['Diagonal Stripes',4],polka:['Polka Dots',4],flames:['Wiggle',3],stars:['Slanted Stars',4],lightning:['Zig Zag',3],rings:['Overlapping Circles',3],diamonds:['Flipped Diamonds',4],clouds:['Endless Clouds',2.5],leaves:['Leaf',3],circuit:['Circuit Board',2],hexagons:['Hexagons',3]
+ belly:['Random Shapes',2.6],stripes:['Diagonal Stripes',4],polka:['Polka Dots',4],flames:['Candy Waves',3],stars:['Five Point Stars',4],lightning:['Zig Zag',3],rings:['Hypnotic Rings',3],diamonds:['Harlequin Diamonds',4],clouds:['Fluffy Clouds',2.5],leaves:['Leaf',3],circuit:['Circuit Board',1],hexagons:['Hexagons',3]
 };
 const cache=new Map();
 // Horizontal body section for print wrapping: half-width 0.81, half-depth 0.67 (see cube-shape CUBE), corner radius 0.5.
@@ -17,7 +17,7 @@ function maskTexture(T,id){
  const entry={texture,ready:Promise.resolve()};cache.set(id,entry);
  if(typeof document!=='undefined'&&PRINTS[id]){
   entry.ready=new Promise((resolve,reject)=>{
-   const img=new Image();img.onload=()=>{try{const canvas=document.createElement('canvas');canvas.width=canvas.height=1024;const ctx=canvas.getContext('2d');const a=(img.naturalWidth||img.width||1)/(img.naturalHeight||img.height||1),nx=a>=1?1:Math.max(1,Math.round(1/a)),ny=a>=1?Math.max(1,Math.round(a)):1;for(let ix=0;ix<nx;ix++)for(let iy=0;iy<ny;iy++)ctx.drawImage(img,ix*1024/nx,iy*1024/ny,1024/nx,1024/ny);const rgba=ctx.getImageData(0,0,1024,1024).data,mask=new Uint8Array(1024*1024);for(let i=0;i<mask.length;i++)mask[i]=rgba[i*4+3];texture.dispose();texture.image={data:mask,width:1024,height:1024};texture.needsUpdate=true;resolve();}catch(e){reject(e);}};img.onerror=()=>reject(new Error('Pattern rasterization failed: '+id));img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(HERO_PATTERNS[PRINTS[id][0]]);
+   const img=new Image();img.onload=()=>{try{const canvas=document.createElement('canvas');canvas.width=canvas.height=1024;const ctx=canvas.getContext('2d');const a=(img.naturalWidth||img.width||1)/(img.naturalHeight||img.height||1),nx=a>=1?1:Math.max(1,Math.round(1/a)),ny=a>=1?Math.max(1,Math.round(a)):1;for(let ix=0;ix<nx;ix++)for(let iy=0;iy<ny;iy++)ctx.drawImage(img,ix*1024/nx,iy*1024/ny,1024/nx,1024/ny);const rgba=ctx.getImageData(0,0,1024,1024).data,mask=new Uint8Array(1024*1024);for(let i=0;i<mask.length;i++)mask[i]=rgba[((1023-Math.floor(i/1024))*1024+i%1024)*4+3];texture.dispose();texture.image={data:mask,width:1024,height:1024};texture.needsUpdate=true;resolve();}catch(e){reject(e);}};img.onerror=()=>reject(new Error('Pattern rasterization failed: '+id));img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(HERO_PATTERNS[PRINTS[id][0]]);
   });
   // Без принта куб остаётся однотонным — предупреждаем, а не роняем «Uncaught (in promise)»
   entry.ready.catch(e=>console.warn('[cube-print]',e));

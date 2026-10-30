@@ -1,0 +1,196 @@
+{
+ "hardhat": {
+  "asset": "ppe_helmet_hardHat_a01",
+  "title": "Каска строителя",
+  "icon": "👷",
+  "slot": "head",
+  "size": 1.12,
+  "rotate": [
+   0,
+   180,
+   0
+  ],
+  "sink": 0.13
+ },
+ "teapot": {
+  "asset": "dishware_utah_teapot_a01",
+  "title": "Чайная церемония",
+  "icon": "🫖",
+  "slot": "head",
+  "size": 1.18,
+  "rotate": [
+   0,
+   0,
+   -8
+  ]
+ },
+ "extinguisher": {
+  "asset": "fireProtection_extinguisher_portable_a01",
+  "title": "Пожарный ранец",
+  "icon": "🧯",
+  "slot": "back",
+  "size": 1.48,
+  "rotate": [
+   0,
+   0,
+   -18
+  ],
+  "side": 0.6,
+  "height": 0.4
+ },
+ "mallet": {
+  "asset": "handTool_hammer_rubberMallet_a01",
+  "title": "Мастер киянки",
+  "icon": "🔨",
+  "slot": "back",
+  "size": 1.6,
+  "rotate": [
+   0,
+   0,
+   245
+  ],
+  "side": 0.55,
+  "height": 0.48
+ },
+ "bucket": {
+  "asset": "bucket_utility_red_a01",
+  "title": "Ведро на голове",
+  "icon": "🪣",
+  "slot": "head",
+  "size": 0.92,
+  "rotate": [
+   180,
+   0,
+   -8
+  ]
+ },
+ "hotdog": {
+  "asset": "food_prepared_hotDog_a01",
+  "title": "Хот-дог на голове",
+  "icon": "🌭",
+  "slot": "head",
+  "size": 1.22,
+  "rotate": [
+   0,
+   90,
+   0
+  ]
+ },
+ "banana": {
+  "asset": "food_produce_banana_a01",
+  "title": "Банан за плечом",
+  "icon": "🍌",
+  "slot": "back",
+  "size": 1.6,
+  "rotate": [
+   90,
+   0,
+   -25
+  ],
+  "side": 0.6,
+  "height": 0.4
+ },
+ "corn": {
+  "asset": "food_produce_corn_a01",
+  "title": "Кукурузный ранец",
+  "icon": "🌽",
+  "slot": "back",
+  "size": 1.5,
+  "rotate": [
+   90,
+   0,
+   18
+  ],
+  "side": 0.6,
+  "height": 0.4
+ },
+ "cupcake": {
+  "asset": "food_prepared_cupcake_a01",
+  "title": "Капкейк-шляпа",
+  "icon": "🧁",
+  "slot": "head",
+  "size": 0.85
+ },
+ "strawberry_suit": {
+  "asset": "food_produce_strawberry_a01",
+  "title": "Ягодная шляпа",
+  "icon": "🍓",
+  "slot": "head",
+  "size": 0.78,
+  "rotate": [
+   0,
+   0,
+   90
+  ]
+ },
+ "avocado": {
+  "asset": "food_produce_avocado_b01",
+  "title": "Авокадо за плечом",
+  "icon": "🥑",
+  "slot": "back",
+  "size": 1.18,
+  "rotate": [
+   0,
+   0,
+   90
+  ],
+  "side": 0.6,
+  "height": 0.4
+ },
+ "barrel": {
+  "asset": "drum_plastic_blue_a01",
+  "title": "Бочка-рюкзак",
+  "icon": "🛢️",
+  "slot": "back",
+  "size": 1.15,
+  "side": 0.6,
+  "height": 0.4
+ },
+ "box": {
+  "asset": "box_cardboard_a01",
+  "title": "Курьерский ранец",
+  "icon": "📦",
+  "slot": "back",
+  "size": 1.05,
+  "side": 0.6,
+  "height": 0.4
+ },
+ "croissant": {
+  "asset": "food_prepared_croissant_a01",
+  "title": "Круассан-берет",
+  "icon": "🥐",
+  "slot": "head",
+  "size": 1.12,
+  "rotate": [
+   0,
+   90,
+   0
+  ]
+ },
+ "baguette": {
+  "asset": "food_prepared_baguette_b01",
+  "title": "Багет за плечом",
+  "icon": "🥖",
+  "slot": "back",
+  "size": 1.8,
+  "rotate": [
+   90,
+   0,
+   25
+  ],
+  "side": 0.58,
+  "height": 0.4
+ },
+ "waffle": {
+  "asset": "food_prepared_waffle_a01",
+  "title": "Вафельная шляпа",
+  "icon": "🧇",
+  "slot": "head",
+  "size": 1.06,
+  "rotate": [
+   30,
+   0,
+   -12
+  ]
+ }
+}
