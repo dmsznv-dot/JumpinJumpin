@@ -4,12 +4,11 @@ import {COSTUME_ASSETS} from './costume-manifest.mjs';
 // Accessories were laid out for a 1.16-deep body with the face at z 0.54; the sheet body is deeper.
 const FACE_DZ=CUBE.face.z-.54,DEPTH=CUBE.halfD/.58,SUIT=.06;
 export const CUBE_COSMETICS = [
- ['none','Без украшения','🟨'],['cherry','Вишенка','🍒'],['strawberry','Клубничка','🍓'],['orange','Мандарин','🍊'],['lemon','Лимончик','🍋'],['sprout','Росток','🌱'],['mushroom','Мухомор','🍄'],['cap','Бейсболка','🧢'],['beanie','Шапка с помпоном','🧶'],['party','Праздничный колпак','🎉'],['king','Корона','👑'],['wizard','Шляпа волшебника','🧙'],['pirate','Пиратская треуголка','🏴‍☠️'],['flower','Ромашка','🌼'],['headphones','Наушники','🎧'],['propeller','Пропеллер','🚁'],['pineapple','Ананасовая корона','🍍'],
- ['fox','Лисьи ушки','🦊'],['rabbit','Заячьи ушки','🐰'],['cat','Кошачьи ушки','🐱'],['bear','Медвежьи ушки','🐻'],['frog','Лягушачьи глазки','🐸'],['chicken','Петушиный гребень','🐓'],['bee','Усики пчёлки','🐝'],['cow','Рожки','🐮'],['panda','Ушки панды','🐼'],['owl','Совёнок','🦉'],
- ['astronaut','Кубонавт','👩‍🚀',true],['diver','Глубоководный скафандр','🤿',true],['robot','Робокуб','🤖',true],['dino','Кубозавр','🦖',true],['shark','Акулокуб','🦈',true],['dragon','Дракончик','🐉',true],['samurai','Кубо-самурай','👹',true],
- // Costumes built from NVIDIA SimReady assets (CC BY 4.0) by tools/costumes/build.py
- ...Object.entries(COSTUME_ASSETS).map(([id,c])=>[id,c.title,c.icon,true])
-].map(([hat,title,icon,full=false])=>({id:'hat_'+hat,hat,title,icon,full,sub:full?'Полная оболочка корпуса':'Украшение сверху',rarity:'ОБЫЧНЫЙ',unlockType:'free',cost:0}));
+ ['none','Без украшения','🟨'],['cherry','Вишенка','🍒'],['strawberry','Клубничка','🍓'],['orange','Мандарин','🍊'],['lemon','Лимончик','🍋'],['sprout','Росток','🌱'],['mushroom','Мухомор','🍄'],['cap','Бейсболка','🧢'],['beanie','Шапка с помпоном','🧶'],['party','Праздничный колпак','🎉'],['king','Корона','👑'],['wizard','Шляпа волшебника','🧙'],['pirate','Пиратская треуголка','🏴‍☠️'],['flower','Ромашка','🌼'],['propeller','Пропеллер','🚁'],['pineapple','Ананасовая корона','🍍'],
+ ['astronaut','Кубонавт','👩‍🚀',true],['dino','Кубозавр','🦖',true],
+ // Original object silhouettes, optimized by tools/costumes/build-props.py (CC BY 4.0).
+ ...Object.entries(COSTUME_ASSETS).map(([id,c])=>[id,c.title,c.icon,c.full===true])
+].map(([hat,title,icon,full=false])=>({id:'hat_'+hat,hat,title,icon,full,sub:COSTUME_ASSETS[hat]?.slot==='back'?'Аксессуар за спиной':full?'Полная оболочка корпуса':'Украшение сверху',rarity:'ОБЫЧНЫЙ',unlockType:'free',cost:0}));
 
 export function createCubeAccessories(T, type='none') {
  const group=new T.Group();group.name='CubeAccessory_'+type;const printMaterials=[];
@@ -52,33 +51,27 @@ export function createCubeAccessories(T, type='none') {
   cyl(0xf2b832,[0,top+.09,0],.32,.18);for(let i=0;i<7;i++){const a=i*Math.PI*2/7;cone(0xffd454,[Math.cos(a)*.28,top+.25,Math.sin(a)*.28],.08,.23);ball(0xe64775,[Math.cos(a)*.31,top+.09,Math.sin(a)*.31],[.045,.045,.045]);}
  }else if(type==='pirate'){
   ball(0x343147,[0,top+.12,0],[.37,.22,.28]);for(let i=0;i<3;i++){const a=i*Math.PI*2/3;ball(0x343147,[Math.sin(a)*.27,top+.06,Math.cos(a)*.27],[.30,.065,.17]);}ball(0xffe9cf,[0,top+.16,.27+FACE_DZ],[.08,.07,.025]);
- }else if(type==='headphones'){
-  const pts=[];for(let i=0;i<=24;i++){const a=Math.PI*i/24;pts.push([Math.cos(a)*.69,top-.18+Math.sin(a)*.44,0]);}tube(pts,0x4b4368,.065);for(const s of [-1,1])ball(0xa58aef,[s*.73,top-.17,0],[.12,.19,.19]);
  }else if(type==='propeller'){
   cyl(0xff627f,[0,top+.09,0],.21,.18);cyl(0xe8e9f7,[0,top+.25,0],.025,.20);ball(0x59cee5,[0,top+.35,0],[.49,.025,.075]);ball(0xffc749,[0,top+.35,0],[.075,.025,.49]);
  }else if(type==='pineapple'){
   for(let i=0;i<9;i++){const a=i*2.4;mesh(new T.SphereGeometry(1,16,12),0x4ba86b,[Math.cos(a)*.10,top+.22,Math.sin(a)*.1],[.07,.35,.035],[Math.sin(a)*.4,0,Math.cos(a)*.4]);}
- }else if(['fox','rabbit','cat','bear','panda','cow','frog','chicken','bee','owl'].includes(type)){
-  const c={fox:0xe59551,rabbit:0xffd6e6,cat:0x8399bf,bear:0xa97750,panda:0x35334a,cow:0xffe2ae,frog:0x63c87b,chicken:0xef4c67,bee:0x42364a,owl:0xa78264}[type];
-  if(type==='chicken')for(let i=0;i<3;i++)ball(c,[0,top+.10+i*.045,(i-1)*.15],[.08,.15,.10]);
-  else for(const s of [-1,1]){const p=[s*.31,top+(type==='rabbit'?.29:.13),0];ball(c,p,type==='rabbit'?[.10,.32,.10]:[.15,.17,.13]);if(type==='rabbit'||type==='fox'||type==='cat')ball(0xf3afbb,[p[0],p[1],.09],[.065,type==='rabbit'?.22:.09,.035]);if(type==='frog')ball(0x283242,[p[0],p[1]+.04,.12],[.06,.07,.03]);}
+
  }
  const full=CUBE_COSMETICS.find(c=>c.hat===type)?.full||false;
  if(full){
   function shape(w,h,r){const s=new T.Shape(),x=-w/2,y=-h/2;s.moveTo(x+r,y);s.lineTo(-x-r,y);s.quadraticCurveTo(-x,y,-x,y+r);s.lineTo(-x,-y-r);s.quadraticCurveTo(-x,-y,-x-r,-y);s.lineTo(x+r,-y);s.quadraticCurveTo(x,-y,x,-y-r);s.lineTo(x,y+r);s.quadraticCurveTo(x,y,x+r,y);return s;}
-  const c={astronaut:0xe6eff7,diver:0xd6ac63,robot:0x8bacc2,dino:0x65bd7a,shark:0x75a3c6,dragon:0xb48adc,samurai:0x544366}[type];
+  const c={astronaut:0xe6eff7,dino:0x65bd7a}[type];
   // The suit is the body itself inflated by SUIT: same pillowy silhouette, opening exactly around the face.
   const suit=mesh(cubeShellGeometry(T,{grow:SUIT}),c);
   printMaterials.push({material:suit.material,base:c});
-  if(['astronaut','diver','robot','samurai'].includes(type)){
+  if(type==='astronaut'){
    const visor=mesh(new T.ExtrudeGeometry(shape(1.20,.74,.17),{depth:.015,bevelEnabled:false,curveSegments:16}),0x91d4e8,[0,0,CUBE.halfD+SUIT+.004]);visor.material= new T.MeshPhysicalMaterial({color:0x9cdaed,transparent:true,opacity:.18,roughness:.12,depthWrite:false});materials.set('visor',visor.material);
    for(const s of [-1,1])cyl(0x657b95,[s*(CUBE.halfW+SUIT+.02),0,0],.14,.10).rotation.z=Math.PI/2;
    mesh(new T.BoxGeometry(.68,.88,.20),0x657b95,[0,-.05,-(CUBE.halfD+SUIT+.09)]);
    for(let i=0;i<3;i++)ball([0xf4717c,0x67dab5,0xffd65b][i],[-.18+i*.18,-.56,.705],[.045,.035,.025]);
   } else {
-   for(let i=0;i<5;i++)cone(type==='shark'?0x4d7a9d:0xf4c77a,[0,top+.16,(-.32+i*.13)*DEPTH],.11,.28);
+   for(let i=0;i<5;i++)cone(0xf4c77a,[0,top+.16,(-.32+i*.13)*DEPTH],.11,.28);
    for(const s of [-1,1])cone(0xffeddb,[s*.42,.27,CUBE.face.z+.04],.06,.12).rotation.z=Math.PI;
-   if(type==='dragon')for(const s of [-1,1])cone(0xffdc91,[s*.5,top+.17,0],.11,.35);
   }
  }
  for(const o of group.children)if(o.isMesh&&printMaterials.some(p=>p.material===o.material)){o.updateMatrix();o.geometry.applyMatrix4(o.matrix);o.position.set(0,0,0);o.rotation.set(0,0,0);o.scale.set(1,1,1);}
@@ -87,22 +80,21 @@ export function createCubeAccessories(T, type='none') {
 
 
 // ---------- Costumes from asset meshes ----------
-// The GLB is the cube's own suit inflated to the object's shape (face window included), coloured from the asset.
+// GLBs retain the source object silhouette; sockets are baked in Body-local space.
 const costumeGeometry=new Map();
 // One shared geometry per costume file; every contestant wearing it reuses it.
 function loadCostumeGeometry(T,file){
  if(!costumeGeometry.has(file))costumeGeometry.set(file,import('../vendor/GLTFLoader.js').then(({GLTFLoader})=>new Promise((resolve,reject)=>{
-  new GLTFLoader().load(new URL('../'+file,import.meta.url).href,gltf=>{let geo=null;gltf.scene.traverse(o=>{if(o.isMesh&&!geo)geo=o.geometry;});if(!geo.attributes.normal)geo.computeVertexNormals();geo.userData.shared=true;resolve(geo);},undefined,reject);
+  new GLTFLoader().load(new URL('../'+file,import.meta.url).href,gltf=>{let geo=null;gltf.scene.traverse(o=>{if(o.isMesh&&!geo)geo=o.geometry;});if(!geo)throw new Error('Costume GLB contains no mesh: '+file);if(!geo.attributes.normal)geo.computeVertexNormals();geo.userData.shared=true;resolve(geo);},undefined,reject);
  })));
  return costumeGeometry.get(file);
 }
 export function preloadCostume(T,type){const c=COSTUME_ASSETS[type];return c&&typeof document!=='undefined'?loadCostumeGeometry(T,c.file):Promise.resolve(null);}
 function assetCostume(T,type,group,mesh,mat,materials){
- const spec=COSTUME_ASSETS[type],main=parseInt(spec.palette[0].slice(1),16);
- // Until the mesh arrives the wearer shows a plain suit in the costume's main colour.
- const fallback=mesh(cubeShellGeometry(T,{grow:SUIT}),main);
- const suitMat=new T.MeshStandardMaterial({vertexColors:true,roughness:.5,side:T.DoubleSide});
+ const spec=COSTUME_ASSETS[type];
+ const suitMat=new T.MeshStandardMaterial({vertexColors:true,roughness:.62});
  let disposed=false;
- preloadCostume(T,type).then(geo=>{if(disposed||!geo)return;group.add(new T.Mesh(geo,suitMat));fallback.visible=false;}).catch(e=>console.warn('[costume]',type,e));
- return {group,full:true,printMaterials:[],dispose(){disposed=true;group.traverse(o=>{if(o.geometry&&!o.geometry.userData.shared)o.geometry.dispose();});suitMat.dispose();materials.forEach(m=>m.dispose());}};
+ // Body remains visible while loading and on failure. Shared geometry is never disposed per wearer.
+ preloadCostume(T,type).then(geo=>{if(disposed||!geo)return;const prop=new T.Mesh(geo,suitMat);prop.name='SimReady_'+type;group.add(prop);}).catch(e=>console.warn('[costume]',type,e));
+ return {group,full:false,printMaterials:[],dispose(){disposed=true;suitMat.dispose();materials.forEach(m=>m.dispose());}};
 }
