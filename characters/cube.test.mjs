@@ -10,3 +10,12 @@ test('every accessory fits a cube rig, full costumes replace the whole original 
  for(const c of CUBE_COSMETICS){const r=createCubeCharacter(THREE,{skin:{hat:c.hat,c1:0xffdb20,c2:0xf53867,pattern:'polka'}});assert.equal(r.accessory.parent,r.bones.Body);if(c.full)assert.equal(r.meshes.find(m=>m.name==='Character_shell').visible,false);r.accessory.traverse(o=>{if(o.geometry)for(const v of o.geometry.attributes.position.array)assert.ok(Number.isFinite(v));});r.dispose();}
 });
 test('square patterns are distinct, two-colour and opaque',()=>{const fingerprints=new Set();for(const p of ['plain','belly','stripes','polka','flames','stars','lightning','rings','diamonds']){const data=patternPixels(0xffdb20,0xf53867,p,32);assert.equal(data.length,4096);for(let i=3;i<data.length;i+=4)assert.equal(data[i],255);fingerprints.add(Buffer.from(data).toString('base64'));}assert.equal(fingerprints.size,9);});
+
+import {cubeShellGeometry,cubeFaceGeometry} from './cube-shape.mjs';
+test('rounded shell matches card proportions and leaves a real shallow face recess',()=>{
+ const g=cubeShellGeometry(THREE);g.computeBoundingBox();const size=g.boundingBox.getSize(new THREE.Vector3());assert.ok(Math.abs(size.x-1.62)<.001);assert.ok(Math.abs(size.y-1.57)<.001);assert.ok(Math.abs(size.z-1.16)<.001);
+ const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial());m.updateMatrixWorld(true);
+ const centerRay=new THREE.Raycaster(new THREE.Vector3(0,0,2),new THREE.Vector3(0,0,-1));const sideRay=new THREE.Raycaster(new THREE.Vector3(.70,0,2),new THREE.Vector3(0,0,-1));
+ assert.ok(centerRay.intersectObject(m).every(h=>h.point.z<0));assert.ok(sideRay.intersectObject(m)[0].point.z>.5);
+ const face=cubeFaceGeometry(THREE);for(const v of face.attributes.position.array)assert.ok(Number.isFinite(v));g.dispose();face.dispose();m.material.dispose();
+});

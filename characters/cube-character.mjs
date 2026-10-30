@@ -1,3 +1,4 @@
+import {cubeShellGeometry,cubeFaceGeometry} from './cube-shape.mjs';
 import {createCubeAccessories,patternPixels} from './cube-wardrobe.mjs';
 import {createCharacterClips as bakeClips} from './sketch-character.mjs';
 // Original game-ready character based on the supplied cartoon model sheet.
@@ -27,7 +28,7 @@ export function createCubeCharacter(THREE, {shadowTexture=null,skin=null}={}) {
     const transform=new THREE.Object3D();transform.position.fromArray(position);transform.scale.fromArray(scale);transform.rotation.set(...rotation);transform.updateMatrix();
     pieces.push({b,material,geometry,transform:transform.matrix});
   }
-  const sphere=(b,m,p,s)=>part(b,m,new THREE.SphereGeometry(1,28,20),p,s);
+  const sphere=(b,m,p,s)=>part(b,m,new THREE.SphereGeometry(1,20,14),p,s);
   function roundedShape(w,h,r) {
     const shape=new THREE.Shape(),x=-w/2,y=-h/2;
     shape.moveTo(x+r,y);shape.lineTo(x+w-r,y);shape.quadraticCurveTo(x+w,y,x+w,y+r);
@@ -38,24 +39,19 @@ export function createCubeCharacter(THREE, {shadowTexture=null,skin=null}={}) {
   function rounded(w,h,depth,r,bevel) {
     return new THREE.ExtrudeGeometry(roundedShape(w,h,r),{depth,bevelEnabled:true,bevelThickness:bevel,bevelSize:bevel,bevelSegments:6,curveSegments:12,steps:1});
   }
-  // Soft cuboid back and a separate rounded front rim with a real opening.
-  part(head,'shell',rounded(1.40,1.40,.04,.23,.095),[0,0,-.40]);
-  const frame=roundedShape(1.40,1.40,.23);
-  // Shape holes are reoriented by ShapeUtils when triangulated.
-  frame.holes.push(roundedShape(1.11,.62,.14));
-  part(head,'shell',new THREE.ExtrudeGeometry(frame,{depth:.68,bevelEnabled:true,bevelThickness:.095,bevelSize:.095,bevelSegments:8,curveSegments:16}),[0,0,-.32]);
-  part(head,'skin',rounded(1.12,.63,.045,.14,.025),[0,.015,.285]);
+  part(head,'shell',cubeShellGeometry(THREE));
+  part(head,'skin',cubeFaceGeometry(THREE),[0,0,.54]);
   const eyes=[];
   for(const [side,sign] of [['Left',-1],['Right',1]]){
-    const eye=bone(side+'Eye',head,skin?.eyeCount===1?0:sign*.365,.045,.369);eyes.push(eye);
-    if(skin?.eyeCount!==1||side==='Left')sphere(eye,'dark',[0,0,0],skin?.eyeCount===1?[.085,.09,.018]:[.060,.063,.018]);
+    const eye=bone(side+'Eye',head,skin?.eyeCount===1?0:sign*.35,.045,.552);eyes.push(eye);
+    if(skin?.eyeCount!==1||side==='Left')sphere(eye,'dark',[0,0,0],skin?.eyeCount===1?[.078,.082,.009]:[.057,.058,.008]);
     part(named[side+'Leg'],'skin',new THREE.CapsuleGeometry(.092,.17,6,16),[0,-.08,0]);
     part(named[side+'Shin'],'skin',new THREE.CapsuleGeometry(.088,.10,6,16),[0,-.09,0]);
     part(named[side+'Foot'],'shoe',new THREE.CapsuleGeometry(.098,.095,6,18),[0,.015,.015],[1,1,1.12]);
   }
   // Tiny puckered mouth, matching the supplied model card.
-  sphere(head,'skin',[0,-.12,.354],[.034,.026,.016]);
-  sphere(head,'dark',[.008,-.12,.368],[.012,.009,.004]);
+  sphere(head,'skin',[0,-.12,.549],[.019,.013,.004]);
+  sphere(head,'dark',[.005,-.12,.554],[.008,.006,.001]);
   root.updateMatrixWorld(true);
   const skeleton=new THREE.Skeleton(bones);const meshes=[];
   for(const [key,material] of Object.entries(mats)){
@@ -97,13 +93,16 @@ export function createCubeCharacter(THREE, {shadowTexture=null,skin=null}={}) {
   const blobShadow=new THREE.Mesh(new THREE.PlaneGeometry(1.55,1.55),new THREE.MeshBasicMaterial({color:shadowTexture?0xffffff:0x24314d,map:shadowTexture,transparent:true,opacity:shadowTexture?.72:.16,depthWrite:false}));
   blobShadow.rotation.x=-Math.PI/2;blobShadow.position.y=.025;root.add(blobShadow);
   const shieldRing=new THREE.Mesh(new THREE.TorusGeometry(.95,.06,10,28),new THREE.MeshBasicMaterial({color:0xffd740}));shieldRing.rotation.x=Math.PI/2;shieldRing.position.y=1;shieldRing.visible=false;root.add(shieldRing);
+  const oldRot=bones.map(b=>new THREE.Quaternion()),oldScale=new THREE.Vector3();
   let clock=0,wasGrounded=true,landingTime=0;
   function animate(dt,{speed=0,grounded=true,diving=false,celebrating=false,vy=0,squash=0,pose=null}={}){
     clock+=dt;
     if(!wasGrounded && grounded)landingTime=.16;
     wasGrounded=grounded;landingTime=Math.max(0,landingTime-dt);
     if(pose==='lobby'){const seq=['wave','idle','dance','idle','sit','idle','look','idle'];pose=seq[Math.floor(clock/6)%seq.length];}
-    const oldRot=bones.map(b=>b.quaternion.clone()),oldY=bodyPivot.position.y,oldRX=bodyPivot.rotation.x,oldRZ=bodyPivot.rotation.z,oldScale=bodyPivot.scale.clone();
+    for(let i=0;i<bones.length;i++)oldRot[i].copy(bones[i].quaternion);
+    oldScale.copy(bodyPivot.scale);
+    const oldY=bodyPivot.position.y,oldRX=bodyPivot.rotation.x,oldRZ=bodyPivot.rotation.z;
     const mode=pose||(celebrating?'win':diving?'dive':!grounded?(vy>=0?'jump':'fall'):landingTime>0?'land':speed>.6?'run':'idle');
     const phase=clock*(mode==='run'?Math.max(5,speed*1.7):5);
     for(const b of bones)b.rotation.set(0,0,0);
@@ -145,11 +144,11 @@ export function createCubeCharacter(THREE, {shadowTexture=null,skin=null}={}) {
     const blink=clock>1 && Math.cos(clock*1.7)>.997?.12:1;
     for(const eye of eyes)eye.scale.y=blink;
     const blend=dt>0?1-Math.exp(-dt*16):1;
-    for(let i=0;i<bones.length;i++)bones[i].quaternion.slerpQuaternions(oldRot[i],bones[i].quaternion.clone(),blend);
+    for(let i=0;i<bones.length;i++){oldRot[i].slerp(bones[i].quaternion,blend);bones[i].quaternion.copy(oldRot[i]);}
     bodyPivot.position.y=THREE.MathUtils.lerp(oldY,bodyPivot.position.y,blend);
     bodyPivot.rotation.x=THREE.MathUtils.lerp(oldRX,bodyPivot.rotation.x,blend);
     bodyPivot.rotation.z=THREE.MathUtils.lerp(oldRZ,bodyPivot.rotation.z,blend);
-    bodyPivot.scale.lerpVectors(oldScale,bodyPivot.scale.clone(),blend);
+    oldScale.lerp(bodyPivot.scale,blend);bodyPivot.scale.copy(oldScale);
     return mode;
   }
   return {root,bodyPivot,skeleton,bones:named,meshes,mainMat:mats.shell,materials:mats,setColors:applyColors,accessory:accessory.group,blobShadow,shieldRing,

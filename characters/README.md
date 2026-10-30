@@ -20,3 +20,9 @@ The exporter is Three.js r170 GLTFExporter, https://github.com/mrdoob/three.js/b
 35 entries: none, 26 top accessories and 8 enclosing costumes. Cosmetics attach to Body. Existing saved outfit IDs are preserved. Palette and pattern selection is applied consistently to lobby, player and bots. Square-face projected 256px motifs cover the shell and leave the face untouched; skin and boots use independent materials.
 
 Eleven animation clips include dance/sit/look. Runtime lobby mode cycles greeting, idle, dance, idle, sitting, idle, curiosity and idle at six-second intervals, easing pose transitions. Research and source links: ANIMATION-RESEARCH.md. No downloaded humanoid clips are included.
+
+## Model-sheet refinement and performance
+
+Continuous contoured shell: 1.62 × 1.57 × 1.16 m, gently rounded front and back, shallow face recess. Face center z=0.54, lip z=0.58, eye spacing 0.70 m with shallow dark discs. Accessories and enclosing suits fit the thicker body. Base mesh reduced from 17,056 to 8,328 triangles, and from 28,592 to 4,694 vertices.
+
+Round celebrations now stop gameplay and reject duplicate starts; timed particles and screen confetti are cleaned up. Frame limits: gameplay 60 FPS, lobby/results 30 FPS; hidden page skips simulation/rendering. Render target capped at 2 million pixels and DPR 1.5; shadow map 1024². These bound GPU work, not a guarantee of a particular temperature on every device.

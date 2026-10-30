@@ -15,7 +15,7 @@ export function createCubeAccessories(T, type='none') {
  const cyl=(c,p,r=.25,h=.12)=>mesh(new T.CylinderGeometry(r,r,h,28),c,p);
  const tube=(points,c,r=.025)=>mesh(new T.TubeGeometry(new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),20,r,8,false),c);
  const leaf=(p,r=0)=>mesh(new T.SphereGeometry(1,16,12),0x50a957,p,[.14,.035,.065],[0,0,r]);
- const top=.81;
+ const top=.79;
  if(type==='none')return {group,full:false,dispose(){}};
  if(type==='cherry'){
   ball(0xe73855,[-.13,top+.13,.04],[.15,.15,.15]);ball(0xcd2348,[.16,top+.14,0],[.16,.16,.16]);
@@ -61,13 +61,13 @@ export function createCubeAccessories(T, type='none') {
   function shape(w,h,r){const s=new T.Shape(),x=-w/2,y=-h/2;s.moveTo(x+r,y);s.lineTo(-x-r,y);s.quadraticCurveTo(-x,y,-x,y+r);s.lineTo(-x,-y-r);s.quadraticCurveTo(-x,-y,-x-r,-y);s.lineTo(x+r,-y);s.quadraticCurveTo(x,-y,x,-y-r);s.lineTo(x,y+r);s.quadraticCurveTo(x,y,x+r,y);return s;}
   const c={astronaut:0xe6eff7,diver:0xd6ac63,robot:0x8bacc2,dino:0x65bd7a,shark:0x75a3c6,dragon:0xb48adc,samurai:0x544366,hotdog:0xe3a562}[type];
   const shell=shape(1.57,1.57,.25);shell.holes.push(shape(1.14,.67,.14));
-  mesh(new T.ExtrudeGeometry(shell,{depth:.79,bevelEnabled:true,bevelThickness:.06,bevelSize:.06,bevelSegments:5,curveSegments:12}),c,[0,0,-.39]);
-  mesh(new T.ExtrudeGeometry(shape(1.57,1.57,.25),{depth:.045,bevelEnabled:true,bevelThickness:.05,bevelSize:.05,bevelSegments:4,curveSegments:12}),c,[0,0,-.45]);
+  mesh(new T.ExtrudeGeometry(shell,{depth:1.28,bevelEnabled:true,bevelThickness:.06,bevelSize:.06,bevelSegments:5,curveSegments:12}),c,[0,0,-.61]);
+  mesh(new T.ExtrudeGeometry(shape(1.57,1.57,.25),{depth:.045,bevelEnabled:true,bevelThickness:.05,bevelSize:.05,bevelSegments:4,curveSegments:12}),c,[0,0,-.67]);
   if(['astronaut','diver','robot','samurai'].includes(type)){
-   const visor=mesh(new T.ExtrudeGeometry(shape(1.16,.69,.14),{depth:.015,bevelEnabled:false,curveSegments:16}),0x91d4e8,[0,0,.475]);visor.material= new T.MeshPhysicalMaterial({color:0x9cdaed,transparent:true,opacity:.18,roughness:.12,depthWrite:false});materials.set('visor',visor.material);
+   const visor=mesh(new T.ExtrudeGeometry(shape(1.16,.69,.14),{depth:.015,bevelEnabled:false,curveSegments:16}),0x91d4e8,[0,0,.745]);visor.material= new T.MeshPhysicalMaterial({color:0x9cdaed,transparent:true,opacity:.18,roughness:.12,depthWrite:false});materials.set('visor',visor.material);
    for(const s of [-1,1])cyl(0x657b95,[s*.85,0,0],.14,.10).rotation.z=Math.PI/2;
-   mesh(new T.BoxGeometry(.68,.88,.20),0x657b95,[0,-.05,-.60]);
-   for(let i=0;i<3;i++)ball([0xf4717c,0x67dab5,0xffd65b][i],[-.18+i*.18,-.58,.49],[.045,.035,.025]);
+   mesh(new T.BoxGeometry(.68,.88,.20),0x657b95,[0,-.05,-.82]);
+   for(let i=0;i<3;i++)ball([0xf4717c,0x67dab5,0xffd65b][i],[-.18+i*.18,-.58,.75],[.045,.035,.025]);
   } else if(type==='hotdog'){
    for(const s of [-1,1])ball(0xe5b077,[s*.70,0,.28],[.13,.73,.23]);tube([[-.40,-.5,.49],[-.15,-.57,.49],[.1,-.48,.49],[.4,-.56,.49]],0xffcf37,.035);
   } else {

@@ -845,7 +845,8 @@ function loadSaveData() {
     playerName: 'СуперФасолька',
     musicVolume: .5,
     effectsVolume: .5,
-    showNameplates: true,
+    showNameplates: false,
+    nameplatePreferenceSet: true,
     skinIndex: 0,
     eyeCount: 2, // 2 = два отдельных глаза в маске Миньона, 1 = один большой глаз-циклоп Миньона
     selectedColorId: 'c_cube_yellow',
@@ -882,6 +883,8 @@ function loadSaveData() {
   return {
     ...defaults,
     ...data,
+    showNameplates: data.nameplatePreferenceSet === true && data.showNameplates === true,
+    nameplatePreferenceSet: true,
     unlockedColors: Array.isArray(data.unlockedColors) ? data.unlockedColors : defaults.unlockedColors,
     unlockedPatterns: Array.isArray(data.unlockedPatterns) ? data.unlockedPatterns : defaults.unlockedPatterns,
     unlockedCostumes: Array.isArray(data.unlockedCostumes) ? data.unlockedCostumes : defaults.unlockedCostumes
@@ -906,9 +909,10 @@ const renderer = new THREE.WebGLRenderer({
   canvas,
   antialias: true,
   alpha: true, // прозрачный фон в Лобби, чтобы были видны анимированные круги Fall Guys!
-  powerPreference: 'high-performance'
+  powerPreference: 'default'
 });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+function renderPixelRatio(){return Math.min(window.devicePixelRatio||1,1.5,Math.sqrt(2_000_000/(innerWidth*innerHeight)));}
+renderer.setPixelRatio(renderPixelRatio());
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -928,8 +932,8 @@ scene.add(hemiLight);
 const dirLight = new THREE.DirectionalLight(0xfffbeb, 1.45);
 dirLight.position.set(28, 58, 32);
 dirLight.castShadow = true;
-dirLight.shadow.mapSize.width = 2048;
-dirLight.shadow.mapSize.height = 2048;
+dirLight.shadow.mapSize.width = 1024;
+dirLight.shadow.mapSize.height = 1024;
 dirLight.shadow.camera.near = 5;
 dirLight.shadow.camera.far = 140;
 const dCam = 36;
@@ -2482,10 +2486,10 @@ function clearActorsAndFX() {
   state.powerups.forEach(p => fxGroup.remove(p.mesh));
   state.powerups = [];
 
-  state.particles.forEach(pt => fxGroup.remove(pt.mesh));
+  state.particles.forEach(pt => {fxGroup.remove(pt.mesh);pt.mesh.material.dispose();});
   state.particles = [];
 
-  state.shockwaves.forEach(sw => fxGroup.remove(sw.mesh));
+  state.shockwaves.forEach(sw => {fxGroup.remove(sw.mesh);sw.mesh.geometry.dispose();sw.mesh.material.dispose();});
   state.shockwaves = [];
 }
 
@@ -2503,6 +2507,7 @@ function beginLevelIntro(kind, title, description) {
 }
 
 function startMatch(options = {}) {
+  clearCelebrationEffects();
   if (state.showdownVisuals) { state.showdownVisuals.dispose(); state.showdownVisuals = null; }
   state.showdown = null;
   if (state.slimeVisuals) { state.slimeVisuals.dispose(); state.slimeVisuals = null; }
@@ -3389,7 +3394,7 @@ function applyPowerup(actor, pu) {
 
 const sharedParticleGeo = new THREE.SphereGeometry(0.16, 10, 8);
 function spawnParticles3D(x, y, z, hexColor, count = 8) {
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < count && state.particles.length < 180; i++) {
     const mat = new THREE.MeshBasicMaterial({ color: hexColor, transparent: true, opacity: 1 });
     const mesh = new THREE.Mesh(sharedParticleGeo, mat);
     mesh.position.set(x, y, z);
@@ -3851,6 +3856,7 @@ function updateWorld3D(dt, nowSec) {
   }
 
   if (state.phase !== 'playing') {
+    updateFX(dt);
     update3DNameplates();
     return;
   }
@@ -4142,6 +4148,7 @@ function updateFX(dt) {
     pt.mesh.material.opacity = Math.max(0, pt.life / pt.maxLife);
     if (pt.life <= 0) {
       fxGroup.remove(pt.mesh);
+      pt.mesh.material.dispose();
       state.particles.splice(i, 1);
     }
   }
@@ -4155,6 +4162,7 @@ function updateFX(dt) {
     sw.mesh.material.opacity = Math.max(0, sw.life / sw.maxLife);
     if (sw.life <= 0) {
       fxGroup.remove(sw.mesh);
+      sw.mesh.geometry.dispose();sw.mesh.material.dispose();
       state.shockwaves.splice(i, 1);
     }
   }
@@ -4274,7 +4282,18 @@ function onPlayerEliminated() {
 }
 
 // ==================== ЭФФЕКТЫ КОНФЕТТИ И ПРАЗДНОВАНИЯ ФИНИША ====================
+let screenConfettiTimer=null;
+function clearCelebrationEffects(){
+  if(state.celebrationTimeout!=null)clearTimeout(state.celebrationTimeout);
+  state.celebrationTimeout=null;
+  if(screenConfettiTimer!=null)clearTimeout(screenConfettiTimer);
+  screenConfettiTimer=null;
+  document.querySelectorAll('.confetti-container').forEach(el=>el.remove());
+  document.getElementById('winner-banner-overlay').classList.add('hidden');
+}
 function launchScreenConfetti(type = 'champion') {
+  document.querySelectorAll('.confetti-container').forEach(el=>el.remove());
+  if(screenConfettiTimer!=null)clearTimeout(screenConfettiTimer);
   const container = document.createElement('div');
   container.className = 'confetti-container';
   Object.assign(container.style, {
@@ -4314,10 +4333,12 @@ function launchScreenConfetti(type = 'champion') {
     container.appendChild(piece);
   }
 
-  setTimeout(() => container.remove(), 3600);
+  screenConfettiTimer=setTimeout(() => {container.remove();screenConfettiTimer=null;}, 3600);
 }
 
 function showCelebrationOverlay({ type = 'champion', icon = '👑', ribbon = '', title = '', subtitle = '', duration = 3.0, onComplete = null } = {}) {
+  if (state.celebrationTimeout != null || state.phase === 'round_result' || state.phase === 'gameover') return false;
+  if (state.phase !== 'celebrating') state.phase = 'round_result';
   const overlay = document.getElementById('winner-banner-overlay');
   const card = document.getElementById('winner-plashka-card');
   const iconEl = document.getElementById('winner-crown-anim');
@@ -4967,6 +4988,7 @@ function openLeaderboard() {
 }
 
 function openStartModal() {
+  clearCelebrationEffects();
   document.getElementById('race-finish-notice')?.remove();
   if (state.raceVisuals) { state.raceVisuals.dispose(); state.raceVisuals = null; }
   if (state.rolloutVisuals) { state.rolloutVisuals.dispose(); state.rolloutVisuals = null; }
@@ -5112,6 +5134,7 @@ nameplateToggle.checked = saveData.showNameplates !== false;
 applyNameplateSetting();
 nameplateToggle.addEventListener('change', () => {
   saveData.showNameplates = nameplateToggle.checked;
+  saveData.nameplatePreferenceSet = true;
   applyNameplateSetting();
   saveGameData();
 });
@@ -5171,6 +5194,7 @@ document.getElementById('btn-spec-skip').addEventListener('click', () => {
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
+  renderer.setPixelRatio(renderPixelRatio());
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
@@ -5181,7 +5205,13 @@ buildLobbyPedestalScene();
 openStartModal();
 
 let lastTime = performance.now();
+let lastRenderedTime=0;
 function animate(now) {
+  requestAnimationFrame(animate);
+  if(document.hidden){lastTime=now;return;}
+  const frameInterval=1000/(state.phase==='playing'||state.phase==='countdown'||state.phase==='intro_flyover'?60:30);
+  if(now-lastRenderedTime < frameInterval-.8)return;
+  lastRenderedTime=now;
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
   const nowSec = now * 0.001;
@@ -5194,7 +5224,6 @@ function animate(now) {
   }
 
   renderer.render(scene, camera);
-  requestAnimationFrame(animate);
 }
 
 requestAnimationFrame(animate);
