@@ -2294,3 +2294,9 @@ button:focus-visible, input:focus-visible, select:focus-visible {outline:3px sol
   .hud-left .pill-card:first-child {display:none;}
   .hud-bottom {bottom:max(8px,env(safe-area-inset-bottom));}
 }
+@media (max-width:600px) {
+  .modal-footer {flex-wrap:wrap;gap:8px;}
+  .modal-footer .fg-btn {flex:1 1 130px;min-width:0;font-size:13px;padding:10px;}
+  .modal-footer .big-play-btn {flex-basis:100%;}
+  .fg-modal {overflow-x:hidden;}
+}
