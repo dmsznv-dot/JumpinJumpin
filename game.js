@@ -26,7 +26,7 @@ import { createShowdown, advanceShowdown, sampleSurface as showdownSurface, chec
 import { createShowdownVisuals } from './jump-showdown/visuals.mjs';
 import { TRACKS as MUSIC_TRACKS, chooseTrack } from './music/tracks.mjs';
 import { introFrame } from './presentation/intro.mjs';
-import { createSketchCharacter } from './characters/sketch-character.mjs';
+import { createCubeCharacter } from './characters/cube-character.mjs';
 
 // ==================== 1. КОНФИГУРАЦИЯ СЛОЖНОСТИ И УСКОРЕННЫЙ РЕГЕН ====================
 const DIFFICULTIES = {
@@ -1146,7 +1146,7 @@ function rebuildLobbyBeanModel() {
     lobbyBeanRig.dispose?.();
   }
   const skin = getPlayerComposedSkin();
-  lobbyBeanRig = createSketchCharacter(THREE, {shadowTexture:beanShadowTexture});
+  lobbyBeanRig = createCubeCharacter(THREE, {shadowTexture:beanShadowTexture});
   lobbyBeanRig.root.position.set(0, 0, 0);
   lobbyPodiumGroup.add(lobbyBeanRig.root);
 }
@@ -2244,7 +2244,7 @@ class Actor3D {
     this.aiRetargetTimer = 0;
 
     // Создаём 3D-модель фасолинки
-    this.rig = isPlayer ? createSketchCharacter(THREE, {shadowTexture:beanShadowTexture}) : createBean3DMesh(skin);
+    this.rig = isPlayer ? createCubeCharacter(THREE, {shadowTexture:beanShadowTexture}) : createBean3DMesh(skin);
     this.rig.root.position.set(this.x, this.y, this.z);
     actorsGroup.add(this.rig.root);
 

@@ -10,3 +10,7 @@ New player character based on the supplied turnaround reference. Existing bot mo
 - Existing costumes are not adapted to this prototype.
 
 The exporter is Three.js r170 GLTFExporter, https://github.com/mrdoob/three.js/blob/r170/examples/jsm/exporters/GLTFExporter.js, distributed under the MIT license (see tools/THREE-LICENSE.txt). Runtime uses the repository Three.js vendor file.
+
+## Cube runner
+
+`cube-character.mjs` is the playable model from the yellow cube turnaround. Ten bones, four materials, eight clips, unit scale in meters, feet origin at ground, facing +Z. Model geometry is visual only; existing gameplay collision remains authoritative. `setColors({shell,face,boots})` independently recolors materials. Runtime procedural skeletal poses match the baked GLB clips. Old outfits are not adapted. Export with `node characters/tools/export-cube.mjs`.
