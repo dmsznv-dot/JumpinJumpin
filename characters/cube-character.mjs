@@ -1,5 +1,6 @@
+import {applyCubePrint} from './cube-print.mjs';
 import {cubeShellGeometry,cubeFaceGeometry} from './cube-shape.mjs';
-import {createCubeAccessories,patternPixels} from './cube-wardrobe.mjs';
+import {createCubeAccessories} from './cube-wardrobe.mjs';
 import {createCharacterClips as bakeClips} from './sketch-character.mjs';
 // Original game-ready character based on the supplied cartoon model sheet.
 // Bones and a bound SkinnedMesh are kept separate from gameplay collision state.
@@ -59,15 +60,7 @@ export function createCubeCharacter(THREE, {shadowTexture=null,skin=null}={}) {
     for(const piece of pieces.filter(p=>p.material===key)){
       const g=piece.geometry.clone(),offset=positions.length/3;
       const matrix=new THREE.Matrix4().multiplyMatrices(piece.b.matrixWorld,piece.transform);g.applyMatrix4(matrix);
-      positions.push(...g.attributes.position.array);normals.push(...g.attributes.normal.array);if(key==='shell') {
-        const pos=g.attributes.position,n=g.attributes.normal;
-        for(let i=0;i<pos.count;i++){
-          const ax=Math.abs(n.getX(i)),ay=Math.abs(n.getY(i)),az=Math.abs(n.getZ(i));
-          const u=ax>az&&ax>ay?pos.getZ(i):pos.getX(i);
-          const v=ay>ax&&ay>az?pos.getZ(i):pos.getY(i)-1.3;
-          uvs.push(u/1.6+.5,v/1.6+.5);
-        }
-      }else uvs.push(...g.attributes.uv.array);
+      positions.push(...g.attributes.position.array);normals.push(...g.attributes.normal.array);uvs.push(...g.attributes.uv.array);
       const idx=bones.indexOf(piece.b);
       for(let i=0;i<g.attributes.position.count;i++){indices.push(idx,0,0,0);weights.push(1,0,0,0);}
       if(g.index)for(const index of g.index.array)triangles.push(offset+index);
@@ -82,12 +75,10 @@ export function createCubeCharacter(THREE, {shadowTexture=null,skin=null}={}) {
   }
   const accessory=createCubeAccessories(THREE,skin?.hat||'none');head.add(accessory.group);
   if(accessory.full)for(const m of meshes)if(m.material===mats.shell)m.visible=false;
-  let patternTexture=null;
   function applyColors({shell=skin?.c1??0xffdb20,face=0xffcda7,boots=skin?.c2??0xf53867,pattern=skin?.pattern||'plain',secondary=skin?.c2??0xf53867}={}) {
-    patternTexture?.dispose();patternTexture=null;
-    if(pattern==='plain') {mats.shell.map=null;mats.shell.color.set(shell);}
-    else {patternTexture=new THREE.DataTexture(patternPixels(shell,secondary,pattern),256,256,THREE.RGBAFormat);patternTexture.colorSpace=THREE.SRGBColorSpace;patternTexture.magFilter=THREE.LinearFilter;patternTexture.needsUpdate=true;mats.shell.map=patternTexture;mats.shell.color.set(0xffffff);}
-    mats.skin.color.set(face);mats.shoe.color.set(boots);mats.shell.needsUpdate=true;
+    applyCubePrint(THREE,mats.shell,{pattern,primary:shell,secondary});
+    for(const {material,base} of accessory.printMaterials||[])applyCubePrint(THREE,material,{pattern,primary:base,secondary,center:[0,0,0]});
+    mats.skin.color.set(face);mats.shoe.color.set(boots);
   }
   applyColors();
   const blobShadow=new THREE.Mesh(new THREE.PlaneGeometry(1.55,1.55),new THREE.MeshBasicMaterial({color:shadowTexture?0xffffff:0x24314d,map:shadowTexture,transparent:true,opacity:shadowTexture?.72:.16,depthWrite:false}));
@@ -154,7 +145,7 @@ export function createCubeCharacter(THREE, {shadowTexture=null,skin=null}={}) {
   return {root,bodyPivot,skeleton,bones:named,meshes,mainMat:mats.shell,materials:mats,setColors:applyColors,accessory:accessory.group,blobShadow,shieldRing,
     leftArm:new THREE.Object3D(),rightArm:new THREE.Object3D(),leftLeg:named.LeftLeg,rightLeg:named.RightLeg,animate,
     resetAnimation(){clock=0;wasGrounded=true;landingTime=0;animate(0,{pose:'idle'});},
-    dispose(){head.remove(accessory.group);accessory.dispose();patternTexture?.dispose();root.traverse(o=>o.geometry?.dispose());Object.values(mats).forEach(m=>m.dispose());blobShadow.material.dispose();shieldRing.material.dispose();skeleton.dispose();}};
+    dispose(){head.remove(accessory.group);accessory.dispose();root.traverse(o=>o.geometry?.dispose());Object.values(mats).forEach(m=>m.dispose());blobShadow.material.dispose();shieldRing.material.dispose();skeleton.dispose();}};
 }
 
 export const createCharacterClips=(THREE,rig)=>bakeClips(THREE,rig,POSES);

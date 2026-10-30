@@ -4,7 +4,7 @@
 <label>Окраска</label><div class="views"><button data-color="#ffdb20">Жёлтый</button><button data-color="#60cce5">Голубой</button><button data-color="#bca1ed">Сиреневый</button><button data-color="#8ce0ad">Мятный</button></div><label for="costume">Шапка / костюм</label><select id="costume"></select><label for="pattern">Паттерн</label><select id="pattern"></select><label for="pose">Движение</label><select id="pose"><option value="idle">Ожидание</option><option value="run">Бег</option><option value="jump">Прыжок</option><option value="fall">Падение</option><option value="dive">Нырок</option><option value="land">Приземление</option><option value="win">Победа</option><option value="wave">Приветствие</option><option value="dance">Танец</option><option value="sit">Сидит</option><option value="look">Любопытство</option><option value="lobby">Эмоции в лобби</option></select>
 <label>Ракурс</label><div class="views"><button data-view="0">Анфас</button><button data-view="0.65">¾</button><button data-view="1.57">Сбоку</button><button data-view="3.14">Сзади</button></div>
 <label><input id="skeleton" type="checkbox"> Показать скелет</label><label><input id="spin" type="checkbox"> Вращать модель</label>
-<a href="../index.html">Проверить в игре →</a><a href="../assets/models/cube-runner.glb" download>Скачать GLB с анимациями</a></aside><footer>Переключайте ракурсы и движения для проверки модели</footer>
+<a href="../index.html">Проверить в игре →</a><a href="../assets/models/cube-runner.glb" download>Скачать GLB с анимациями</a><p style="font-size:11px">Принты: <a href="https://heropatterns.com/">Steve Schoger / Hero Patterns</a> · CC BY 4.0, адаптация цветов и нанесения.</p></aside><footer>Переключайте ракурсы и движения для проверки модели</footer>
 <script type="module">
 import {CUBE_COSMETICS} from './cube-wardrobe.mjs';
 import * as THREE from '../vendor/three.module.min.js';import {createCubeCharacter} from './cube-character.mjs';
@@ -13,7 +13,7 @@ const renderer=new THREE.WebGLRenderer({canvas:document.querySelector('canvas'),
 scene.add(new THREE.HemisphereLight(0xffffff,0x8f9bac,2.2));const sun=new THREE.DirectionalLight(0xfff1df,2.5);sun.position.set(3,5,5);scene.add(sun);
 let color='#ffdb20';const costume=document.querySelector('#costume'),pattern=document.querySelector('#pattern');
 CUBE_COSMETICS.forEach(c=>costume.add(new Option(c.icon+' '+c.title,c.hat)));
-['plain','belly','stripes','polka','flames','stars','lightning','rings','diamonds'].forEach((id,i)=>pattern.add(new Option(['Чистый цвет','Пятно','Полосы','Горошек','Пламя','Звёзды','Молнии','Кольца','Ромбы'][i],id)));
+['plain','belly','stripes','polka','flames','stars','lightning','rings','diamonds','clouds','leaves','circuit','hexagons'].forEach((id,i)=>pattern.add(new Option(['Чистый цвет','Пятно','Полосы','Горошек','Пламя','Звёзды','Молнии','Кольца','Ромбы','Облака','Листья','Микросхема','Соты'][i],id)));
 let rig,helper;
 function rebuild(){if(rig){scene.remove(rig.root,helper);helper.dispose();rig.dispose();}rig=createCubeCharacter(THREE,{skin:{hat:costume.value||'none',c1:parseInt(color.slice(1),16),c2:0xf53867,pattern:pattern.value||'plain'}});scene.add(rig.root);helper=new THREE.SkeletonHelper(rig.root);helper.visible=document.querySelector('#skeleton').checked;scene.add(helper);}
 rebuild();costume.onchange=pattern.onchange=rebuild;

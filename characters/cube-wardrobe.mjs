@@ -6,7 +6,7 @@ export const CUBE_COSMETICS = [
 ].map(([hat,title,icon,full=false])=>({id:'hat_'+hat,hat,title,icon,full,sub:full?'Полная оболочка корпуса':'Украшение сверху',rarity:'ОБЫЧНЫЙ',unlockType:'free',cost:0}));
 
 export function createCubeAccessories(T, type='none') {
- const group=new T.Group();group.name='CubeAccessory_'+type;
+ const group=new T.Group();group.name='CubeAccessory_'+type;const printMaterials=[];
  const materials=new Map();
  const mat=(c,metal=0)=>{const k=c+':'+metal;if(!materials.has(k))materials.set(k,new T.MeshStandardMaterial({color:c,roughness:.45,metalness:metal}));return materials.get(k);};
  function mesh(g,c,p=[0,0,0],s=[1,1,1],r=[0,0,0],metal=0){const m=new T.Mesh(g,mat(c,metal));m.position.fromArray(p);m.scale.fromArray(s);m.rotation.set(...r);m.castShadow=true;group.add(m);return m;}
@@ -60,9 +60,10 @@ export function createCubeAccessories(T, type='none') {
  if(full){
   function shape(w,h,r){const s=new T.Shape(),x=-w/2,y=-h/2;s.moveTo(x+r,y);s.lineTo(-x-r,y);s.quadraticCurveTo(-x,y,-x,y+r);s.lineTo(-x,-y-r);s.quadraticCurveTo(-x,-y,-x-r,-y);s.lineTo(x+r,-y);s.quadraticCurveTo(x,-y,x,-y-r);s.lineTo(x,y+r);s.quadraticCurveTo(x,y,x+r,y);return s;}
   const c={astronaut:0xe6eff7,diver:0xd6ac63,robot:0x8bacc2,dino:0x65bd7a,shark:0x75a3c6,dragon:0xb48adc,samurai:0x544366,hotdog:0xe3a562}[type];
-  const shell=shape(1.57,1.57,.25);shell.holes.push(shape(1.14,.67,.14));
-  mesh(new T.ExtrudeGeometry(shell,{depth:1.28,bevelEnabled:true,bevelThickness:.06,bevelSize:.06,bevelSegments:5,curveSegments:12}),c,[0,0,-.61]);
-  mesh(new T.ExtrudeGeometry(shape(1.57,1.57,.25),{depth:.045,bevelEnabled:true,bevelThickness:.05,bevelSize:.05,bevelSegments:4,curveSegments:12}),c,[0,0,-.67]);
+  const shell=shape(1.57,1.57,.43);shell.holes.push(shape(1.14,.67,.14));
+  const suit=mesh(new T.ExtrudeGeometry(shell,{depth:1.28,bevelEnabled:true,bevelThickness:.06,bevelSize:.06,bevelSegments:6,curveSegments:16}),c,[0,0,-.61]);
+  printMaterials.push({material:suit.material,base:c});
+  mesh(new T.ExtrudeGeometry(shape(1.57,1.57,.43),{depth:.045,bevelEnabled:true,bevelThickness:.05,bevelSize:.05,bevelSegments:4,curveSegments:12}),c,[0,0,-.67]);
   if(['astronaut','diver','robot','samurai'].includes(type)){
    const visor=mesh(new T.ExtrudeGeometry(shape(1.16,.69,.14),{depth:.015,bevelEnabled:false,curveSegments:16}),0x91d4e8,[0,0,.745]);visor.material= new T.MeshPhysicalMaterial({color:0x9cdaed,transparent:true,opacity:.18,roughness:.12,depthWrite:false});materials.set('visor',visor.material);
    for(const s of [-1,1])cyl(0x657b95,[s*.85,0,0],.14,.10).rotation.z=Math.PI/2;
@@ -76,25 +77,7 @@ export function createCubeAccessories(T, type='none') {
    if(type==='dragon')for(const s of [-1,1])cone(0xffdc91,[s*.5,top+.17,0],.11,.35);
   }
  }
- return {group,full,dispose(){group.traverse(o=>o.geometry?.dispose());materials.forEach(m=>m.dispose());}};
+ for(const o of group.children)if(o.isMesh&&printMaterials.some(p=>p.material===o.material)){o.updateMatrix();o.geometry.applyMatrix4(o.matrix);o.position.set(0,0,0);o.rotation.set(0,0,0);o.scale.set(1,1,1);}
+ return {group,full,printMaterials,dispose(){group.traverse(o=>o.geometry?.dispose());materials.forEach(m=>m.dispose());}};
 }
 
-// Square-face projection keeps motif sizes consistent on the cube's six faces.
-export function patternPixels(primary,secondary,pattern='plain',size=256) {
- const out=new Uint8Array(size*size*4),a=[primary>>16&255,primary>>8&255,primary&255],b=[secondary>>16&255,secondary>>8&255,secondary&255];
- const star=(x,y)=>{const angle=Math.atan2(y,x),r=Math.hypot(x,y);return r < .15+.055*Math.cos(angle*5);};
- for(let y=0;y<size;y++)for(let x=0;x<size;x++){
-  const u=x/size,v=y/size,tx=(u*4)%1-.5,ty=(v*4)%1-.5;let on=false;
-  switch(pattern){
-   case 'belly':on=(u-.5)**2/.09+(v-.45)**2/.13<1;break;
-   case 'stripes':on=(u*5+v*2)%1<.27;break;
-   case 'polka':on=tx*tx+ty*ty<.045;break;
-   case 'stars':on=star(tx,ty);break;
-   case 'diamonds':on=Math.abs(tx)+Math.abs(ty)<.25;break;
-   case 'rings':on=Math.hypot(tx,ty)>.20&&Math.hypot(tx,ty)<.27;break;
-   case 'lightning':on=Math.abs(tx-(ty>0?-.08:.08))<.055&&Math.abs(ty)<.33;break;
-   case 'flames':on=v<.2+.14*Math.sin(u*28)+.06*Math.sin(u*57);break;
-  }
-  const c=on?b:a,i=(y*size+x)*4;out[i]=c[0];out[i+1]=c[1];out[i+2]=c[2];out[i+3]=255;
- }return out;
-}

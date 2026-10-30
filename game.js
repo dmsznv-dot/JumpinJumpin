@@ -133,15 +133,21 @@ COLOR_PALETTES.unshift({id:'c_cube_yellow',title:'Солнечный куб',c1:
 
 const PATTERN_ITEMS = [
   {id:'pat_plain',title:'Чистый цвет',icon:'🟨',pattern:'plain',rarity:'ОБЫЧНЫЙ',unlockType:'free',cost:0},
-  { id: 'pat_belly',     title: 'Пузико Пингвина',    icon: '🐧', pattern: 'belly',     rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
-  { id: 'pat_stripes',   title: 'Тигровые Полосы',    icon: '🐯', pattern: 'stripes',   rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
+  { id: 'pat_belly',     title: 'Абстрактное конфетти',    icon: '🐧', pattern: 'belly',     rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
+  { id: 'pat_stripes',   title: 'Диагональные полосы',    icon: '🐯', pattern: 'stripes',   rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
   { id: 'pat_polka',     title: 'Конфетти Горошек',   icon: '⚪', pattern: 'polka',     rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
-  { id: 'pat_flames',    title: 'Пламя Турбо-Гонки',  icon: '🔥', pattern: 'flames',    rarity: 'РЕДКИЙ',    unlockType: 'ad',     cost: 0 },
+  { id: 'pat_flames',    title: 'Карамельные волны',  icon: '🔥', pattern: 'flames',    rarity: 'РЕДКИЙ',    unlockType: 'ad',     cost: 0 },
   { id: 'pat_stars',     title: 'Звёздный Шоумен',    icon: '⭐', pattern: 'stars',     rarity: 'РЕДКИЙ',    unlockType: 'ad',     cost: 0 },
-  { id: 'pat_lightning', title: 'Неоновые Молнии',    icon: '⚡', pattern: 'lightning', rarity: 'РЕДКИЙ',    unlockType: 'kudos',  cost: 450 },
+  { id: 'pat_lightning', title: 'Ломаный ритм',    icon: '⚡', pattern: 'lightning', rarity: 'РЕДКИЙ',    unlockType: 'kudos',  cost: 450 },
   { id: 'pat_rings',     title: 'Волны Гипноза',      icon: '🌀', pattern: 'rings',     rarity: 'ЭПИЧЕСКИЙ', unlockType: 'kudos',  cost: 750 },
   { id: 'pat_diamonds',  title: 'Королевский Арлекин',icon: '♦️', pattern: 'diamonds',  rarity: 'ЛЕГЕНДА',   unlockType: 'crowns', cost: 1 }
 ];
+
+[
+ ['clouds','Пушистые облака','☁️'],['leaves','Тропические листья','🌿'],['circuit','Микросхема','🔌'],['hexagons','Медовые соты','🍯']
+].forEach(([pattern,title,icon])=>PATTERN_ITEMS.push({id:'pat_'+pattern,title,icon,pattern,rarity:'ОБЫЧНЫЙ',unlockType:'free',cost:0}));
+// Every print is available for this test build.
+PATTERN_ITEMS.forEach(p=>{p.unlockType='free';p.cost=0;});
 
 const COSTUME_ITEMS = [
   { id: 'hat_none',      title: 'Классическая Фасоль', sub: 'Очки Миньона + Кеды',            icon: '🥽', hat: 'none',      rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
@@ -175,7 +181,7 @@ COSTUME_ITEMS.splice(0,COSTUME_ITEMS.length,...CUBE_COSMETICS);
 const SEASON_TIERS = [
   { level: 1, xpReq: 0,    title: 'Старт Сезона',       icon: '🥽', rewardText: 'Очки Миньона' },
   { level: 2, xpReq: 300,  title: 'Бонус Лавров',       icon: '🟣', rewardText: '+300 Лавров' },
-  { level: 3, xpReq: 700,  title: 'Пламя Турбо-Гонки',  icon: '🔥', rewardText: 'Паттерн Пламя' },
+  { level: 3, xpReq: 700,  title: 'Карамельные волны',  icon: '🔥', rewardText: 'Паттерн Пламя' },
   { level: 4, xpReq: 1200, title: 'Ти-Рекс Динозавр',   icon: '🦖', rewardText: 'Полный Костюм' },
   { level: 5, xpReq: 1800, title: 'Кубок Чемпиона',     icon: '👑', rewardText: '+1 Корона' },
   { level: 6, xpReq: 2500, title: 'Кибер-Самурай',      icon: '👹', rewardText: 'Броня + Маска' },

@@ -26,3 +26,11 @@ Eleven animation clips include dance/sit/look. Runtime lobby mode cycles greetin
 Continuous contoured shell: 1.62 × 1.57 × 1.16 m, gently rounded front and back, shallow face recess. Face center z=0.54, lip z=0.58, eye spacing 0.70 m with shallow dark discs. Accessories and enclosing suits fit the thicker body. Base mesh reduced from 17,056 to 8,328 triangles, and from 28,592 to 4,694 vertices.
 
 Round celebrations now stop gameplay and reject duplicate starts; timed particles and screen confetti are cleaned up. Frame limits: gameplay 60 FPS, lobby/results 30 FPS; hidden page skips simulation/rendering. Render target capped at 2 million pixels and DPR 1.5; shadow map 1024². These bound GPU work, not a guarantee of a particular temperature on every device.
+
+## Print and rounding revision
+
+Outer corner radius increased from 0.37 to 0.48 m without changing the gameplay footprint. Previous per-vertex dominant-axis UVs were removed. Print coordinates now follow one continuous body-space wrap around the rounded sides with an integer repeat count to close the back seam. Top/bottom caps fade to the base color, avoiding folded motifs at singularities. The face is a separate unprinted material.
+
+Twelve original SVG artworks from Hero Patterns are rasterized locally to shared 1024² R8 masks with mipmaps and anisotropic filtering. Palette colors are uniforms, so contestants share both mask textures and shader programs. Fully enclosing suits use the same print method with coordinates baked into body space. No external runtime requests. Attribution: PRINT-LICENSE.md and settings.
+
+The downloadable GLB contains the base character and skeletal clips. Palette-driven prints are runtime materials.
