@@ -2300,3 +2300,12 @@ button:focus-visible, input:focus-visible, select:focus-visible {outline:3px sol
   .modal-footer .big-play-btn {flex-basis:100%;}
   .fg-modal {overflow-x:hidden;}
 }
+
+/* Cube wardrobe: preserve the model preview above the scrollable controls. */
+@media(max-width:600px) and (orientation:portrait){
+ .customise-panel{top:auto;left:12px;right:12px;bottom:12px;width:auto;height:43dvh;gap:5px;}
+ .eye-mode-bar{padding:5px;gap:4px;}.eye-mode-label{font-size:9px}.eye-mode-btn{padding:5px;font-size:10px}
+ .custom-subtabs{gap:4px}.c-subtab{padding:6px;font-size:10px;flex:1}
+ .custom-box{padding:8px;min-height:0}.custom-box-header{margin-bottom:5px;padding-bottom:5px;font-size:11px}
+ .custom-box .costumes-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.costume-card-name{font-size:10px}
+}

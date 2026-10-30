@@ -1,3 +1,4 @@
+import { CUBE_COSMETICS } from './characters/cube-wardrobe.mjs';
 import { createGamepadReader } from './controls/gamepad.mjs';
 /**
  * ГЕКСА-АРЕНА 3D SHOW (v3.0 — True 3D WebGL / Three.js + CC0 GLB Models)
@@ -128,7 +129,10 @@ const COLOR_PALETTES = [
  css1:'#'+c1.toString(16).padStart(6,'0'),css2:'#'+c2.toString(16).padStart(6,'0'),
  defaultPat:'pat_belly',rarity:'ОБЫЧНЫЙ',unlockType:'free',cost:0}));
 
+COLOR_PALETTES.unshift({id:'c_cube_yellow',title:'Солнечный куб',c1:0xffdb20,c2:0xf53867,css1:'#ffdb20',css2:'#f53867',defaultPat:'pat_plain',rarity:'ОБЫЧНЫЙ',unlockType:'free',cost:0});
+
 const PATTERN_ITEMS = [
+  {id:'pat_plain',title:'Чистый цвет',icon:'🟨',pattern:'plain',rarity:'ОБЫЧНЫЙ',unlockType:'free',cost:0},
   { id: 'pat_belly',     title: 'Пузико Пингвина',    icon: '🐧', pattern: 'belly',     rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
   { id: 'pat_stripes',   title: 'Тигровые Полосы',    icon: '🐯', pattern: 'stripes',   rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
   { id: 'pat_polka',     title: 'Конфетти Горошек',   icon: '⚪', pattern: 'polka',     rarity: 'ОБЫЧНЫЙ',   unlockType: 'free',   cost: 0 },
@@ -165,6 +169,8 @@ const EXTRA_COSTUMES = [
 EXTRA_COSTUMES.forEach(([hat,title,icon,color]) => COSTUME_ITEMS.push({
  id:'hat_'+hat,title,icon,hat,color,sub:'Объёмный костюм',rarity:'ОБЫЧНЫЙ',unlockType:'free',cost:0
 }));
+
+COSTUME_ITEMS.splice(0,COSTUME_ITEMS.length,...CUBE_COSMETICS);
 
 const SEASON_TIERS = [
   { level: 1, xpReq: 0,    title: 'Старт Сезона',       icon: '🥽', rewardText: 'Очки Миньона' },
@@ -842,9 +848,9 @@ function loadSaveData() {
     showNameplates: true,
     skinIndex: 0,
     eyeCount: 2, // 2 = два отдельных глаза в маске Миньона, 1 = один большой глаз-циклоп Миньона
-    selectedColorId: 'c_pink_yellow',
-    selectedPatternId: 'pat_stripes',
-    selectedCostumeId: 'hat_dino',
+    selectedColorId: 'c_cube_yellow',
+    selectedPatternId: 'pat_plain',
+    selectedCostumeId: 'hat_none',
     unlockedColors: ['c_pink_yellow', 'c_cyan_blue', 'c_lime_choco'],
     unlockedPatterns: ['pat_belly', 'pat_stripes', 'pat_polka'],
     unlockedCostumes: ['hat_none', 'hat_dino'],
@@ -1146,7 +1152,7 @@ function rebuildLobbyBeanModel() {
     lobbyBeanRig.dispose?.();
   }
   const skin = getPlayerComposedSkin();
-  lobbyBeanRig = createCubeCharacter(THREE, {shadowTexture:beanShadowTexture});
+  lobbyBeanRig = createCubeCharacter(THREE, {shadowTexture:beanShadowTexture,skin});
   lobbyBeanRig.root.position.set(0, 0, 0);
   lobbyPodiumGroup.add(lobbyBeanRig.root);
 }
@@ -1164,7 +1170,7 @@ function updateLobby3D(dt, nowSec) {
   lobbyBeanRig.bodyPivot.rotation.z = Math.sin(nowSec * 1.5) * 0.035;
   lobbyBeanRig.leftArm.rotation.x = Math.sin(nowSec * 2.5) * 0.18;
   lobbyBeanRig.rightArm.rotation.x = -Math.sin(nowSec * 2.5) * 0.18;
-  lobbyBeanRig.animate?.(dt, {pose:'wave'});
+  lobbyBeanRig.animate?.(dt, {pose:'lobby'});
 
   // В зависимости от открытой вкладки Лобби пьедестал плавно смещается:
   // - В 'play' — строго по центру
@@ -1185,12 +1191,13 @@ function updateLobby3D(dt, nowSec) {
     visible = false;
   }
 
+  if(lobbyActiveTab==='custom' && innerWidth<=600 && innerHeight>innerWidth){targetX=0;targetY=.62;}
   lobbyGroup.visible = visible;
   lobbyPodiumGroup.position.x += (targetX - lobbyPodiumGroup.position.x) * Math.min(1, dt * 8);
   lobbyPodiumGroup.position.y += (targetY - lobbyPodiumGroup.position.y) * Math.min(1, dt * 8);
 
   // Камера крупным планом смотрит прямо на пьедестал
-  camera.position.set(0, 1.25, 4.45);
+  camera.position.set(0, 1.25, 5.1);
   camera.lookAt(0, 0.95, 0);
 }
 
@@ -2244,7 +2251,7 @@ class Actor3D {
     this.aiRetargetTimer = 0;
 
     // Создаём 3D-модель фасолинки
-    this.rig = isPlayer ? createCubeCharacter(THREE, {shadowTexture:beanShadowTexture}) : createBean3DMesh(skin);
+    this.rig = createCubeCharacter(THREE, {shadowTexture:beanShadowTexture,skin});
     this.rig.root.position.set(this.x, this.y, this.z);
     actorsGroup.add(this.rig.root);
 

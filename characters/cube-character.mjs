@@ -1,8 +1,10 @@
+import {createCubeAccessories,patternPixels} from './cube-wardrobe.mjs';
+import {createCharacterClips as bakeClips} from './sketch-character.mjs';
 // Original game-ready character based on the supplied cartoon model sheet.
 // Bones and a bound SkinnedMesh are kept separate from gameplay collision state.
-export const POSES = ['idle','run','jump','fall','dive','land','win','wave'];
+export const POSES = ['idle','run','jump','fall','dive','land','win','wave','dance','sit','look'];
 
-export function createCubeCharacter(THREE, {shadowTexture=null}={}) {
+export function createCubeCharacter(THREE, {shadowTexture=null,skin=null}={}) {
   const root=new THREE.Group();root.name='CubeRunner';
   const bodyPivot=new THREE.Group();bodyPivot.name='CharacterMotion';root.add(bodyPivot);
   const bones=[], named={};
@@ -45,8 +47,8 @@ export function createCubeCharacter(THREE, {shadowTexture=null}={}) {
   part(head,'skin',rounded(1.12,.63,.045,.14,.025),[0,.015,.285]);
   const eyes=[];
   for(const [side,sign] of [['Left',-1],['Right',1]]){
-    const eye=bone(side+'Eye',head,sign*.365,.045,.369);eyes.push(eye);
-    sphere(eye,'dark',[0,0,0],[.060,.063,.018]);
+    const eye=bone(side+'Eye',head,skin?.eyeCount===1?0:sign*.365,.045,.369);eyes.push(eye);
+    if(skin?.eyeCount!==1||side==='Left')sphere(eye,'dark',[0,0,0],skin?.eyeCount===1?[.085,.09,.018]:[.060,.063,.018]);
     part(named[side+'Leg'],'skin',new THREE.CapsuleGeometry(.092,.17,6,16),[0,-.08,0]);
     part(named[side+'Shin'],'skin',new THREE.CapsuleGeometry(.088,.10,6,16),[0,-.09,0]);
     part(named[side+'Foot'],'shoe',new THREE.CapsuleGeometry(.098,.095,6,18),[0,.015,.015],[1,1,1.12]);
@@ -61,7 +63,15 @@ export function createCubeCharacter(THREE, {shadowTexture=null}={}) {
     for(const piece of pieces.filter(p=>p.material===key)){
       const g=piece.geometry.clone(),offset=positions.length/3;
       const matrix=new THREE.Matrix4().multiplyMatrices(piece.b.matrixWorld,piece.transform);g.applyMatrix4(matrix);
-      positions.push(...g.attributes.position.array);normals.push(...g.attributes.normal.array);uvs.push(...g.attributes.uv.array);
+      positions.push(...g.attributes.position.array);normals.push(...g.attributes.normal.array);if(key==='shell') {
+        const pos=g.attributes.position,n=g.attributes.normal;
+        for(let i=0;i<pos.count;i++){
+          const ax=Math.abs(n.getX(i)),ay=Math.abs(n.getY(i)),az=Math.abs(n.getZ(i));
+          const u=ax>az&&ax>ay?pos.getZ(i):pos.getX(i);
+          const v=ay>ax&&ay>az?pos.getZ(i):pos.getY(i)-1.3;
+          uvs.push(u/1.6+.5,v/1.6+.5);
+        }
+      }else uvs.push(...g.attributes.uv.array);
       const idx=bones.indexOf(piece.b);
       for(let i=0;i<g.attributes.position.count;i++){indices.push(idx,0,0,0);weights.push(1,0,0,0);}
       if(g.index)for(const index of g.index.array)triangles.push(offset+index);
@@ -74,6 +84,16 @@ export function createCubeCharacter(THREE, {shadowTexture=null}={}) {
     g.setIndex(triangles);
     const mesh=new THREE.SkinnedMesh(g,material);mesh.name='Character_'+key;mesh.frustumCulled=false;bodyPivot.add(mesh);mesh.bind(skeleton);meshes.push(mesh);
   }
+  const accessory=createCubeAccessories(THREE,skin?.hat||'none');head.add(accessory.group);
+  if(accessory.full)for(const m of meshes)if(m.material===mats.shell)m.visible=false;
+  let patternTexture=null;
+  function applyColors({shell=skin?.c1??0xffdb20,face=0xffcda7,boots=skin?.c2??0xf53867,pattern=skin?.pattern||'plain',secondary=skin?.c2??0xf53867}={}) {
+    patternTexture?.dispose();patternTexture=null;
+    if(pattern==='plain') {mats.shell.map=null;mats.shell.color.set(shell);}
+    else {patternTexture=new THREE.DataTexture(patternPixels(shell,secondary,pattern),256,256,THREE.RGBAFormat);patternTexture.colorSpace=THREE.SRGBColorSpace;patternTexture.magFilter=THREE.LinearFilter;patternTexture.needsUpdate=true;mats.shell.map=patternTexture;mats.shell.color.set(0xffffff);}
+    mats.skin.color.set(face);mats.shoe.color.set(boots);mats.shell.needsUpdate=true;
+  }
+  applyColors();
   const blobShadow=new THREE.Mesh(new THREE.PlaneGeometry(1.55,1.55),new THREE.MeshBasicMaterial({color:shadowTexture?0xffffff:0x24314d,map:shadowTexture,transparent:true,opacity:shadowTexture?.72:.16,depthWrite:false}));
   blobShadow.rotation.x=-Math.PI/2;blobShadow.position.y=.025;root.add(blobShadow);
   const shieldRing=new THREE.Mesh(new THREE.TorusGeometry(.95,.06,10,28),new THREE.MeshBasicMaterial({color:0xffd740}));shieldRing.rotation.x=Math.PI/2;shieldRing.position.y=1;shieldRing.visible=false;root.add(shieldRing);
@@ -82,11 +102,28 @@ export function createCubeCharacter(THREE, {shadowTexture=null}={}) {
     clock+=dt;
     if(!wasGrounded && grounded)landingTime=.16;
     wasGrounded=grounded;landingTime=Math.max(0,landingTime-dt);
+    if(pose==='lobby'){const seq=['wave','idle','dance','idle','sit','idle','look','idle'];pose=seq[Math.floor(clock/6)%seq.length];}
+    const oldRot=bones.map(b=>b.quaternion.clone()),oldY=bodyPivot.position.y,oldRX=bodyPivot.rotation.x,oldRZ=bodyPivot.rotation.z,oldScale=bodyPivot.scale.clone();
     const mode=pose||(celebrating?'win':diving?'dive':!grounded?(vy>=0?'jump':'fall'):landingTime>0?'land':speed>.6?'run':'idle');
     const phase=clock*(mode==='run'?Math.max(5,speed*1.7):5);
     for(const b of bones)b.rotation.set(0,0,0);
     bodyPivot.position.y=0;bodyPivot.rotation.x=0;bodyPivot.rotation.z=0;bodyPivot.scale.set(1+squash*.2,1-squash*.24,1+squash*.2);
-    if(mode==='run'){
+    if(mode==='dance'){
+      const beat=clock*5.6,swing=Math.sin(beat);
+      bodyPivot.rotation.z=swing*.16;bodyPivot.rotation.x=Math.cos(beat*.5)*.07;
+      bodyPivot.position.y=Math.abs(Math.sin(beat))*.10;
+      head.rotation.y=Math.sin(beat*.5)*.18;
+      named.LeftLeg.rotation.x=swing*.5;named.RightLeg.rotation.x=-swing*.5;
+      named.LeftFoot.rotation.z=-.12;named.RightFoot.rotation.z=.12;
+    }else if(mode==='sit'){
+      bodyPivot.position.y=-.30;bodyPivot.rotation.x=-.08;
+      named.LeftLeg.rotation.x=named.RightLeg.rotation.x=-1.25;
+      named.LeftShin.rotation.x=named.RightShin.rotation.x=.35;
+      head.rotation.z=Math.sin(clock*1.2)*.04;
+    }else if(mode==='look'){
+      head.rotation.y=Math.sin(clock*1.6)*.26;bodyPivot.rotation.z=Math.sin(clock*.8)*.07;
+      named.LeftFoot.rotation.x=Math.sin(clock*3)*.12;
+    }else if(mode==='run'){
       const swing=Math.sin(phase);bodyPivot.position.y=Math.abs(Math.sin(phase*2))*.045;bodyPivot.rotation.x=.08;bodyPivot.rotation.z=swing*.065;
       named.LeftLeg.rotation.x=swing*.75;named.RightLeg.rotation.x=-swing*.75;
       named.LeftShin.rotation.x=Math.max(0,-swing)*.5;named.RightShin.rotation.x=Math.max(0,swing)*.5;
@@ -107,12 +144,18 @@ export function createCubeCharacter(THREE, {shadowTexture=null}={}) {
     } else {bodyPivot.position.y=Math.sin(clock*2.4)*.012;head.rotation.y=Math.sin(clock*.8)*.035;}
     const blink=clock>1 && Math.cos(clock*1.7)>.997?.12:1;
     for(const eye of eyes)eye.scale.y=blink;
+    const blend=dt>0?1-Math.exp(-dt*16):1;
+    for(let i=0;i<bones.length;i++)bones[i].quaternion.slerpQuaternions(oldRot[i],bones[i].quaternion.clone(),blend);
+    bodyPivot.position.y=THREE.MathUtils.lerp(oldY,bodyPivot.position.y,blend);
+    bodyPivot.rotation.x=THREE.MathUtils.lerp(oldRX,bodyPivot.rotation.x,blend);
+    bodyPivot.rotation.z=THREE.MathUtils.lerp(oldRZ,bodyPivot.rotation.z,blend);
+    bodyPivot.scale.lerpVectors(oldScale,bodyPivot.scale.clone(),blend);
     return mode;
   }
-  return {root,bodyPivot,skeleton,bones:named,meshes,mainMat:mats.shell,materials:mats,setColors({shell,face,boots}={}){if(shell!=null)mats.shell.color.set(shell);if(face!=null)mats.skin.color.set(face);if(boots!=null)mats.shoe.color.set(boots);},blobShadow,shieldRing,
+  return {root,bodyPivot,skeleton,bones:named,meshes,mainMat:mats.shell,materials:mats,setColors:applyColors,accessory:accessory.group,blobShadow,shieldRing,
     leftArm:new THREE.Object3D(),rightArm:new THREE.Object3D(),leftLeg:named.LeftLeg,rightLeg:named.RightLeg,animate,
     resetAnimation(){clock=0;wasGrounded=true;landingTime=0;animate(0,{pose:'idle'});},
-    dispose(){root.traverse(o=>o.geometry?.dispose());Object.values(mats).forEach(m=>m.dispose());blobShadow.material.dispose();shieldRing.material.dispose();skeleton.dispose();}};
+    dispose(){head.remove(accessory.group);accessory.dispose();patternTexture?.dispose();root.traverse(o=>o.geometry?.dispose());Object.values(mats).forEach(m=>m.dispose());blobShadow.material.dispose();shieldRing.material.dispose();skeleton.dispose();}};
 }
 
-export { createCharacterClips } from './sketch-character.mjs';
+export const createCharacterClips=(THREE,rig)=>bakeClips(THREE,rig,POSES);

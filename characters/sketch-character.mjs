@@ -152,8 +152,8 @@ export function createSketchCharacter(THREE, {shadowTexture=null}={}) {
 }
 
 // Bake the same poses used at runtime into reusable skeletal animation clips.
-export function createCharacterClips(THREE,rig) {
-  return POSES.map(pose=>{
+export function createCharacterClips(THREE,rig,poses=POSES) {
+  return poses.map(pose=>{
     rig.resetAnimation();const duration=pose==='land'?.5:pose==='run'?1:pose==='idle'?3:2;
     const count=Math.round(duration*30),times=[],values=new Map();
     const nodes=[rig.bodyPivot,...Object.values(rig.bones)];
