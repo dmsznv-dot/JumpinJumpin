@@ -5,6 +5,7 @@ import {
   OUTER_RADIUS,
   SECTOR_GAP
 } from './showdown.mjs';
+import { PALETTE, candyMaterial, balloonField } from '../presentation/fg-style.mjs';
 
 export function createShowdownVisuals(THREE, course) {
   const root = new THREE.Group();
@@ -21,7 +22,6 @@ export function createShowdownVisuals(THREE, course) {
   const yellow = mat(0xffe600, { roughness: 0.28 });
   const darkMetal = mat(0x35517b, { roughness: 0.55, metalness: 0.35 });
   const chrome = mat(0xd0d8e8, { roughness: 0.18, metalness: 0.85 });
-  const woodGreen = mat(0x00e676, { roughness: 0.35 });
   const stitchMat = mat(0xffffff, { roughness: 0.55 });
   const hazardOrange = mat(0xff9100, { roughness: 0.35 });
   const sirenOff = mat(0x4a0e1c, { roughness: 0.6 });
@@ -37,7 +37,8 @@ export function createShowdownVisuals(THREE, course) {
     sectorGroups.push(sGroup);
 
     const isEven = i % 2 === 0;
-    const topMat = isEven ? pink : cyan;
+    // Printed padding on the wedges: pink polka dots and cyan checks, in metres.
+    const topMat = isEven ? candyMaterial(THREE, 'dots', PALETTE.hotPink, 0xff9ccc, 2.4, { roughness: .4 }) : candyMaterial(THREE, 'check', 0x00cfe8, 0xb4f6ff, 2.6, { roughness: .4 });
     const rimMat = isEven ? cyan : pink;
 
     // Build custom 3D wedge geometry with rounded borders and thickness
@@ -175,18 +176,11 @@ export function createShowdownVisuals(THREE, course) {
 
   const rollerGeo = new THREE.CylinderGeometry(lowRollerRadius, lowRollerRadius, lowArmLen - 2.4, 24);
   rollerGeo.rotateZ(Math.PI / 2); // orient along X
-  const rollerMesh = new THREE.Mesh(rollerGeo, woodGreen);
+  // Spiral hazard stripes printed on the roller (one mesh instead of a stack of rings).
+  const rollerMesh = new THREE.Mesh(rollerGeo, candyMaterial(THREE, 'stripes', 0x00d66a, PALETTE.yellow, 1.1 / (lowArmLen - 2.4)));
   rollerMesh.castShadow = true;
   lowRollerGroup.add(rollerMesh);
 
-  // Spiral hazard stripes on the lower roller
-  const stripeCount = 9;
-  for (let s = 0; s < stripeCount; s++) {
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(lowRollerRadius + 0.015, 0.05, 8, 20), yellow);
-    ring.rotation.y = Math.PI / 2;
-    ring.position.x = ((s / stripeCount) - 0.5) * (lowArmLen - 3.0);
-    lowRollerGroup.add(ring);
-  }
 
   // End cap bumper on the roller tip
   const lowEndCap = new THREE.Mesh(new THREE.SphereGeometry(lowRollerRadius * 1.15, 16, 16), pink);
@@ -235,9 +229,16 @@ export function createShowdownVisuals(THREE, course) {
   counterWeight.castShadow = true;
   highBarPivot.add(counterWeight);
 
+  // Balloons ring the arena outside the outer edge.
+  const balloonSpots = [];
+  for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2; balloonSpots.push({ x: Math.cos(a) * (OUTER_RADIUS + 7), y: -1 + (i % 4) * 1.6, z: Math.sin(a) * (OUTER_RADIUS + 7), r: 1.3 + (i % 3) * .25 }); }
+  const balloons = balloonField(THREE, balloonSpots);
+  root.add(balloons.mesh);
+
   return {
     root,
     update() {
+      balloons.update(course.time);
       // 1. Sweeper rotations
       lowBarPivot.rotation.y = -course.lowBar.angle;
       highBarPivot.rotation.y = -course.highBar.angle;
@@ -274,6 +275,7 @@ export function createShowdownVisuals(THREE, course) {
       root.traverse(o => {
         if (o.geometry) o.geometry.dispose();
       });
+      balloons.mesh.dispose();
       mats.forEach(m => m.dispose());
     }
   };

@@ -19,7 +19,7 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 import { createCourseState } from './big-fans/course.mjs';
 import { createCourseVisuals } from './big-fans/visuals.mjs';
 import { initializeRacer, updateRace } from './big-fans/race.mjs';
-import { createRollout, advanceRollout, sampleSurface, carryRacer, hitWall, botDecision, RING_WIDTH } from './roll-out/rollout.mjs';
+import { createRollout, advanceRollout, sampleSurface, carryRacer, hitWall, botDecision, RING_WIDTH, LIMIT as ROLLOUT_LIMIT } from './roll-out/rollout.mjs';
 import { createRolloutVisuals } from './roll-out/visuals.mjs';
 import { createCourse as createSlimeCourse, advanceCourse as advanceSlimeCourse, surface as slimeSurface, courseY as slimeCourseY, slimeY as risingSlimeY, obstaclesAt as slimeObstacles, obstacleContact as slimeObstacleContact, botDecision as slimeBotDecision, LIMIT as SLIME_LIMIT } from './slime-climb/course.mjs';
 import { createVisuals as createSlimeVisuals } from './slime-climb/visuals.mjs';
@@ -28,6 +28,7 @@ import { createShowdownVisuals } from './jump-showdown/visuals.mjs';
 import { TRACKS as MUSIC_TRACKS, chooseTrack } from './music/tracks.mjs';
 import { introFrame } from './presentation/intro.mjs';
 import { createCubeCharacter } from './characters/cube-character.mjs';
+import { createSky, candyColumn, PALETTE } from './presentation/fg-style.mjs';
 
 // ==================== 1. КОНФИГУРАЦИЯ СЛОЖНОСТИ И УСКОРЕННЫЙ РЕГЕН ====================
 const DIFFICULTIES = {
@@ -54,7 +55,7 @@ const DIFFICULTIES = {
     stepHoldTime: 1.00,
     fallDuration: 0.80,
     regenDelay: 5.5,      // 5.5 сек на Классике
-    botIQ: 0.72,
+    botIQ: 0.80,
     powerupInterval: 4.5,
     specialTileChance: 0.12,
     scoreMult: 1.5
@@ -68,7 +69,7 @@ const DIFFICULTIES = {
     stepHoldTime: 0.72,
     fallDuration: 0.75,
     regenDelay: 6.5,      // 6.5 сек на Хардкоре
-    botIQ: 0.90,
+    botIQ: 0.97,
     powerupInterval: 4.5,
     specialTileChance: 0.16,
     scoreMult: 2.2
@@ -82,7 +83,7 @@ const DIFFICULTIES = {
     stepHoldTime: 0.82,
     fallDuration: 0.78,
     regenDelay: 4.8,      // быстрый реген в Мега-Хаосе
-    botIQ: 0.82,
+    botIQ: 0.90,
     powerupInterval: 2.8,
     specialTileChance: 0.26,
     scoreMult: 2.5
@@ -198,7 +199,13 @@ const SKINS = [
   { id: 5, title: 'Кубо-самурай',       icon: '👹', c1: 0xff1744, c2: 0xffd700, css1: '#ff1744', css2: '#ffd700', pattern: 'flames',    hat: 'samurai',   eyeCount: 2 },
   { id: 6, title: 'Верховный Чародей',  icon: '🧙‍♂️', c1: 0x26c6da, c2: 0xff80ab, css1: '#26c6da', css2: '#ff80ab', pattern: 'stars',     hat: 'wizard',    eyeCount: 2 },
   { id: 7, title: 'Тропический Ананас', icon: '🍍', c1: 0xffd700, c2: 0x00e676, css1: '#ffd700', css2: '#00e676', pattern: 'diamonds',  hat: 'pineapple', eyeCount: 1 },
-  { id: 8, title: 'Император Короны',   icon: '👑', c1: 0xffd700, c2: 0xb71c1c, css1: '#ffd700', css2: '#b71c1c', pattern: 'diamonds',  hat: 'king',      eyeCount: 2 }
+  { id: 8, title: 'Император Короны',   icon: '👑', c1: 0xffd700, c2: 0xb71c1c, css1: '#ffd700', css2: '#b71c1c', pattern: 'diamonds',  hat: 'king',      eyeCount: 2 },
+  // Костюмы из ассетов SimReady (цвета берутся из самого костюма, принт не нужен)
+  { id: 9,  title: 'Бананокуб',  icon: '🍌', c1: 0xffd93b, c2: 0xffffff, css1: '#ffd93b', css2: '#ffffff', pattern: 'plain', hat: 'banana', eyeCount: 2 },
+  { id: 10, title: 'Пончик',     icon: '🍩', c1: 0xff8fc8, c2: 0xffffff, css1: '#ff8fc8', css2: '#ffffff', pattern: 'plain', hat: 'donut',  eyeCount: 2 },
+  { id: 11, title: 'Кукурузка',  icon: '🌽', c1: 0xffd93b, c2: 0xffffff, css1: '#ffd93b', css2: '#ffffff', pattern: 'plain', hat: 'corn',   eyeCount: 1 },
+  { id: 12, title: 'Бочка',      icon: '🛢️', c1: 0x3a7bd5, c2: 0xffffff, css1: '#3a7bd5', css2: '#ffffff', pattern: 'plain', hat: 'barrel', eyeCount: 2 },
+  { id: 13, title: 'Коробка',    icon: '📦', c1: 0xc8925a, c2: 0xffffff, css1: '#c8925a', css2: '#ffffff', pattern: 'plain', hat: 'box',    eyeCount: 1 }
 ];
 
 function getPlayerComposedSkin() {
@@ -938,7 +945,7 @@ scene.background = null; // в Лобби прозрачный, в матче в
 const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.5, 320);
 
 // Освещение телешоу Fall Guys
-const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x4a148c, 1.15);
+const hemiLight = new THREE.HemisphereLight(0xe3f4ff, 0xd77fb4, 1.25);
 hemiLight.position.set(0, 60, 0);
 scene.add(hemiLight);
 
@@ -968,6 +975,11 @@ scene.add(lobbyKeyLight);
 const slimeGlowLight = new THREE.PointLight(0xff2a85, 2.5, 90);
 slimeGlowLight.position.set(0, -14, 0);
 scene.add(slimeGlowLight);
+
+// Небо шоу: градиентный купол и облака (в том числе под трассой — арена «парит» в небе)
+const showSky = createSky(THREE);
+showSky.root.visible = false;
+scene.add(showSky.root);
 
 // Группы 3D-объектов сцены
 const stadiumGroup = new THREE.Group();
@@ -1053,7 +1065,6 @@ function buildStadiumEnvironment() {
   const pillarRadius = 44;
   const pillarColors = [0x00e5ff, 0xff2a85, 0xffe600, 0xb388ff];
 
-  const pillarGeo = new THREE.CylinderGeometry(2.2, 2.8, 95, 16);
   const ringBandGeo = new THREE.TorusGeometry(2.55, 0.32, 10, 24);
   ringBandGeo.rotateX(Math.PI / 2);
 
@@ -1065,16 +1076,11 @@ function buildStadiumEnvironment() {
     const pGroup = new THREE.Group();
     pGroup.position.set(px, 22, pz);
 
-    const pMat = new THREE.MeshStandardMaterial({
-      color: 0x6278a6,
-      roughness: 0.5,
-      metalness: 0.25
-    });
-    const pillar = new THREE.Mesh(pillarGeo, pMat);
-    pGroup.add(pillar);
+    // Колонна-леденец в цветах шоу вместо серого металла
+    const neonCol = pillarColors[i % pillarColors.length];
+    pGroup.add(candyColumn(THREE, 95, 2.4, PALETTE.white, neonCol));
 
     // Неоновые светящиеся кольца вдоль каждой колонны
-    const neonCol = pillarColors[i % pillarColors.length];
     const neonMat = new THREE.MeshBasicMaterial({ color: neonCol });
     for (let h = -30; h <= 35; h += 13) {
       const band = new THREE.Mesh(ringBandGeo, neonMat);
@@ -1918,7 +1924,7 @@ function startMatch(options = {}) {
   state.slimeCourse = null;
   if (state.rolloutVisuals) { state.rolloutVisuals.dispose(); state.rolloutVisuals = null; }
   state.rollout = null;
-  if (slimeSeaMesh) { slimeSeaMesh.material.color.setHex(0xff2a85); slimeSeaMesh.material.emissive.setHex(0xc80055); }
+  if (slimeSeaMesh) { slimeSeaMesh.material.color.setHex(0xff2a85); slimeSeaMesh.material.emissive.setHex(0xc80055); slimeSeaMesh.position.z = 0; }
   document.querySelector('.brand-pill .pill-title').textContent='ГЕКСА-АРЕНА 3D';
   document.querySelector('.layer-pill .pill-label').textContent='ЯРУС';
   if (state.raceVisuals) { state.raceVisuals.dispose(); state.raceVisuals = null; }
@@ -1963,8 +1969,9 @@ function startMatch(options = {}) {
   actorsGroup.visible = true;
   fxGroup.visible = true;
   // A soft daylight backdrop separates the playfield from the distant scenery.
-  scene.background = new THREE.Color(0xa6dbee);
-  scene.fog = new THREE.FogExp2(0xa6dbee, 0.0030);
+  // Цвет тумана совпадает с горизонтом неба, дальние объекты растворяются в нём
+  scene.background = new THREE.Color(0xc7f0ff);
+  scene.fog = new THREE.FogExp2(0xc7f0ff, 0.0026);
 
   clearActorsAndFX();
   buildArena3D(config);
@@ -2014,6 +2021,8 @@ function startMatch(options = {}) {
       topLayer.yHeight,
       bTile.z
     );
+    // Сильнейшие боты задают темп, остальные чуть слабее: поле растягивается, но лидеры давят на игрока
+    bot.botSkill = Math.min(1, Math.max(.25, config.botIQ + .16 - (i % 6) * .06));
     state.actors.push(bot);
   }
 
@@ -2040,13 +2049,13 @@ function startBigFans(mode = 'single') {
   document.querySelector('.brand-pill .pill-title').textContent = 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ';
   document.querySelector('.layer-pill .pill-label').textContent = 'КОНТРОЛЬНЫЕ ТОЧКИ';
   stadiumPillars.forEach(pillar => { pillar.visible = false; });
-  slimeSeaMesh.material.color.setHex(0x151c42); slimeSeaMesh.material.emissive.setHex(0x090d25);
   // The race has a single ground height and its own arena and rules.
   arenaGroup.clear();
   state.layers = [{ index: 0, yHeight: 0, list: [], map: new Map() }];
   state.race = createCourseState();
   state.raceFinishNotice = 0;
   document.getElementById('race-finish-notice')?.remove();
+  slimeSeaMesh.position.z = 79; // море слизи под всей трассой, а не только под стартом
   state.raceVisuals = createCourseVisuals(THREE, state.race);
   arenaGroup.add(state.raceVisuals.root);
   state.raceVisuals.update();
@@ -2173,7 +2182,6 @@ function startRollOut(mode = 'single_rollout', qualifiers = null) {
   document.querySelector('.brand-pill .pill-title').textContent='ВРАЩАЮЩИЕСЯ БАРАБАНЫ';
   document.querySelector('.layer-pill .pill-label').textContent='КВАЛИФИКАЦИЯ';
   stadiumPillars.forEach(pillar => { pillar.visible = false; });
-  slimeSeaMesh.material.color.setHex(0x151c42); slimeSeaMesh.material.emissive.setHex(0x090d25);
   arenaGroup.clear();
   state.layers = [{ index:0, yHeight:0, list:[], map:new Map() }];
   state.rollout = createRollout();
@@ -2200,7 +2208,7 @@ function updateRolloutHUD() {
   setText('hud-mode-label', 'ВРАЩАЮЩИЕСЯ БАРАБАНЫ • ВЫЖИВАНИЕ');
   setText('hud-alive', `${count} / ${state.actors.length}`);
   setText('hud-layer', `${state.rolloutQuota} проходят`);
-  setText('hud-timer', formatTime(state.elapsed));
+  setText('hud-timer', formatTime(Math.max(0, ROLLOUT_LIMIT - state.elapsed)));
 }
 function finishRollOut() {
   const survivors=state.actors.filter(a=>a.alive);
@@ -2294,7 +2302,7 @@ function updateRollOut(dt) {
   }
   for(const a of alive)a.bumpCooldown=Math.max(0,a.bumpCooldown-dt);
   updateFX(dt);updateThirdPersonCamera(dt);update3DNameplates();updateRolloutHUD();
-  if(alive.length<=state.rolloutQuota || state.elapsed>=150)finishRollOut();
+  if(alive.length<=state.rolloutQuota || state.elapsed>=ROLLOUT_LIMIT)finishRollOut();
 }
 
 // ==================== SLIME CLIMB TEST RACE ====================
@@ -4677,6 +4685,8 @@ function animate(now) {
   const wantFov = lobbyView ? 30 : 52;
   if (camera.fov !== wantFov) { camera.fov = wantFov; camera.updateProjectionMatrix(); }
   lobbyKeyLight.intensity = lobbyView ? 1.7 : 0;
+  showSky.root.visible = !lobbyView;
+  if (!lobbyView) showSky.update(nowSec, camera);
   if (lobbyView) {
     updateLobby3D(dt, nowSec);
   } else {

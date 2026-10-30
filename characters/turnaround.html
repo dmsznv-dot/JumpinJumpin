@@ -3,8 +3,9 @@
 <!-- Dev page: renders the cube in the four model-sheet views (front, left side, back, three-quarter) to compare against the sheet.
      Query: ?hat=dino&pattern=polka&c1=60cce5&pose=idle -->
 <canvas></canvas><div class="labels"><span>FRONT</span><span>LEFT SIDE</span><span>BACK</span><span>THREE-QUARTER</span></div>
+<script type="importmap">{"imports":{"three":"../vendor/three.module.min.js"}}</script>
 <script type="module">
-import * as THREE from '../vendor/three.module.min.js';import {createCubeCharacter} from './cube-character.mjs';import {printsReady} from './cube-print.mjs';
+import * as THREE from '../vendor/three.module.min.js';import {createCubeCharacter} from './cube-character.mjs';import {printsReady} from './cube-print.mjs';import {preloadCostume} from './cube-wardrobe.mjs';
 const q=new URLSearchParams(location.search),canvas=document.querySelector('canvas');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xe9e9e9);
@@ -22,4 +23,5 @@ function draw(){
  views.forEach((yaw,i)=>{rig.root.rotation.y=yaw;rig.root.updateMatrixWorld(true);renderer.setViewport(i*vw,0,vw,h);renderer.setScissor(i*vw,0,vw,h);renderer.render(scene,camera);});
 }
 addEventListener('resize',draw);draw();printsReady().then(draw); // print masks rasterize asynchronously
+preloadCostume(THREE,skin.hat).then(draw,draw); // asset costumes arrive as GLB
 </script></html>

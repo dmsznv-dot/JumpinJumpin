@@ -1,0 +1,144 @@
+{
+ "cache": "~/.cache/jumpin-costumes",
+ "cube": {
+  "halfW": 0.81,
+  "halfH": 0.785,
+  "halfD": 0.67,
+  "suit": 0.06,
+  "window": 0.035,
+  "face": {
+   "w": 1.075,
+   "h": 0.605,
+   "z": 0.585
+  }
+ },
+ "defaults": {
+  "colors": 4,
+  "saturation": 1.3,
+  "lift": 0.18,
+  "points": 40,
+  "clean": 3
+ },
+ "costumes": {
+  "hotdog": {
+   "asset": "food_prepared_hotDog_a01",
+   "title": "Хот-дог",
+   "icon": "🌭",
+   "rotate": [
+    90,
+    0,
+    0
+   ],
+   "margin": [
+    1.08,
+    1.28,
+    1.12
+   ]
+  },
+  "banana": {
+   "asset": "food_produce_banana_a01",
+   "title": "Бананокуб",
+   "icon": "🍌",
+   "rotate": [
+    90,
+    0,
+    0
+   ],
+   "margin": [
+    1.1,
+    1.3,
+    1.15
+   ]
+  },
+  "corn": {
+   "asset": "food_produce_corn_a01",
+   "title": "Кукурузка",
+   "icon": "🌽",
+   "rotate": [
+    90,
+    0,
+    0
+   ],
+   "margin": [
+    1.08,
+    1.3,
+    1.1
+   ]
+  },
+  "donut": {
+   "asset": "food_prepared_donut_a01",
+   "title": "Пончик",
+   "icon": "🍩",
+   "rotate": [
+    90,
+    0,
+    0
+   ],
+   "margin": [
+    1.18,
+    1.16,
+    1.1
+   ]
+  },
+  "cupcake": {
+   "asset": "food_prepared_cupcake_a01",
+   "title": "Капкейк",
+   "icon": "🧁",
+   "margin": [
+    1.1,
+    1.18,
+    1.1
+   ]
+  },
+  "strawberry_suit": {
+   "asset": "food_produce_strawberry_a01",
+   "title": "Клубничный костюм",
+   "icon": "🍓",
+   "rotate": [
+    0,
+    0,
+    90
+   ],
+   "margin": [
+    1.1,
+    1.2,
+    1.12
+   ]
+  },
+  "avocado": {
+   "asset": "food_produce_avocado_b01",
+   "title": "Авокадо",
+   "icon": "🥑",
+   "rotate": [
+    0,
+    0,
+    90
+   ],
+   "margin": [
+    1.1,
+    1.22,
+    1.12
+   ]
+  },
+  "barrel": {
+   "asset": "drum_plastic_blue_a01",
+   "title": "Бочка",
+   "icon": "🛢️",
+   "margin": [
+    1.08,
+    1.12,
+    1.08
+   ]
+  },
+  "box": {
+   "asset": "box_cardboard_a01",
+   "title": "Коробка",
+   "icon": "📦",
+   "margin": [
+    1.08,
+    1.1,
+    1.1
+   ]
+  }
+ }
+}

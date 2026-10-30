@@ -1,154 +1,143 @@
 import { COURSE } from './course.mjs';
+import { mergeGeometries } from '../vendor/BufferGeometryUtils.js';
+import { PALETTE, candyMaterial, softMaterial, roundedSlabGeometry, foamRail, candyColumn, inflatableArch, balloonField } from '../presentation/fg-style.mjs';
 
 // Three.js is supplied by the existing game so the level does not load a second engine.
 export function createCourseVisuals(THREE, course) {
   const root = new THREE.Group();
-  const pink = new THREE.MeshStandardMaterial({ color: 0xff398e, roughness: 0.55 });
-  const cyan = new THREE.MeshStandardMaterial({ color: 0x25d6e3, roughness: 0.48 });
-  const yellow = new THREE.MeshStandardMaterial({ color: 0xffda34, roughness: 0.48 });
-  const purple = new THREE.MeshStandardMaterial({ color: 0x7845d0, roughness: 0.5 });
-  const white = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.55 });
-  const lightPink = new THREE.MeshStandardMaterial({ color: 0xffc8df, roughness: 0.42 });
-  const darkBlue = new THREE.MeshStandardMaterial({ color: 0x294c86, roughness: 0.55 });
-  const metal = new THREE.MeshStandardMaterial({color:0x6383ae,roughness:.4,metalness:.35});
-  const box = (w,h,d,mat,x,y,z,parent=root) => {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
-    mesh.position.set(x,y,z); mesh.castShadow = true; mesh.receiveShadow = true;
-    parent.add(mesh); return mesh;
-  };
-  [COURSE.start, ...COURSE.checkpoints, COURSE.finish].forEach((pad, i) => {
-    box(pad.halfWidth*2, 0.65, pad.halfLength*2, i === 4 ? yellow : cyan, pad.x, -0.325, pad.z);
-    box(pad.halfWidth*2, 0.12, 0.25, pink, pad.x, 0.06, pad.z-pad.halfLength+0.25);
-    // Seams and a padded rim remain inside the walkable platform footprint.
-    for (let stripe = -2; stripe <= 2; stripe++) {
-      box(.07, .015, Math.max(.1, pad.halfLength*2-.55), white,
-        pad.x+stripe*pad.halfWidth*.32, .008, pad.z);
-    }
-    for (const side of [-1,1]) box(.28,.2,pad.halfLength*2-.3,lightPink,
-      pad.x+side*(pad.halfWidth-.18),.04,pad.z);
-    // Structural supports sit below the walking surface and remain out of the route.
-    for (const side of [-1,1]) {
-      const leg=new THREE.Mesh(new THREE.CylinderGeometry(.36,.48,3.1,16),metal);
-      leg.position.set(pad.x+side*(pad.halfWidth-1.4),-2.2,pad.z);root.add(leg);
-      const foot=new THREE.Mesh(new THREE.SphereGeometry(.48,16,10),yellow);
-      foot.position.set(pad.x+side*(pad.halfWidth-1.4),-3.72,pad.z);root.add(foot);
-    }
-    if (i > 0 && i < 4) {
-      box(0.3, 3.8, 0.3, white, pad.x-pad.halfWidth+1, 1.9, pad.z);
-      box(2, 1.2, 0.12, pink, pad.x-pad.halfWidth+2, 3.0, pad.z);
-    }
-  });
-  // Finish arch and striped finish line.
-  box(.7, 6, .7, pink, -8, 3, COURSE.finish.z);
-  box(.7, 6, .7, pink, 8, 3, COURSE.finish.z);
-  box(16.7, .8, .7, pink, 0, 6, COURSE.finish.z);
-  // Support posts and backboard for the FINISH marquee
-  box(.6, 2.2, .6, pink, -4, 7.1, COURSE.finish.z);
-  box(.6, 2.2, .6, pink, 4, 7.1, COURSE.finish.z);
-  box(8.6, 2.3, .4, pink, 0, 7.45, COURSE.finish.z);
-  for (let i=0; i<12; i++) box(1.3,.06,.8,i%2 ? purple : white, -7.15+i*1.3,.04,COURSE.finish.z);
+  const owned = []; // geometries created here (materials are shared through the style cache)
+  const add = (mesh, parent = root) => { parent.add(mesh); if (mesh.geometry) owned.push(mesh.geometry); return mesh; };
+  const white = softMaterial(THREE, PALETTE.white), yellow = softMaterial(THREE, PALETTE.yellow, .4);
 
-  // A bright marquee and floating confetti make the finish readable from afar.
-  const signCanvas = document.createElement('canvas');
-  signCanvas.width = 1024; signCanvas.height = 256;
-  const ctx = signCanvas.getContext('2d');
-  ctx.fillStyle = '#713aca'; ctx.fillRect(0, 0, 1024, 256);
-  ctx.strokeStyle = '#ffdc38'; ctx.lineWidth = 14; ctx.strokeRect(8, 8, 1008, 240);
-  ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.font = 'bold 150px sans-serif'; ctx.fillText('FINISH!', 512, 132);
-  const signTexture = new THREE.CanvasTexture(signCanvas);
-  signTexture.colorSpace = THREE.SRGBColorSpace;
-  const signMat = new THREE.MeshBasicMaterial({
-    map: signTexture,
-    side: THREE.FrontSide,
-    polygonOffset: true,
-    polygonOffsetFactor: -1,
-    polygonOffsetUnits: -1
+  // Pads: pillowy slabs with a printed floor — chevrons on the start, checks on checkpoints and finish.
+  const floors = [
+    candyMaterial(THREE, 'chevron', PALETTE.cyan, 0x9ff0ff, 4),
+    candyMaterial(THREE, 'check', PALETTE.yellow, 0xfff1a8, 4),
+    candyMaterial(THREE, 'check', PALETTE.lilac, 0xe7dcff, 4),
+    candyMaterial(THREE, 'check', PALETTE.mint, 0xc8fbe9, 4),
+    candyMaterial(THREE, 'check', PALETTE.pink, 0xffd1e8, 3)
+  ];
+  const railMat = candyMaterial(THREE, 'stripes', PALETTE.pink, PALETTE.white, 1.2);
+  [COURSE.start, ...COURSE.checkpoints, COURSE.finish].forEach((pad, i) => {
+    const slab = add(new THREE.Mesh(roundedSlabGeometry(THREE, pad.halfWidth * 2, pad.halfLength * 2, .8, 1.1), floors[i]));
+    slab.position.set(pad.x, 0, pad.z); slab.receiveShadow = true; slab.castShadow = true;
+    // Half-sunk foam trim along the open sides; purely visual, the edge is still an edge.
+    for (const side of [-1, 1]) {
+      const rail = add(foamRail(THREE, pad.halfLength * 2 - 1.4, .2, railMat));
+      rail.rotation.y = Math.PI / 2; rail.position.set(pad.x + side * (pad.halfWidth - .15), -.08, pad.z);
+    }
+    for (const side of [-1, 1]) {
+      const leg = add(candyColumn(THREE, 9, .45, PALETTE.white, i % 2 ? PALETTE.purple : PALETTE.pink));
+      leg.position.set(pad.x + side * (pad.halfWidth - 1.6), -5.3, pad.z);
+    }
   });
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(8, 2), signMat);
-  sign.position.set(0, 7.45, COURSE.finish.z - 0.22); sign.rotation.y = Math.PI; root.add(sign);
-  const backSign = new THREE.Mesh(new THREE.PlaneGeometry(8, 2), signMat);
-  backSign.position.set(0, 7.45, COURSE.finish.z + 0.22); root.add(backSign);
+  const arches = [
+    [COURSE.start.z + COURSE.start.halfLength - .6, 'СТАРТ', PALETTE.cyan, PALETTE.purple],
+    ...COURSE.checkpoints.map((pad, i) => [pad.z - pad.halfLength + .8, `ЧЕКПОИНТ ${i + 1}`, PALETTE.yellow, PALETTE.hotPink]),
+    [COURSE.finish.z, 'ФИНИШ!', PALETTE.pink, PALETTE.purple]
+  ];
+  for (const [z, label, a, bg] of arches) {
+    const arch = inflatableArch(THREE, { width: 19.2, height: 7.4, a, b: PALETTE.white, label, labelBg: bg });
+    arch.position.set(0, 0, z); root.add(arch);
+    arch.traverse(o => { if (o.geometry) owned.push(o.geometry); });
+  }
+  // Checkered finish line (one printed strip).
+  const line = add(new THREE.Mesh(new THREE.PlaneGeometry(15.6, 1.6), candyMaterial(THREE, 'check', 0x2b1a5a, PALETTE.white, 1.6)));
+  line.rotation.x = -Math.PI / 2; line.position.set(0, .03, COURSE.finish.z + .9);
+  line.geometry.attributes.uv.array.forEach((v, k, arr) => { arr[k] = v * (k % 2 ? 1.6 : 15.6); });
+
+  // Confetti that keeps floating over the finish.
   const decorations = [];
-  const colors = [pink, cyan, yellow, white];
+  const confettiGeo = new THREE.BoxGeometry(.2, .34, .04); owned.push(confettiGeo);
+  const confetti = new THREE.InstancedMesh(confettiGeo, new THREE.MeshStandardMaterial({ roughness: .5 }), 24);
+  const confettiColor = new THREE.Color(), dummy = new THREE.Object3D();
   for (let i = 0; i < 24; i++) {
     const a = i * 2.399, radius = 3 + (i % 4) * 1.3;
-    const piece = box(.20, .34, .12, colors[i % colors.length], Math.cos(a)*radius, 5+(i%5)*.7, COURSE.finish.z+Math.sin(a)*1.5);
-    decorations.push({mesh:piece, baseY:piece.position.y, phase:i*.8});
+    confetti.setColorAt(i, confettiColor.setHex([PALETTE.pink, PALETTE.cyan, PALETTE.yellow, PALETTE.white][i % 4]));
+    decorations.push({ x: Math.cos(a) * radius, baseY: 6 + (i % 5) * .7, z: COURSE.finish.z + Math.sin(a) * 1.5, phase: i * .8 });
   }
-  const bulbMat = new THREE.MeshStandardMaterial({color:0x756948, emissive:0x000000, roughness:.5});
-  for (const side of [-1, 1]) {
-    for (let i=0; i<5; i++) {
-      const bulb = new THREE.Mesh(new THREE.SphereGeometry(.2,12,8), bulbMat);
-      bulb.position.set(side*8, .8+i*1.1, COURSE.finish.z-.42); root.add(bulb);
-    }
-  }
+  root.add(confetti);
+  // Balloons line the course on both sides, well clear of the side fans.
+  const spots = [];
+  for (let z = 6; z < COURSE.finish.z; z += 13) for (const side of [-1, 1]) spots.push({ x: side * (21 + (z % 3)), y: 1 + (z % 5), z: z + side * 3, r: 1.3 + (z % 4) * .2 });
+  const balloons = balloonField(THREE, spots);
+  root.add(balloons.mesh); owned.push(balloons.mesh.geometry);
 
+  const bladeMats = [candyMaterial(THREE, 'bands', PALETTE.pink, PALETTE.white, 1.6), candyMaterial(THREE, 'bands', PALETTE.cyan, PALETTE.white, 1.6)];
+  const hubMat = candyMaterial(THREE, 'dots', PALETTE.yellow, PALETTE.orange, 1.2);
+  const metal = softMaterial(THREE, 0x6f86c9, .4);
   const fanVisuals = course.fans.map((fan, i) => {
     const group = new THREE.Group(); group.position.set(fan.x, 0, fan.z); root.add(group);
     const rotor = new THREE.Group(); group.add(rotor);
-    const hub = new THREE.Mesh(new THREE.CylinderGeometry(fan.hubRadius,fan.hubRadius,.5,32), yellow);
-    hub.position.y = -.25; hub.castShadow = true; rotor.add(hub);
-    const engine = new THREE.Mesh(new THREE.CylinderGeometry(fan.hubRadius*.72,fan.hubRadius*.52,1.3,24),metal);
-    engine.position.y=-1.13;rotor.add(engine);
-    const engineRim = new THREE.Mesh(new THREE.TorusGeometry(fan.hubRadius*.62,.08,8,24),white);
-    engineRim.rotation.x=Math.PI/2;engineRim.position.y=-1.75;rotor.add(engineRim);
-    const hubTrim = new THREE.Mesh(new THREE.TorusGeometry(fan.hubRadius*.75,.08,8,32), white);
-    hubTrim.rotation.x = Math.PI/2; hubTrim.position.y=.012; rotor.add(hubTrim);
-    const hubCenter = new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,.08,16), darkBlue);
-    hubCenter.position.y=.04;rotor.add(hubCenter);
-    // Blades are tapered to match the widening collision surface.
-    for (let n=0; n<fan.blades; n++) {
-      const shape = new THREE.Shape();
-      shape.moveTo(fan.hubRadius,-fan.innerHalfWidth); shape.lineTo(fan.radius,-fan.outerHalfWidth);
-      shape.lineTo(fan.radius,fan.outerHalfWidth); shape.lineTo(fan.hubRadius,fan.innerHalfWidth); shape.closePath();
-      const geo = new THREE.ExtrudeGeometry(shape, {depth:.5, bevelEnabled:false});
+    const hub = add(new THREE.Mesh(roundedHub(THREE, fan.hubRadius), hubMat), rotor);
+    hub.castShadow = true; hub.receiveShadow = true;
+    const engine = add(new THREE.Mesh(new THREE.CylinderGeometry(fan.hubRadius * .72, fan.hubRadius * .52, 1.3, 20), metal), rotor);
+    engine.position.y = -1.13;
+    const cap = add(new THREE.Mesh(new THREE.TorusGeometry(fan.hubRadius * .75, .1, 8, 28), white), rotor);
+    cap.rotation.x = Math.PI / 2; cap.position.y = .02;
+    // Blades are tapered to match the widening collision surface; a small bevel softens them like foam.
+    // All blades (and all tip bumpers) of a fan are merged: one draw call each instead of four.
+    const bladeGeos = [], tipGeos = [];
+    for (let n = 0; n < fan.blades; n++) {
+      const shape = new THREE.Shape(), bv = .1;
+      shape.moveTo(fan.hubRadius, -fan.innerHalfWidth + bv); shape.lineTo(fan.radius - bv, -fan.outerHalfWidth + bv);
+      shape.lineTo(fan.radius - bv, fan.outerHalfWidth - bv); shape.lineTo(fan.hubRadius, fan.innerHalfWidth - bv); shape.closePath();
+      const geo = new THREE.ExtrudeGeometry(shape, { depth: .3, bevelEnabled: true, bevelSize: bv, bevelThickness: bv, bevelSegments: 2 });
       // Extruded XY -> horizontal XZ with its top at y=0.
-      geo.rotateX(Math.PI/2);
-      const blade = new THREE.Mesh(geo, i%2 ? cyan : pink);
-      blade.rotation.y = -n * Math.PI*2/fan.blades;
-      blade.castShadow = true; blade.receiveShadow = true; rotor.add(blade);
-      // A narrow inset highlight reads as a seam, with no extra collision surface.
-      const seam = new THREE.Mesh(new THREE.BoxGeometry((fan.radius-fan.hubRadius)*.72,.018,.055), white);
-      const mid=(fan.hubRadius+fan.radius)*.5, a=n*Math.PI*2/fan.blades;
-      seam.position.set(Math.cos(a)*mid,.012,Math.sin(a)*mid); seam.rotation.y=-a; rotor.add(seam);
+      geo.rotateX(Math.PI / 2); geo.translate(0, -bv, 0);
+      const a = n * Math.PI * 2 / fan.blades;
+      bladeGeos.push(geo.rotateY(-a));
+      // Soft bumper on the blade tip.
+      const tip = new THREE.CapsuleGeometry(.2, fan.outerHalfWidth * 2 - .4, 4, 10);
+      tip.rotateZ(Math.PI / 2); tip.rotateY(-a + Math.PI / 2); tip.translate(Math.cos(a) * (fan.radius - .1), -.12, Math.sin(a) * (fan.radius - .1));
+      tipGeos.push(tip);
     }
+    const blades = add(new THREE.Mesh(mergeGeometries(bladeGeos), bladeMats[i % 2]), rotor);
+    blades.castShadow = true; blades.receiveShadow = true;
+    add(new THREE.Mesh(mergeGeometries(tipGeos), softMaterial(THREE, PALETTE.yellow, .4)), rotor);
+    [...bladeGeos, ...tipGeos].forEach(g => g.dispose());
     let sweeper = null;
     if (fan.beam) {
       sweeper = new THREE.Group(); group.add(sweeper);
-      const bar=new THREE.Mesh(new THREE.CylinderGeometry(.275,.275,fan.radius*2,24),purple);
-      bar.rotation.z=Math.PI/2;bar.position.y=.52;bar.castShadow=true;sweeper.add(bar);
-      const boss=new THREE.Mesh(new THREE.CylinderGeometry(.52,.56,1.0,24),yellow);
-      boss.position.y=.5;sweeper.add(boss);
-      for(const side of [-1,1]){
-        const end=new THREE.Mesh(new THREE.SphereGeometry(.275,16,12),lightPink);
-        end.position.set(side*fan.radius,.52,0);sweeper.add(end);
-        for(let j=1;j<=3;j++){
-          const band=new THREE.Mesh(new THREE.TorusGeometry(.28,.035,8,20),white);
-          band.rotation.y=Math.PI/2;band.position.set(side*fan.radius*j/4,.52,0);sweeper.add(band);
-        }
+      const barMat = candyMaterial(THREE, 'bands', PALETTE.purple, PALETTE.white, .8 / (fan.radius * 2));
+      const bar = add(new THREE.Mesh(new THREE.CylinderGeometry(.275, .275, fan.radius * 2, 24), barMat), sweeper);
+      bar.rotation.z = Math.PI / 2; bar.position.y = .52; bar.castShadow = true;
+      const boss = add(new THREE.Mesh(new THREE.CylinderGeometry(.52, .56, 1.0, 24), yellow), sweeper);
+      boss.position.y = .5;
+      for (const side of [-1, 1]) {
+        const end = add(new THREE.Mesh(new THREE.SphereGeometry(.34, 16, 12), softMaterial(THREE, PALETTE.pink)), sweeper);
+        end.position.set(side * fan.radius, .52, 0);
       }
     }
-    return {rotor,sweeper};
+    return { rotor, sweeper };
   });
+  let party = 0;
   return {
     root,
-    celebrateFinish() { bulbMat.color.setHex(0xffed91); bulbMat.emissive.setHex(0xffbd12); bulbMat.emissiveIntensity = 2; },
+    celebrateFinish() { party = 1; },
     update() {
-      decorations.forEach(({mesh, baseY, phase}) => {
-        mesh.position.y = baseY + Math.sin(course.time*1.6+phase)*.28;
-        mesh.rotation.z = course.time*.6+phase;
+      const spin = party ? 3 : 1;
+      decorations.forEach(({ x, baseY, z, phase }, i) => {
+        dummy.position.set(x, baseY + Math.sin(course.time * 1.6 * spin + phase) * .28, z);
+        dummy.rotation.z = course.time * .6 * spin + phase; dummy.updateMatrix(); confetti.setMatrixAt(i, dummy.matrix);
       });
-      course.fans.forEach((fan,i) => {
+      confetti.instanceMatrix.needsUpdate = true;
+      balloons.update(course.time);
+      course.fans.forEach((fan, i) => {
         fanVisuals[i].rotor.rotation.y = -fan.angle;
         if (fanVisuals[i].sweeper) fanVisuals[i].sweeper.rotation.y = -fan.beamAngle;
       });
     },
     dispose() {
-      root.traverse(obj => { if (obj.geometry) obj.geometry.dispose(); });
-      [pink,cyan,yellow,purple,white,lightPink,darkBlue,metal,signMat,bulbMat].forEach(m => m.dispose());
-      signTexture.dispose();
+      owned.forEach(g => g.dispose()); balloons.mesh.dispose(); confetti.material.dispose(); confetti.dispose();
+      root.traverse(o => { if (o.material?.userData.owned) { o.material.map?.dispose(); o.material.dispose(); } });
     }
   };
 }
-
+// Hub: a cushion with a rounded top edge, top face at y = 0.
+function roundedHub(THREE, r) {
+  const pts = [new THREE.Vector2(0, -.5), new THREE.Vector2(r, -.5)];
+  for (let i = 0; i <= 6; i++) { const a = i / 6 * Math.PI / 2; pts.push(new THREE.Vector2(r - .18 + Math.cos(a) * .18, -.18 + Math.sin(a) * .18)); }
+  pts.push(new THREE.Vector2(0, 0));
+  return new THREE.LatheGeometry(pts, 32);
+}

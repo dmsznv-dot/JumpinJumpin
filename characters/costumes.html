@@ -1,0 +1,16 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Костюмы из ассетов</title>
+<style>body{margin:0;background:#e9e9e9;font:12px/1.2 system-ui;color:#555}canvas{display:block;width:100vw;height:56vw}.labels{display:grid;grid-template-columns:repeat(5,1fr);text-align:center;letter-spacing:.08em}</style>
+<!-- Dev page: every SimReady-based costume from characters/costume-manifest.mjs, three-quarter view. Rebuild with tools/costumes/build.py. -->
+<script type="importmap">{"imports":{"three":"../vendor/three.module.min.js"}}</script>
+<canvas></canvas><div class="labels"></div>
+<script type="module">
+import * as THREE from '../vendor/three.module.min.js';import {createCubeCharacter} from './cube-character.mjs';import {preloadCostume} from './cube-wardrobe.mjs';import {COSTUME_ASSETS} from './costume-manifest.mjs';
+const ids=Object.keys(COSTUME_ASSETS),canvas=document.querySelector('canvas'),cols=5,rows=Math.ceil(ids.length/cols);
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;
+const scene=new THREE.Scene();scene.background=new THREE.Color(0xe9e9e9);scene.add(new THREE.HemisphereLight(0xffffff,0xb9b9b9,2.1));const key=new THREE.DirectionalLight(0xfff4e6,2.2);key.position.set(2.5,6,4);scene.add(key);
+ids.forEach((id,i)=>{const rig=createCubeCharacter(THREE,{skin:{hat:id,pattern:'plain',c1:0xffdb20,c2:0xf2596e}});rig.blobShadow.visible=false;rig.animate(0,{pose:'idle'});rig.root.position.set((i%cols-(cols-1)/2)*2.6,-Math.floor(i/cols)*3.1,0);rig.root.rotation.y=.5;scene.add(rig.root);});
+document.querySelector('.labels').innerHTML=ids.map(id=>`<span>${COSTUME_ASSETS[id].icon} ${COSTUME_ASSETS[id].title}<br>${COSTUME_ASSETS[id].tris} △</span>`).join('');
+const camera=new THREE.OrthographicCamera(-cols*1.3,cols*1.3,1.9,-rows*3.1+1.3,.1,100);camera.position.set(0,1,20);camera.lookAt(0,1,0);
+function draw(){const w=canvas.clientWidth,h=canvas.clientHeight;renderer.setSize(w,h,false);const aspect=w/h,hh=cols*1.3/aspect;camera.top=1.9;camera.bottom=1.9-2*hh;camera.updateProjectionMatrix();renderer.render(scene,camera);}
+addEventListener('resize',draw);draw();Promise.allSettled(ids.map(id=>preloadCostume(THREE,id))).then(()=>setTimeout(draw,30));
+</script></html>
