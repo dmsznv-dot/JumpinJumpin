@@ -16,19 +16,32 @@ import { createGamepadReader } from './controls/gamepad.mjs';
 
 import * as THREE from 'three';
 import { GLTFLoader } from './vendor/GLTFLoader.js';
-import { createCourseState } from './big-fans/course.mjs';
+import { createCourseState, surfaceAt as bigFansSurfaceAt } from './big-fans/course.mjs';
 import { createCourseVisuals } from './big-fans/visuals.mjs';
 import { initializeRacer, updateRace } from './big-fans/race.mjs';
+import { initRacer, updateObstacleRace } from './race-kit/obstacle-race.mjs';
+import { createDoorDash, LIMIT as DOOR_DASH_LIMIT, FINISH_Z as DOOR_DASH_FINISH } from './door-dash/course.mjs';
+import { createDoorDashVisuals } from './door-dash/visuals.mjs';
+import { createGateCrash, LIMIT as GATE_CRASH_LIMIT, FINISH_Z as GATE_CRASH_FINISH } from './gate-crash/course.mjs';
+import { createGateCrashVisuals } from './gate-crash/visuals.mjs';
+import { createSeeSaw, LIMIT as SEE_SAW_LIMIT, FINISH_Z as SEE_SAW_FINISH } from './see-saw/course.mjs';
+import { createSeeSawVisuals } from './see-saw/visuals.mjs';
+import { createRollOn, LIMIT as ROLL_ON_LIMIT, FINISH_Z as ROLL_ON_FINISH } from './roll-on/course.mjs';
+import { createRollOnVisuals } from './roll-on/visuals.mjs';
 import { createRollout, advanceRollout, sampleSurface, carryRacer, hitWall, botDecision, RING_WIDTH, LIMIT as ROLLOUT_LIMIT } from './roll-out/rollout.mjs';
 import { createRolloutVisuals } from './roll-out/visuals.mjs';
 import { createCourse as createSlimeCourse, advanceCourse as advanceSlimeCourse, surface as slimeSurface, courseY as slimeCourseY, slimeY as risingSlimeY, obstaclesAt as slimeObstacles, obstacleContact as slimeObstacleContact, botDecision as slimeBotDecision, LIMIT as SLIME_LIMIT } from './slime-climb/course.mjs';
 import { createVisuals as createSlimeVisuals } from './slime-climb/visuals.mjs';
 import { createShowdown, advanceShowdown, sampleSurface as showdownSurface, checkSweeperHit as showdownSweeperHit, botDecision as showdownBotDecision, LIMIT as SHOWDOWN_LIMIT } from './jump-showdown/showdown.mjs';
 import { createShowdownVisuals } from './jump-showdown/visuals.mjs';
-import { TRACKS as MUSIC_TRACKS, chooseTrack } from './music/tracks.mjs';
+import { TRACKS as MUSIC_TRACKS } from './music/tracks.mjs';
+import { SONGS, pickMusic } from './music/songs.mjs';
 import { introFrame } from './presentation/intro.mjs';
 import { createCubeCharacter } from './characters/cube-character.mjs';
+import { PRINT_CATALOG } from './characters/print-catalog.mjs';
 import { createSky, candyColumn, PALETTE } from './presentation/fg-style.mjs';
+import { setupColour, bakeSkyEnvironment, followShadow, AdaptiveResolution } from './presentation/render-quality.mjs';
+import { createPostFX, isLowPowerDevice } from './presentation/post-fx.mjs';
 
 // ==================== 1. КОНФИГУРАЦИЯ СЛОЖНОСТИ И УСКОРЕННЫЙ РЕГЕН ====================
 const DIFFICULTIES = {
@@ -147,6 +160,8 @@ const PATTERN_ITEMS = [
 [
  ['clouds','Пушистые облака','☁️'],['leaves','Листья','🌿'],['circuit','Микросхема','🔌'],['hexagons','Медовые соты','🍯']
 ].forEach(([pattern,title,icon])=>PATTERN_ITEMS.push({id:'pat_'+pattern,title,icon,pattern,rarity:'ОБЫЧНЫЙ',unlockType:'free',cost:0}));
+// Остальные принты Hero Patterns: название описывает то, что нарисовано на плитке (characters/print-catalog.mjs)
+PRINT_CATALOG.forEach(([pattern,,,title,icon])=>PATTERN_ITEMS.push({id:'pat_'+pattern,title,icon,pattern,rarity:'ОБЫЧНЫЙ',unlockType:'free',cost:0}));
 // Every print is available for this test build.
 PATTERN_ITEMS.forEach(p=>{p.unlockType='free';p.cost=0;});
 
@@ -441,7 +456,14 @@ class FestivalMusicEngine {
     this.timerId = setInterval(() => this.scheduler(), 25);
   }
 
-  selectTrack() { this.track = chooseTrack(this.track); this.step = 0; }
+  // level: 'race' | 'survival' | 'final' — picks among that level's songs and the classic themes, never twice in a row.
+  selectTrack(level) {
+    this.pick = pickMusic(this.pick, level);
+    const [kind, index] = this.pick.split(':');
+    this.song = kind === 'song' ? SONGS[Number(index)] : null;
+    if (kind === 'track') this.track = Number(index);
+    this.step = 0;
+  }
 
   setVolume(value) {
     this.volume = Math.max(0, Math.min(1, value));
@@ -630,6 +652,47 @@ class FestivalMusicEngine {
     osc.stop(t + 0.17);
   }
 
+  // ---- Voices for the songs (music/songs.mjs) ----
+  tone(ctx, t, midi, dur, { type = 'triangle', peak = .14, attack = .008, cutoff = 0, detune = 0, vibrato = 0, partial = 0 } = {}) {
+    const f = this.midiToFreq(midi), g = ctx.createGain(), out = cutoff ? ctx.createBiquadFilter() : g;
+    const oscs = [ctx.createOscillator()];
+    oscs[0].type = type; oscs[0].frequency.setValueAtTime(f, t);
+    if (detune) { const o = ctx.createOscillator(); o.type = type; o.frequency.setValueAtTime(f * (1 + detune), t); oscs.push(o); }
+    if (partial) { const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(f * partial, t); oscs.push(o); }
+    if (vibrato) { const lfo = ctx.createOscillator(), depth = ctx.createGain(); lfo.frequency.value = 5.5; depth.gain.value = f * vibrato; lfo.connect(depth); depth.connect(oscs[0].frequency); lfo.start(t + .08); lfo.stop(t + dur + .05); }
+    if (cutoff) { out.type = 'lowpass'; out.frequency.setValueAtTime(cutoff * 3, t); out.frequency.exponentialRampToValueAtTime(cutoff, t + Math.min(.12, dur)); out.connect(g); }
+    g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(peak, t + attack); g.gain.exponentialRampToValueAtTime(.001, t + dur);
+    g.connect(this.masterGain);
+    for (const o of oscs) { o.connect(out); o.start(t); o.stop(t + dur + .03); }
+  }
+  playSongLead(ctx, t, voice, midi, dur) {
+    if (voice === 'brass') return this.playBrassLead(ctx, t, midi, Math.max(dur, .12));
+    if (voice === 'pluck') return this.tone(ctx, t, midi, Math.max(.16, dur * .9), { type: 'sawtooth', peak: .12, cutoff: 1400, detune: .004 });
+    if (voice === 'bell') return this.tone(ctx, t, midi, Math.max(.35, dur * 1.4), { type: 'sine', peak: .13, attack: .004, partial: 3.01 });
+    if (voice === 'chip') return this.tone(ctx, t, midi, Math.max(.1, dur * .85), { type: 'square', peak: .07, attack: .003 });
+    if (voice === 'whistle') return this.tone(ctx, t, midi + 12, Math.max(.14, dur), { type: 'sine', peak: .11, attack: .03, vibrato: .012 });
+  }
+  scheduleSong(ctx, stepIdx, t, stepDur) {
+    const song = this.song, s = stepIdx % (song.bars.length * 16), bar = song.bars[Math.floor(s / 16)], k = s % 16;
+    // Swing grooves delay every off-16th by a third of a step.
+    const tt = song.groove === 'swing' && k % 2 === 1 ? t + stepDur / 3 : t;
+    const g = song.groove;
+    const kick = { four: k % 4 === 0, disco: k % 4 === 0, swing: k % 4 === 0, dembow: k % 4 === 0, polka: k === 0 || k === 8, ska: k === 0 || k === 8,
+      breakbeat: k === 0 || k === 10, halftime: k === 0 || k === 11, jersey: [0, 3, 6, 10, 12].includes(k), cumbia: k === 0 || k === 8,
+      baile: [0, 3, 7, 10].includes(k), stomp: k === 0 || k === 8 || k === 11 }[g];
+    const snare = { dembow: [3, 6, 11, 14].includes(k), halftime: k === 8, baile: [4, 12, 14].includes(k) }[g] ?? (k === 4 || k === 12);
+    if (kick) this.playKick(ctx, tt, g === 'stomp' ? 1.15 : .95);
+    if (snare) this.playSnareClap(ctx, tt);
+    if (g === 'disco' ? k % 4 === 2 : g === 'cumbia' ? k % 2 === 0 : k % 2 === 1) this.playHiHat(ctx, tt, g === 'disco' || k === 15);
+    const bass = bar.bassAt[k];
+    if (bass) this.playFunkBass(ctx, tt, bass, stepDur * (g === 'polka' || g === 'stomp' ? 3 : 1.7));
+    // Chords: off-beat stabs for polka/ska ("oom-pah", skank), a soft pad elsewhere.
+    if ((g === 'polka' && (k === 4 || k === 12)) || (g === 'ska' && k % 4 === 2)) this.playMarimbaChord(ctx, tt, bar.chord, stepDur * 1.2);
+    else if (g !== 'polka' && g !== 'ska' && (k === 0 || (k === 8 && g !== 'halftime'))) this.playMarimbaChord(ctx, tt, bar.chord, stepDur * 6);
+    const n = bar.leadAt[k];
+    if (n) this.playSongLead(ctx, tt, song.voice, n.midi, n.len * stepDur);
+  }
+
   scheduleStep(ctx, stepIdx, t) {
     const s = stepIdx % 64; // 4 такта по 16 шестнадцатых долей
     const bar = Math.floor(s / 16);
@@ -649,6 +712,7 @@ class FestivalMusicEngine {
       return;
     }
 
+    if (this.mode === 'arena' && this.song) { this.scheduleSong(ctx, stepIdx, t, (60 / this.song.bpm) / 4); return; }
     if (this.mode === 'arena' && this.track > 0) {
       const theme=MUSIC_TRACKS[this.track-1];
       const bassy=theme.style==='bass', melodic=theme.style==='melodic';
@@ -750,7 +814,7 @@ class FestivalMusicEngine {
   scheduler() {
     const ctx = sfx.ctx;
     if (!ctx || !this.isPlaying) return;
-    const bpm = this.mode === 'intro' ? 112 : this.mode === 'arena' ? 136 : 126;
+    const bpm = this.mode === 'intro' ? 112 : this.mode === 'arena' ? (this.song?.bpm || 136) : 126;
     const stepDur = (60 / bpm) / 4;
 
     while (this.nextNoteTime < ctx.currentTime + 0.12) {
@@ -906,32 +970,42 @@ const renderer = new THREE.WebGLRenderer({
   alpha: true, // прозрачный фон в Лобби, чтобы были видны анимированные круги Fall Guys!
   powerPreference: 'default'
 });
-function renderPixelRatio(){return Math.min(window.devicePixelRatio||1,1.5,Math.sqrt(2_000_000/(innerWidth*innerHeight)));}
-renderer.setPixelRatio(renderPixelRatio());
+// Upper bound for the pixel ratio on this screen (~3.2 MP); AdaptiveResolution lowers it on slow devices.
+function renderPixelRatio(){return Math.min(window.devicePixelRatio||1,2,Math.sqrt(3_200_000/(innerWidth*innerHeight)));}
+renderer.setPixelRatio(Math.min(renderPixelRatio(),1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
+// Если даже на минимальном разрешении кадры не успевают — до конца сессии выключаем свечение и AO
+const adaptiveResolution = new AdaptiveResolution(renderer, { min: 0.75, max: 2, onChange: () => postFX?.resize(), onStarved: () => { if (postFX?.enabled) postFX.setEnabled(false); } });
+let postFX = null; // создаётся при первом включении «красивой графики»
+adaptiveResolution.setCap(renderPixelRatio());
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.12;
+setupColour(THREE, renderer);
 
 const scene = new THREE.Scene();
 scene.background = null; // в Лобби прозрачный, в матче включаем 0x180e3a
+// Освещение по окружению: небо шоу запекается в PMREM один раз — мягкие отражения и заполняющий свет в цветах сцены
+scene.environment = bakeSkyEnvironment(THREE, renderer);
+scene.environmentIntensity = 0.55;
 
 const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.5, 320);
 
 // Освещение телешоу Fall Guys
-const hemiLight = new THREE.HemisphereLight(0xe3f4ff, 0xd77fb4, 1.25);
+const hemiLight = new THREE.HemisphereLight(0xe3f4ff, 0xd77fb4, 0.85);
 hemiLight.position.set(0, 60, 0);
 scene.add(hemiLight);
 
-const dirLight = new THREE.DirectionalLight(0xfffbeb, 1.45);
-dirLight.position.set(28, 58, 32);
+const dirLight = new THREE.DirectionalLight(0xfff3df, 1.9);
+// Солнце сбоку-сверху; тень ездит за камерой (followShadow), поэтому коробка теней компактная и чёткая
+const SUN_OFFSET = new THREE.Vector3(18, 40, 22);
+dirLight.position.copy(SUN_OFFSET);
 dirLight.castShadow = true;
-dirLight.shadow.mapSize.width = 1024;
-dirLight.shadow.mapSize.height = 1024;
+const shadowSize = (window.devicePixelRatio || 1) > 1 && Math.min(innerWidth, innerHeight) > 500 ? 2048 : 1024;
+dirLight.shadow.mapSize.width = shadowSize;
+dirLight.shadow.mapSize.height = shadowSize;
 dirLight.shadow.camera.near = 5;
-dirLight.shadow.camera.far = 140;
-const dCam = 36;
+dirLight.shadow.camera.far = 110;
+const dCam = 30;
 dirLight.shadow.camera.left = -dCam;
 dirLight.shadow.camera.right = dCam;
 dirLight.shadow.camera.top = dCam;
@@ -939,6 +1013,7 @@ dirLight.shadow.camera.bottom = -dCam;
 dirLight.shadow.bias = -0.0008;
 dirLight.shadow.normalBias = 0.03; // против полос shadow acne на изогнутых полах (барабаны, слизь)
 scene.add(dirLight);
+scene.add(dirLight.target);
 
 // Студийный свет на персонажа в лобби (как на модельном листе). В матчах гасится интенсивностью, а не удаляется:
 // изменение числа источников перекомпилировало бы все шейдеры при каждом входе в забег
@@ -1567,13 +1642,27 @@ function processRegenQueue() {
 const beanShadowCanvas = document.createElement('canvas');
 beanShadowCanvas.width = beanShadowCanvas.height = 128;
 const beanShadowContext = beanShadowCanvas.getContext('2d');
-const beanShadowGradient = beanShadowContext.createRadialGradient(64, 64, 8, 64, 64, 64);
-beanShadowGradient.addColorStop(0, 'rgba(12,18,46,0.52)');
-beanShadowGradient.addColorStop(.48, 'rgba(12,18,46,0.24)');
-beanShadowGradient.addColorStop(1, 'rgba(12,18,46,0)');
-beanShadowContext.fillStyle = beanShadowGradient;
-beanShadowContext.fillRect(0, 0, 128, 128);
+// След куба: скруглённый квадрат с плотным центром и узким мягким краем — сразу видно, куда приземлишься
+beanShadowContext.shadowColor = 'rgba(10,14,40,0.9)';
+beanShadowContext.shadowBlur = 14;
+beanShadowContext.fillStyle = 'rgba(10,14,40,0.82)';
+beanShadowContext.beginPath();
+beanShadowContext.roundRect(26, 30, 76, 68, 24);
+beanShadowContext.fill();
 const beanShadowTexture = new THREE.CanvasTexture(beanShadowCanvas);
+beanShadowTexture.colorSpace = THREE.SRGBColorSpace;
+
+// Тень-пятно строго под персонажем на высоте пола под ним, в том числе в прыжке. Чем выше — тем меньше и светлее,
+// но всегда читается. floorY: высота опоры под (x, z) или null над пропастью.
+function placeBlobShadow(actor, floorY) {
+  const blob = actor.rig.blobShadow;
+  if (floorY === null || floorY === undefined || floorY > actor.y + .05) { blob.visible = false; return; }
+  const k = Math.min(1, (actor.y - floorY) / 7);
+  blob.visible = true;
+  blob.position.y = floorY - actor.y + .04;
+  blob.scale.setScalar(1.3 * (1 - k * .35)); // the 1.55 m quad × 1.3 ≈ the cube's own footprint
+  blob.material.opacity = .95 - k * .45;
+}
 
 // ==================== КЛАСС УЧАСТНИКА 3D (ИГРОК И БОТЫ) ====================
 class Actor3D {
@@ -1628,6 +1717,8 @@ class Actor3D {
 
     // Создаём 3D-модель фасолинки
     this.rig = createCubeCharacter(THREE, {shadowTexture:beanShadowTexture,skin});
+    Object.assign(this.rig.blobShadow.material, { polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
+    this.rig.blobShadow.renderOrder = 2;
     this.rig.root.position.set(this.x, this.y, this.z);
     actorsGroup.add(this.rig.root);
 
@@ -1880,7 +1971,7 @@ function clearActorsAndFX() {
 
 function beginLevelIntro(kind, title, description) {
   state.introKind = kind;
-  state.introDuration = kind === 'big-fans' ? 8.0 : 6.0;
+  state.introDuration = kind === 'big-fans' || kind === 'race' ? 8.0 : 6.0;
   state.introTimer = state.introDuration;
   state.countdownTimer = 3.2;
   state.phase = 'intro_flyover';
@@ -1892,6 +1983,7 @@ function beginLevelIntro(kind, title, description) {
 }
 
 function startMatch(options = {}) {
+  const musicLevel = options.musicLevel || 'survival';
   clearCelebrationEffects();
   if (state.showdownVisuals) { state.showdownVisuals.dispose(); state.showdownVisuals = null; }
   state.showdown = null;
@@ -1936,7 +2028,7 @@ function startMatch(options = {}) {
   // Включаем 3D-арену, фон телешоу и переключаем фестивальный синтезатор на драйвовый ритм шоу (136 BPM)!
   music.start();
   music.setMode('intro');
-  music.selectTrack();
+  music.selectTrack(musicLevel);
   lobbyGroup.visible = false;
   stadiumGroup.visible = true;
   stadiumPillars.forEach(pillar => { pillar.visible = true; });
@@ -2016,22 +2108,64 @@ function startMatch(options = {}) {
   updateHUD();
 }
 
-// ==================== БОЛЬШИЕ ВЕНТИЛЯТОРЫ: TEST COURSE ====================
-function startBigFans(mode = 'single') {
-  state.lastMode = mode;
-  startMatch({largeField: mode === 'championship'});
+// ==================== ГОНОЧНЫЕ УРОВНИ: БОЛЬШИЕ ВЕНТИЛЯТОРЫ, ДВЕРНОЙ ПРОРЫВ, ВОРОТА ====================
+// Все забеги идут по одной схеме (пролёт, отсчёт, квота 70%, финиш); уровень даёт трассу, визуал и правила.
+const RACE_LEVELS = {
+  'big-fans': {
+    title: 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ', progressLabel: 'КОНТРОЛЬНЫЕ ТОЧКИ', length: 155, seaZ: 79,
+    description: 'Доберитесь до финиша через вращающиеся платформы!',
+    create: createCourseState, visuals: createCourseVisuals, init: initializeRacer,
+    update: (course, actors, dt, elapsed) => updateRace(course, actors, dt, elapsed),
+    progress: (course, actor) => [actor.checkpoint, 3],
+    floor: (course, actor) => (bigFansSurfaceAt(course, actor.x, actor.z) ? 0 : null)
+  },
+  'door-dash': {
+    title: 'ДВЕРНОЙ ПРОРЫВ', progressLabel: 'РЯДЫ ДВЕРЕЙ', length: DOOR_DASH_FINISH, seaZ: 55, limit: DOOR_DASH_LIMIT,
+    description: 'Одни двери настоящие, другие — нет. Пробейтесь к финишу!',
+    create: () => createDoorDash(Math.floor(Math.random() * 1e9)), visuals: createDoorDashVisuals, init: initRacer,
+    update: (course, actors, dt, elapsed) => updateObstacleRace(course, actors, dt, elapsed, { limit: DOOR_DASH_LIMIT }),
+    progress: (course, actor) => [course.rows.filter(r => actor.z > r.z).length, course.rows.length]
+  },
+  'gate-crash': {
+    title: 'ВОРОТА', progressLabel: 'РЯДЫ ВОРОТ', length: GATE_CRASH_FINISH, seaZ: 68, limit: GATE_CRASH_LIMIT,
+    description: 'Проскакивайте, пока ворота опущены, и прыгайте через крутилки!',
+    create: createGateCrash, visuals: createGateCrashVisuals, init: initRacer,
+    update: (course, actors, dt, elapsed) => updateObstacleRace(course, actors, dt, elapsed, { limit: GATE_CRASH_LIMIT }),
+    progress: (course, actor) => [course.rows.filter(r => actor.z > r.z).length, course.rows.length]
+  },
+  'see-saw': {
+    title: 'КАЧЕЛИ', progressLabel: 'КОНТРОЛЬНЫЕ ТОЧКИ', length: SEE_SAW_FINISH, seaZ: 80, limit: SEE_SAW_LIMIT,
+    description: 'Качели наклоняются под весом толпы — держите баланс и прыгайте на следующие!',
+    create: createSeeSaw, visuals: createSeeSawVisuals, init: initRacer,
+    update: (course, actors, dt, elapsed) => updateObstacleRace(course, actors, dt, elapsed, { limit: SEE_SAW_LIMIT }),
+    progress: (course, actor) => [actor.seeCheckpoint || 0, 2]
+  },
+  'roll-on': {
+    title: 'КАТАЮЩИЕСЯ КОЛЬЦА', progressLabel: 'КОНТРОЛЬНЫЕ ТОЧКИ', length: ROLL_ON_FINISH, seaZ: 65, limit: ROLL_ON_LIMIT,
+    description: 'Кольца крутятся и уносят вбок — обходите дыры, стенки и бамперы!',
+    create: createRollOn, visuals: createRollOnVisuals, init: initRacer,
+    update: (course, actors, dt, elapsed) => updateObstacleRace(course, actors, dt, elapsed, { limit: ROLL_ON_LIMIT }),
+    progress: (course, actor) => [actor.rollCheckpoint || 0, 3]
+  }
+};
+function startBigFans(mode = 'single') { startRaceLevel('big-fans', mode); }
+function startRaceLevel(kind, mode = 'single') {
+  const level = RACE_LEVELS[kind];
+  state.lastMode = kind === 'big-fans' ? mode : kind;
+  startMatch({largeField: mode === 'championship', musicLevel: 'race'});
   state.showMode = mode;
-  document.querySelector('.brand-pill .pill-title').textContent = 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ';
-  document.querySelector('.layer-pill .pill-label').textContent = 'КОНТРОЛЬНЫЕ ТОЧКИ';
+  state.raceLevel = level;
+  document.querySelector('.brand-pill .pill-title').textContent = level.title;
+  document.querySelector('.layer-pill .pill-label').textContent = level.progressLabel;
   stadiumPillars.forEach(pillar => { pillar.visible = false; });
   // The race has a single ground height and its own arena and rules.
   arenaGroup.clear();
   state.layers = [{ index: 0, yHeight: 0, list: [], map: new Map() }];
-  state.race = createCourseState();
+  state.race = level.create();
   state.raceFinishNotice = 0;
   document.getElementById('race-finish-notice')?.remove();
-  slimeSeaMesh.position.z = 79; // море слизи под всей трассой, а не только под стартом
-  state.raceVisuals = createCourseVisuals(THREE, state.race);
+  slimeSeaMesh.position.z = level.seaZ; // море слизи под всей трассой, а не только под стартом
+  state.raceVisuals = level.visuals(THREE, state.race);
   arenaGroup.add(state.raceVisuals.root);
   state.raceVisuals.update();
   state.phase = 'intro_flyover';
@@ -2042,24 +2176,27 @@ function startBigFans(mode = 'single') {
     actor.z = -3 + Math.floor(i / 5) * 2;
     actor.y = 0; actor.vx = actor.vy = actor.vz = 0;
     actor.facing = 0; actor.visualFacing = 0;
-    initializeRacer(actor);
+    level.init(actor);
   });
   state.targetCamYaw = Math.PI;
   state.camYaw = Math.PI;
   state.camFocusPos.set(state.player.x, 1.3, state.player.z);
-  document.getElementById('countdown-badge').textContent = state.showMode === 'championship' ? 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ • РАУНД 1' : 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ';
+  const badge = state.showMode === 'championship' ? `${level.title} • РАУНД 1` : level.title;
+  document.getElementById('countdown-badge').textContent = badge;
   document.getElementById('countdown-text').textContent = '3';
-  document.getElementById('countdown-sub').textContent = 'Доберитесь до финиша через вращающиеся платформы!';
-  beginLevelIntro('big-fans', 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ', 'Доберитесь до финиша через вращающиеся платформы!');
+  document.getElementById('countdown-sub').textContent = level.description;
+  beginLevelIntro(kind === 'big-fans' ? 'big-fans' : 'race', badge, level.description);
   updateRaceHUD();
 }
 function updateRaceHUD() {
   const finished = state.actors.filter(a => a.raceFinished).length;
   const quota = Math.max(1, Math.ceil(state.actors.length * .7));
-  setText('hud-mode-label', state.showMode === 'championship' ? 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ • РАУНД 1' : 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ');
+  const level = state.raceLevel;
+  setText('hud-mode-label', state.showMode === 'championship' ? `${level.title} • РАУНД 1` : level.title);
   setText('hud-alive', `${finished} / ${quota}`);
-  setText('hud-layer', `${state.player.checkpoint} / 3`);
-  setText('hud-timer', formatTime(state.elapsed));
+  const [done, total] = level.progress(state.race, state.player);
+  setText('hud-layer', `${done} / ${total}`);
+  setText('hud-timer', formatTime(level.limit ? Math.max(0, level.limit - state.elapsed) : state.elapsed));
 }
 function finishRace(result) {
   const qualifiers = result.finished.slice(0, result.quota);
@@ -2082,14 +2219,14 @@ function finishRace(result) {
   const p = state.player;
   const place = result.finished.indexOf(p) + 1;
   const passed = playerQualified;
-  document.getElementById('result-ribbon').textContent = state.showMode === 'championship' ? 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ • РАУНД 1' : 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ';
+  document.getElementById('result-ribbon').textContent = state.showMode === 'championship' ? `${state.raceLevel.title} • РАУНД 1` : state.raceLevel.title;
   document.getElementById('result-title').textContent = passed ? `ВЫ ПРОШЛИ! МЕСТО #${place}` : 'ЗАБЕГ ОКОНЧЕН';
   document.getElementById('result-subtitle').textContent = passed ? 'Вы достигли финиша в числе прошедших!' : 'Квота заполнена или время закончилось. Попробуйте ещё раз!';
   document.getElementById('spot-winner-name').textContent = result.finished[0]?.name || 'Финиширующих нет';
   document.getElementById('spot-winner-meta').textContent = `${result.finished.length} / ${result.quota} финишировали`;
   document.getElementById('res-place').textContent = place ? `#${place}` : '—';
   document.getElementById('res-time').textContent = formatTime(place ? p.raceFinishTime : state.elapsed);
-  document.getElementById('res-tiles').textContent = String(p.checkpoint);
+  document.getElementById('res-tiles').textContent = String(state.raceLevel.progress(state.race, p)[0]);
   document.getElementById('res-score').textContent = '—';
   const standings = document.getElementById('match-standings');
   standings.replaceChildren();
@@ -2126,23 +2263,28 @@ function updateBigFans(dt) {
     if (actor.isDiving && (actor.diveTimer -= dt) <= 0) actor.isDiving = false;
   }
   const playerFinishedBefore = p.raceFinished;
-  const result = updateRace(state.race, state.actors, dt, state.elapsed);
+  const result = state.raceLevel.update(state.race, state.actors, dt, state.elapsed);
   if (!playerFinishedBefore && p.raceFinished) {
     const place = result.finished.indexOf(p) + 1;
     state.raceVisuals.celebrateFinish();
     showCelebrationOverlay({
       type: 'qualified',
       icon: '🏁',
-      ribbon: state.showMode === 'championship' ? 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ • РАУНД 1' : 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ • ФИНИШ',
+      ribbon: state.showMode === 'championship' ? `${state.raceLevel.title} • РАУНД 1` : `${state.raceLevel.title} • ФИНИШ`,
       title: 'ФИНИШ!',
       subtitle: `ТЫ ПРОШЁЛ! Место #${place} из ${result.quota} прошедших!`,
       duration: 3.0,
       freeze: false
     });
   }
+  // Door breaks, bounces off fake doors and gate crashes: sound and a puff, louder for the player's own hits.
+  for (const e of state.race.events?.splice(0) || []) {
+    if (e.by.isPlayer || Math.hypot(e.by.x - p.x, e.by.z - p.z) < 14) sfx.play('hit');
+    if (e.type === 'break') spawnParticles3D(e.door.x, 1.6, state.race.rows[e.door.row].z, 0xfff1dc, 14);
+  }
   state.raceVisuals.update();
   for (const actor of state.actors) {
-    actor.rig.blobShadow.visible = actor.onGround;
+    placeBlobShadow(actor, state.raceLevel.floor ? state.raceLevel.floor(state.race, actor) : state.race.floorAt(actor.x, actor.z, actor.y));
     if (actor.raceFinished && !actor.isPlayer) { actor.rig.root.visible = false; actor.labelEl.style.display = 'none'; }
   }
   updateFX(dt); updateThirdPersonCamera(dt); update3DNameplates(); updateRaceHUD();
@@ -2152,7 +2294,7 @@ function updateBigFans(dt) {
 // ==================== ВРАЩАЮЩИЕСЯ БАРАБАНЫ: SURVIVAL ROUND ====================
 function startRollOut(mode = 'single_rollout', qualifiers = null) {
   if (mode === 'single_rollout') state.lastMode = mode;
-  startMatch(qualifiers ? {qualifiers} : {largeField:true});
+  startMatch(qualifiers ? {qualifiers, musicLevel: 'survival'} : {largeField:true, musicLevel: 'survival'});
   state.showMode = mode;
   document.querySelector('.brand-pill .pill-title').textContent='ВРАЩАЮЩИЕСЯ БАРАБАНЫ';
   document.querySelector('.layer-pill .pill-label').textContent='КВАЛИФИКАЦИЯ';
@@ -2263,8 +2405,7 @@ function updateRollOut(dt) {
     const surface=sampleSurface(state.rollout,a.x,a.z);a.onGround=false;
     if(surface && a.vy<=0 && oldY>=surface.y-.65 && a.y<=surface.y+.08){a.y=surface.y;a.vy=0;a.onGround=true;a.jumpCount=0;}
     hitWall(surface,a,oldZ);
-    a.rig.blobShadow.visible=!!surface && a.y>=surface.y;
-    if(a.rig.blobShadow.visible)a.rig.blobShadow.position.y=surface.y-a.y+.03;
+    placeBlobShadow(a, surface ? surface.y : null);
     if(a.y < -10){a.alive=false;a.rig.root.visible=false;a.labelEl.style.display='none';state.eliminationOrder.push(a);sfx.play('elim');if(a.isPlayer)onPlayerEliminated();}
   }
   // Gentle contact between contestants on the roller.
@@ -2283,7 +2424,7 @@ function updateRollOut(dt) {
 // ==================== SLIME CLIMB TEST RACE ====================
 function startSlimeClimb(mode='single_slime', qualifiers=null) {
   if(mode==='single_slime') state.lastMode=mode;
-  startMatch(qualifiers?{qualifiers}:{largeField:true});
+  startMatch(qualifiers?{qualifiers,musicLevel:'race'}:{largeField:true,musicLevel:'race'});
   state.showMode=mode; state.slimeCourse=createSlimeCourse();
   arenaGroup.clear(); stadiumGroup.visible=false;
   state.slimeVisuals=createSlimeVisuals(THREE,state.slimeCourse);arenaGroup.add(state.slimeVisuals.root);state.slimeVisuals.update();
@@ -2458,7 +2599,7 @@ function updateSlimeClimb(dt){
     }
   }
 
-  a.rig.blobShadow.visible=floor!==null&&a.y>=floor;if(a.rig.blobShadow.visible)a.rig.blobShadow.position.y=floor-a.y+.03;
+  placeBlobShadow(a, floor);
   if(a.z>=120&&Math.abs(a.x)<8.5&&a.y>=25.0){a.climbFinished=true;a.climbTime=state.elapsed;a.vx=a.vz=0;if(!a.isPlayer){a.rig.root.visible=false;a.labelEl.style.display='none';}}
   else if(a.y<=risingSlimeY(state.elapsed)||a.y< -20){a.alive=false;a.rig.root.visible=false;a.labelEl.style.display='none';state.eliminationOrder.push(a);sfx.play('elim');if(a.isPlayer)onPlayerEliminated();}
  }
@@ -2489,7 +2630,7 @@ function updateSlimeClimb(dt){
 // ==================== ПРЫЖКОВЫЙ ФИНАЛ: GRAND FINAL ====================
 function startJumpShowdown(mode = 'single_showdown', qualifiers = null) {
   if (mode === 'single_showdown') state.lastMode = mode;
-  startMatch(qualifiers ? { qualifiers } : { largeField: true });
+  startMatch(qualifiers ? { qualifiers, musicLevel: 'final' } : { largeField: true, musicLevel: 'final' });
   state.showMode = mode;
   document.querySelector('.brand-pill .pill-title').textContent = 'ПРЫЖКОВЫЙ ФИНАЛ';
   document.querySelector('.layer-pill .pill-label').textContent = 'ФИНАЛ';
@@ -2625,10 +2766,7 @@ function updateJumpShowdown(dt) {
     }
 
     // Shadow projection
-    a.rig.blobShadow.visible = surf !== null && a.y >= surf.y;
-    if (a.rig.blobShadow.visible) {
-      a.rig.blobShadow.position.y = (surf.y - a.y) + 0.03;
-    }
+    placeBlobShadow(a, surf !== null ? surf.y : null);
 
     // Fall into slime ocean
     if (a.y < -14.0) {
@@ -3215,7 +3353,7 @@ function updateWorld3D(dt, nowSec) {
   if (state.phase === 'intro_flyover') {
     state.introTimer -= dt;
     const progress = 1 - Math.max(0, state.introTimer / state.introDuration);
-    const frame=introFrame(state.introKind,progress,state.player,state.targetCamYaw,state.camDist,state.camHeight,state.layers[0]?.yHeight || 0);
+    const frame=introFrame(state.introKind,progress,state.player,state.targetCamYaw,state.camDist,state.camHeight,state.layers[0]?.yHeight || 0,state.raceLevel?.length);
     camera.position.set(frame.position.x,frame.position.y,frame.position.z);
     camera.lookAt(frame.look.x,frame.look.y,frame.look.z);
 
@@ -3420,16 +3558,14 @@ function updateWorld3D(dt, nowSec) {
         actor.currentLayer = layer.index;
         supportTile.triggerStep(actor, state.config);
 
-        actor.rig.blobShadow.visible = true;
-        actor.rig.blobShadow.position.y = 0.03;
+        placeBlobShadow(actor, actor.y);
         shadowPlaced = true;
         break;
       }
 
       // Проекция круглой тени на ближайшую соту внизу во время прыжка
       if (!shadowPlaced && supportTile && actor.y > surfaceY) {
-        actor.rig.blobShadow.visible = true;
-        actor.rig.blobShadow.position.y = (surfaceY - actor.y) + 0.03;
+        placeBlobShadow(actor, surfaceY);
         shadowPlaced = true;
       }
     }
@@ -4564,6 +4700,17 @@ for (const [id, key] of [['volume-music','musicVolume'],['volume-effects','effec
   slider.addEventListener('input',update); slider.addEventListener('change',saveGameData);
 }
 
+// «Красивая графика»: bloom + ambient occlusion. По умолчанию выключена на телефонах и слабых устройствах.
+const prettyToggle = document.getElementById('pretty-graphics');
+function applyPrettyGraphics() {
+  const on = saveData.prettyGraphics ?? !isLowPowerDevice();
+  if (on && !postFX) postFX = createPostFX(THREE, renderer, scene, camera);
+  postFX?.setEnabled(on);
+  prettyToggle.checked = on;
+}
+prettyToggle.addEventListener('change', () => { saveData.prettyGraphics = prettyToggle.checked; saveGameData(); applyPrettyGraphics(); });
+applyPrettyGraphics();
+
 const nameplateToggle = document.getElementById('show-nameplates');
 function applyNameplateSetting() {
   document.getElementById('labels-layer').classList.toggle('hidden', saveData.showNameplates === false);
@@ -4586,7 +4733,11 @@ document.getElementById('btn-start-match').addEventListener('click', () => {
   startMatch();
 });
 
-document.getElementById('btn-play-again').addEventListener('click', () => state.lastMode === 'hex' ? startMatch() : state.lastMode === 'single_rollout' ? startRollOut() : state.lastMode === 'single_slime' ? startSlimeClimb() : state.lastMode === 'single_showdown' ? startJumpShowdown() : startBigFans(state.lastMode || 'single'));
+document.getElementById('btn-play-again').addEventListener('click', () => state.lastMode === 'hex' ? startMatch() : state.lastMode === 'single_rollout' ? startRollOut() : state.lastMode === 'single_slime' ? startSlimeClimb() : state.lastMode === 'single_showdown' ? startJumpShowdown() : RACE_LEVELS[state.lastMode] ? startRaceLevel(state.lastMode) : startBigFans(state.lastMode || 'single'));
+document.getElementById('btn-door-dash').addEventListener('click', () => startRaceLevel('door-dash'));
+document.getElementById('btn-gate-crash').addEventListener('click', () => startRaceLevel('gate-crash'));
+document.getElementById('btn-see-saw').addEventListener('click', () => startRaceLevel('see-saw'));
+document.getElementById('btn-roll-on').addEventListener('click', () => startRaceLevel('roll-on'));
 document.getElementById('btn-big-fans').addEventListener('click', () => startBigFans('single'));
 document.getElementById('btn-roll-out').addEventListener('click', () => startRollOut());
 document.getElementById('btn-jump-showdown')?.addEventListener('click', () => startJumpShowdown());
@@ -4632,8 +4783,9 @@ document.getElementById('btn-spec-skip').addEventListener('click', () => {
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setPixelRatio(renderPixelRatio());
   renderer.setSize(window.innerWidth, window.innerHeight);
+  adaptiveResolution.setCap(renderPixelRatio());
+  postFX?.resize();
 });
 
 // ==================== СТАРТ И ГЛАВНЫЙ 3D ЦИКЛ ====================
@@ -4651,6 +4803,7 @@ function animate(now) {
   // Кадры по расписанию, а не «прошло ≥ интервала»: на 90/144 Гц в среднем держит 60 fps вместо 45/48
   if(now < nextFrameDue-2)return;
   nextFrameDue=Math.max(nextFrameDue+frameInterval, now);
+  adaptiveResolution.update(now - lastTime, frameInterval);
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
   const nowSec = now * 0.001;
@@ -4662,13 +4815,16 @@ function animate(now) {
   lobbyKeyLight.intensity = lobbyView ? 1.7 : 0;
   showSky.root.visible = !lobbyView;
   if (!lobbyView) showSky.update(nowSec, camera);
+  followShadow(dirLight, lobbyView ? { x: 0, y: 0, z: 0 } : state.camFocusPos, SUN_OFFSET);
   if (lobbyView) {
     updateLobby3D(dt, nowSec);
   } else {
     updateWorld3D(dt, nowSec);
   }
 
-  renderer.render(scene, camera);
+  // Свечение и AO — только в игре: в лобби фон прозрачный (за ним анимированные круги CSS)
+  if (!lobbyView && postFX?.enabled) postFX.render(dt);
+  else renderer.render(scene, camera);
 }
 
 requestAnimationFrame(animate);

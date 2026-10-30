@@ -9,15 +9,16 @@ export function createCourseVisuals(THREE, course) {
   const add = (mesh, parent = root) => { parent.add(mesh); if (mesh.geometry) owned.push(mesh.geometry); return mesh; };
   const white = softMaterial(THREE, PALETTE.white), yellow = softMaterial(THREE, PALETTE.yellow, .4);
 
-  // Pads: pillowy slabs with a printed floor — chevrons on the start, checks on checkpoints and finish.
+  // Pads: pillowy slabs. Only start and finish carry a print, and a big one, so the level never competes
+  // with the contestants' own patterns; checkpoints are plain colour.
   const floors = [
-    candyMaterial(THREE, 'chevron', PALETTE.cyan, 0x9ff0ff, 4),
-    candyMaterial(THREE, 'check', PALETTE.yellow, 0xfff1a8, 4),
-    candyMaterial(THREE, 'check', PALETTE.lilac, 0xe7dcff, 4),
-    candyMaterial(THREE, 'check', PALETTE.mint, 0xc8fbe9, 4),
-    candyMaterial(THREE, 'check', PALETTE.pink, 0xffd1e8, 3)
+    candyMaterial(THREE, 'chevron', PALETTE.cyan, 0x7fe6f5, 10),
+    softMaterial(THREE, PALETTE.yellow, .45),
+    softMaterial(THREE, PALETTE.lilac, .45),
+    softMaterial(THREE, PALETTE.mint, .45),
+    candyMaterial(THREE, 'check', PALETTE.violet, PALETTE.violetLight, 7)
   ];
-  const railMat = candyMaterial(THREE, 'stripes', PALETTE.pink, PALETTE.white, 1.2);
+  const railMat = softMaterial(THREE, PALETTE.violet, .45);
   [COURSE.start, ...COURSE.checkpoints, COURSE.finish].forEach((pad, i) => {
     const slab = add(new THREE.Mesh(roundedSlabGeometry(THREE, pad.halfWidth * 2, pad.halfLength * 2, .8, 1.1), floors[i]));
     slab.position.set(pad.x, 0, pad.z); slab.receiveShadow = true; slab.castShadow = true;
@@ -27,15 +28,12 @@ export function createCourseVisuals(THREE, course) {
       rail.rotation.y = Math.PI / 2; rail.position.set(pad.x + side * (pad.halfWidth - .15), -.08, pad.z);
     }
     for (const side of [-1, 1]) {
-      const leg = add(candyColumn(THREE, 9, .45, PALETTE.white, i % 2 ? PALETTE.purple : PALETTE.pink));
+      const leg = add(candyColumn(THREE, 9, .45, PALETTE.white, i % 2 ? PALETTE.cyan : PALETTE.violet));
       leg.position.set(pad.x + side * (pad.halfWidth - 1.6), -5.3, pad.z);
     }
   });
-  const arches = [
-    [COURSE.start.z + COURSE.start.halfLength - .6, 'СТАРТ', PALETTE.cyan, PALETTE.purple],
-    ...COURSE.checkpoints.map((pad, i) => [pad.z - pad.halfLength + .8, `ЧЕКПОИНТ ${i + 1}`, PALETTE.yellow, PALETTE.hotPink]),
-    [COURSE.finish.z, 'ФИНИШ!', PALETTE.pink, PALETTE.purple]
-  ];
+  // Only the finish gets an arch: arches over the start and checkpoints filled the screen behind the player.
+  const arches = [[COURSE.finish.z, 'ФИНИШ!', PALETTE.violet, PALETTE.purple]];
   for (const [z, label, a, bg] of arches) {
     const arch = inflatableArch(THREE, { width: 19.2, height: 7.4, a, b: PALETTE.white, label, labelBg: bg });
     arch.position.set(0, 0, z); root.add(arch);
@@ -63,8 +61,9 @@ export function createCourseVisuals(THREE, course) {
   const balloons = balloonField(THREE, spots);
   root.add(balloons.mesh); owned.push(balloons.mesh.geometry);
 
-  const bladeMats = [candyMaterial(THREE, 'bands', PALETTE.pink, PALETTE.white, 1.6), candyMaterial(THREE, 'bands', PALETTE.cyan, PALETTE.white, 1.6)];
-  const hubMat = candyMaterial(THREE, 'dots', PALETTE.yellow, PALETTE.orange, 1.2);
+  // Violet and cyan blades: both stand out against the pink slime below.
+  const bladeMats = [softMaterial(THREE, PALETTE.violet, .45), softMaterial(THREE, PALETTE.cyan, .45)];
+  const hubMat = softMaterial(THREE, PALETTE.yellow, .4);
   const metal = softMaterial(THREE, 0x6f86c9, .4);
   const fanVisuals = course.fans.map((fan, i) => {
     const group = new THREE.Group(); group.position.set(fan.x, 0, fan.z); root.add(group);
@@ -99,13 +98,13 @@ export function createCourseVisuals(THREE, course) {
     let sweeper = null;
     if (fan.beam) {
       sweeper = new THREE.Group(); group.add(sweeper);
-      const barMat = candyMaterial(THREE, 'bands', PALETTE.purple, PALETTE.white, .8 / (fan.radius * 2));
+      const barMat = candyMaterial(THREE, 'bands', PALETTE.purple, PALETTE.white, 3.2 / (fan.radius * 2));
       const bar = add(new THREE.Mesh(new THREE.CylinderGeometry(.275, .275, fan.radius * 2, 24), barMat), sweeper);
       bar.rotation.z = Math.PI / 2; bar.position.y = .52; bar.castShadow = true;
       const boss = add(new THREE.Mesh(new THREE.CylinderGeometry(.52, .56, 1.0, 24), yellow), sweeper);
       boss.position.y = .5;
       for (const side of [-1, 1]) {
-        const end = add(new THREE.Mesh(new THREE.SphereGeometry(.34, 16, 12), softMaterial(THREE, PALETTE.pink)), sweeper);
+        const end = add(new THREE.Mesh(new THREE.SphereGeometry(.34, 16, 12), softMaterial(THREE, PALETTE.yellow)), sweeper);
         end.position.set(side * fan.radius, .52, 0);
       }
     }

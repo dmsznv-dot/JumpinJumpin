@@ -1,8 +1,20 @@
 import {HERO_PATTERNS} from './hero-patterns.mjs';
+import {PRINT_CATALOG} from './print-catalog.mjs';
 export const PRINTS={
- belly:['Random Shapes',2.6],stripes:['Diagonal Stripes',4],polka:['Polka Dots',4],flames:['Candy Waves',3],stars:['Five Point Stars',4],lightning:['Zig Zag',3],rings:['Hypnotic Rings',3],diamonds:['Harlequin Diamonds',4],clouds:['Fluffy Clouds',2.5],leaves:['Leaf',3],circuit:['Circuit Board',1],hexagons:['Hexagons',3]
+ belly:['Random Shapes',2.6],stripes:['Diagonal Stripes',4],polka:['Polka Dots',4],flames:['Candy Waves',3],stars:['Five Point Stars',4],lightning:['Zig Zag',3],rings:['Hypnotic Rings',3],diamonds:['Harlequin Diamonds',4],clouds:['Fluffy Clouds',2.5],leaves:['Leaf',3],circuit:['Circuit Board',1],hexagons:['Hexagons',3],
+ ...Object.fromEntries(PRINT_CATALOG.map(([id,artwork,repeat])=>[id,[artwork,repeat]]))
 };
 const cache=new Map();
+// Line-art tiles (graph paper, stained glass, food icons) lose their hair-thin strokes when a big tile is squeezed
+// into the mask: the sparser the ink, the more the strokes are widened (separable max filter).
+export function thickenThinLines(mask,size){
+ let ink=0;for(let i=0;i<mask.length;i++)ink+=mask[i];ink/=mask.length*255;
+ const r=ink<.05?4:ink<.09?3:ink<.14?2:0;if(!r)return r;
+ const tmp=new Uint8Array(mask.length);
+ for(let y=0;y<size;y++)for(let x=0;x<size;x++){let m=0;for(let k=-r;k<=r;k++){const v=mask[y*size+((x+k+size)%size)];if(v>m)m=v;}tmp[y*size+x]=m;}
+ for(let y=0;y<size;y++)for(let x=0;x<size;x++){let m=0;for(let k=-r;k<=r;k++){const v=tmp[((y+k+size)%size)*size+x];if(v>m)m=v;}mask[y*size+x]=m;}
+ return r;
+}
 // Horizontal body section for print wrapping: half-width 0.81, half-depth 0.67 (see cube-shape CUBE), corner radius 0.5.
 export const WRAP={radius:.5,flatX:.31,flatZ:.17};
 export function wrapUV([x,y,z],repeat=4){
@@ -17,7 +29,7 @@ function maskTexture(T,id){
  const entry={texture,ready:Promise.resolve()};cache.set(id,entry);
  if(typeof document!=='undefined'&&PRINTS[id]){
   entry.ready=new Promise((resolve,reject)=>{
-   const img=new Image();img.onload=()=>{try{const canvas=document.createElement('canvas');canvas.width=canvas.height=1024;const ctx=canvas.getContext('2d');const a=(img.naturalWidth||img.width||1)/(img.naturalHeight||img.height||1),nx=a>=1?1:Math.max(1,Math.round(1/a)),ny=a>=1?Math.max(1,Math.round(a)):1;for(let ix=0;ix<nx;ix++)for(let iy=0;iy<ny;iy++)ctx.drawImage(img,ix*1024/nx,iy*1024/ny,1024/nx,1024/ny);const rgba=ctx.getImageData(0,0,1024,1024).data,mask=new Uint8Array(1024*1024);for(let i=0;i<mask.length;i++)mask[i]=rgba[((1023-Math.floor(i/1024))*1024+i%1024)*4+3];texture.dispose();texture.image={data:mask,width:1024,height:1024};texture.needsUpdate=true;resolve();}catch(e){reject(e);}};img.onerror=()=>reject(new Error('Pattern rasterization failed: '+id));img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(HERO_PATTERNS[PRINTS[id][0]]);
+   const img=new Image();img.onload=()=>{try{const canvas=document.createElement('canvas');canvas.width=canvas.height=1024;const ctx=canvas.getContext('2d');const a=(img.naturalWidth||img.width||1)/(img.naturalHeight||img.height||1),nx=a>=1?1:Math.max(1,Math.round(1/a)),ny=a>=1?Math.max(1,Math.round(a)):1;for(let ix=0;ix<nx;ix++)for(let iy=0;iy<ny;iy++)ctx.drawImage(img,ix*1024/nx,iy*1024/ny,1024/nx,1024/ny);const rgba=ctx.getImageData(0,0,1024,1024).data,mask=new Uint8Array(1024*1024);for(let i=0;i<mask.length;i++)mask[i]=rgba[((1023-Math.floor(i/1024))*1024+i%1024)*4+3];thickenThinLines(mask,1024);texture.dispose();texture.image={data:mask,width:1024,height:1024};texture.needsUpdate=true;resolve();}catch(e){reject(e);}};img.onerror=()=>reject(new Error('Pattern rasterization failed: '+id));img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(HERO_PATTERNS[PRINTS[id][0]]);
   });
   // Без принта куб остаётся однотонным — предупреждаем, а не роняем «Uncaught (in promise)»
   entry.ready.catch(e=>console.warn('[cube-print]',e));

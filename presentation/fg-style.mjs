@@ -3,7 +3,9 @@
 
 export const PALETTE = {
   pink: 0xff4fa3, hotPink: 0xff2a85, cyan: 0x37d8f0, yellow: 0xffd93b, purple: 0x8b5cf6,
-  lilac: 0xc4a7ff, mint: 0x5ee6b8, orange: 0xff9f2e, white: 0xfdfbff, sky: 0x8fd8ff
+  lilac: 0xc4a7ff, mint: 0x5ee6b8, orange: 0xff9f2e, white: 0xfdfbff, sky: 0x8fd8ff,
+  // Deep violet for anything that sits over the pink slime sea: pink on pink was hard to read.
+  violet: 0x5b2be0, violetLight: 0xb59cff
 };
 const css = hex => '#' + hex.toString(16).padStart(6, '0');
 
@@ -133,16 +135,16 @@ export function foamRail(THREE, length, radius, material) {
   return new THREE.Mesh(geo, material);
 }
 // Candy-cane support column: diagonal stripes on a cylinder read as a spiral.
-export function candyColumn(THREE, height, radius, a = PALETTE.white, b = PALETTE.pink) {
+export function candyColumn(THREE, height, radius, a = PALETTE.white, b = PALETTE.violet) {
   const geo = new THREE.CylinderGeometry(radius, radius * 1.12, height, 18, 1, true);
-  const around = Math.max(1, Math.round(radius * 4)), along = height / 1.4, uv = geo.attributes.uv;
+  const around = Math.max(1, Math.round(radius * 2)), along = height / 3.5, uv = geo.attributes.uv;
   for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * around, uv.getY(i) * along);
   return new THREE.Mesh(geo, candyMaterial(THREE, 'stripes', a, b, 1));
 }
 
 // ---------- Show props ----------
 // Inflatable arch with a banner; the course passes underneath (no collision, purely visual).
-export function inflatableArch(THREE, { width = 16, height = 7, a = PALETTE.pink, b = PALETTE.white, label = '', labelBg = PALETTE.purple, tube = .75 } = {}) {
+export function inflatableArch(THREE, { width = 16, height = 7, a = PALETTE.violet, b = PALETTE.white, label = '', labelBg = PALETTE.purple, tube = .75 } = {}) {
   const group = new THREE.Group();
   const span = width / 2;
   const mat = candyMaterial(THREE, 'bands', a, b, 1);
@@ -169,13 +171,15 @@ export function inflatableArch(THREE, { width = 16, height = 7, a = PALETTE.pink
     const bannerGeo = new THREE.PlaneGeometry(bw, bw / 4);
     for (const flip of [0, Math.PI]) {
       const banner = new THREE.Mesh(bannerGeo, bannerMat);
-      banner.rotation.y = flip; banner.position.set(0, legH + span * .55 - .2, flip ? -.02 : .02); group.add(banner);
+      // Hung just under the top tube and in front of it on both faces, so the tube never covers the label.
+      const y = legH + span * .55 - tube * .55 - bw / 8 - .15, z = tube + .18;
+      banner.rotation.y = flip; banner.position.set(0, y, flip ? -z : z); group.add(banner);
     }
   }
   return group;
 }
 // Bobbing balloons / beach balls around a level (one instanced draw call per colour set).
-export function balloonField(THREE, spots, { colors = [PALETTE.pink, PALETTE.cyan, PALETTE.yellow, PALETTE.purple, PALETTE.mint], radius = 1.4 } = {}) {
+export function balloonField(THREE, spots, { colors = [PALETTE.orange, PALETTE.cyan, PALETTE.yellow, PALETTE.violet, PALETTE.mint], radius = 1.4 } = {}) {
   const geo = new THREE.SphereGeometry(1, 20, 14);
   geo.scale(1, 1.18, 1);
   const mat = new THREE.MeshStandardMaterial({ roughness: .25, metalness: .05 });

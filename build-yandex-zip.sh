@@ -5,7 +5,9 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 OUT_ZIP="${OUT_ZIP:-hex-a-guys-yandex.zip}"
-MAX_KB="${MAX_KB:-1024}"
+# Яндекс Игры: все файлы игры в разархивированном виде — не больше 100 МБ
+# (yandex.ru/dev/games/doc/ru/concepts/requirements). Бюджет считаем по распакованному размеру.
+MAX_KB="${MAX_KB:-102400}"
 SKIP_TESTS="${SKIP_TESTS:-0}"
 
 if [ "$SKIP_TESTS" != "1" ]; then
@@ -39,6 +41,7 @@ rm -f "$OUT_ZIP"
 
 COUNT=$(echo "$FILES" | wc -l | tr -d ' ')
 SIZE_KB=$(( $(wc -c < "$OUT_ZIP") / 1024 ))
-echo "✅ $OUT_ZIP — $COUNT файлов, ${SIZE_KB} КБ, коммит $(git rev-parse --short HEAD)"
+UNPACKED_KB=$(( $(unzip -l "$OUT_ZIP" | tail -1 | awk '{print $1}') / 1024 ))
+echo "✅ $OUT_ZIP — $COUNT файлов, архив ${SIZE_KB} КБ, распакованно ${UNPACKED_KB} КБ, коммит $(git rev-parse --short HEAD)"
 unzip -l "$OUT_ZIP" | awk 'NR>3 && $4!="" {print $1"\t"$4}' | sort -rn | head -5
-[ "$SIZE_KB" -le "$MAX_KB" ] || { echo "✖ Больше бюджета ${MAX_KB} КБ"; exit 1; }
+[ "$UNPACKED_KB" -le "$MAX_KB" ] || { echo "✖ Распакованная игра больше бюджета ${MAX_KB} КБ"; exit 1; }

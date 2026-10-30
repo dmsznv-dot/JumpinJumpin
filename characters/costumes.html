@@ -8,12 +8,12 @@ import * as T from '../vendor/three.module.min.js';
 import {createCubeCharacter} from './cube-character.mjs';
 import {CUBE_COSMETICS,preloadCostume} from './cube-wardrobe.mjs';
 import {COSTUME_ASSETS} from './costume-manifest.mjs';
-import {PRINTS,printsReady} from './cube-print.mjs';
+import {PRINTS,printsReady} from './cube-print.mjs';import {PRINT_CATALOG} from './print-catalog.mjs';
 const canvas=document.querySelector('canvas'),renderer=new T.WebGLRenderer({canvas,antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;
 const scene=new T.Scene();scene.background=new T.Color(0xeeeae3);scene.add(new T.HemisphereLight(0xffffff,0xb9b6b0,2));const key=new T.DirectionalLight(0xfff7eb,2.5);key.position.set(2,6,4);scene.add(key);
 const camera=new T.OrthographicCamera(-6.4,6.4,3.5,-3.9,.1,100);camera.position.set(0,0,20);camera.lookAt(0,0,0);
 let page=0,rigs=[],serial=0;const params=new URLSearchParams(location.search);document.querySelector('#catalog').value=params.get('catalog')||'assets';document.querySelector('#view').value=params.get('view')||'front';
-const names={belly:'Абстрактное конфетти',stripes:'Диагональные полосы',polka:'Горошек',flames:'Карамельные волны',stars:'Пятиконечные звёзды',lightning:'Ломаный ритм',rings:'Гипнотические кольца',diamonds:'Арлекин',clouds:'Пушистые облака',leaves:'Листья',circuit:'Микросхема',hexagons:'Медовые соты'};
+const names={belly:'Абстрактное конфетти',stripes:'Диагональные полосы',polka:'Горошек',flames:'Карамельные волны',stars:'Пятиконечные звёзды',lightning:'Ломаный ритм',rings:'Гипнотические кольца',diamonds:'Арлекин',clouds:'Пушистые облака',leaves:'Листья',circuit:'Микросхема',hexagons:'Медовые соты',...Object.fromEntries(PRINT_CATALOG.map(([id,,,title])=>[id,title]))};
 function draw(){renderer.setSize(canvas.clientWidth,canvas.clientHeight,false);renderer.render(scene,camera);}
 async function refresh(){const token=++serial;for(const r of rigs){scene.remove(r.root);r.dispose();}rigs=[];const mode=document.querySelector('#catalog').value;
 const items=mode==='patterns'?Object.keys(PRINTS).map(pattern=>({hat:'none',pattern,title:names[pattern]})):mode==='all'?CUBE_COSMETICS:Object.entries(COSTUME_ASSETS).map(([hat,c])=>({hat,...c}));

@@ -18,6 +18,7 @@ export function createShowdownVisuals(THREE, course) {
   };
 
   const pink = mat(0xff2a85, { roughness: 0.32 });
+  const violet = mat(0x5b2be0, { roughness: 0.36 }); // wedges over the pink slime need a contrasting colour
   const cyan = mat(0x00e5ff, { roughness: 0.32 });
   const yellow = mat(0xffe600, { roughness: 0.28 });
   const darkMetal = mat(0x35517b, { roughness: 0.55, metalness: 0.35 });
@@ -37,9 +38,9 @@ export function createShowdownVisuals(THREE, course) {
     sectorGroups.push(sGroup);
 
     const isEven = i % 2 === 0;
-    // Printed padding on the wedges: pink polka dots and cyan checks, in metres.
-    const topMat = isEven ? candyMaterial(THREE, 'dots', PALETTE.hotPink, 0xff9ccc, 2.4, { roughness: .4 }) : candyMaterial(THREE, 'check', 0x00cfe8, 0xb4f6ff, 2.6, { roughness: .4 });
-    const rimMat = isEven ? cyan : pink;
+    // Plain violet wedges alternate with large cyan checks (UVs in metres) — big enough not to blend with contestants' prints.
+    const topMat = isEven ? violet : candyMaterial(THREE, 'check', 0x00cfe8, 0x8fe9f7, 6, { roughness: .4 });
+    const rimMat = isEven ? cyan : violet;
 
     // Build custom 3D wedge geometry with rounded borders and thickness
     const arcSegments = 16;

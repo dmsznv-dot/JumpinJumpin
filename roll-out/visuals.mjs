@@ -19,11 +19,11 @@ function mergeByMaterial(THREE,group){
 }
 export function createRolloutVisuals(THREE, course) {
  const root=new THREE.Group();
- const colors=[0xf4529d,0x38cbe6,0xffd43b,0x9767e8,0x49d5af];
- // Each drum gets its own printed pad: stripes, checks and dots in the show colours (UVs are in metres).
- const kinds=['stripes','check','dots','check','stripes'];
- const mats=colors.map((color,i)=>{const m=candyMaterial(THREE,kinds[i],color,0xffffff,2.7,{roughness:.45}).clone();m.side=THREE.DoubleSide;return m;});
- const wallMat=candyMaterial(THREE,'stripes',PALETTE.yellow,PALETTE.white,.9);
+ const colors=[0x5b2be0,0x38cbe6,0xffd43b,0xff9f2e,0x49d5af]; // no pink drum: it melted into the slime below
+ // Plain drums alternate with two large-print ones (2 checks across a drum, big dots), so contestants' prints stay readable.
+ const kinds=[null,'check',null,'dots',null];
+ const mats=colors.map((color,i)=>{const m=(kinds[i]?candyMaterial(THREE,kinds[i],color,0xffffff,kinds[i]==='check'?5.4:4.5,{roughness:.45}):softMaterial(THREE,color,.45)).clone();m.side=THREE.DoubleSide;return m;});
+ const wallMat=candyMaterial(THREE,'stripes',PALETTE.yellow,PALETTE.white,2.6);
  const edgeMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.55});
  const stripeMat=new THREE.MeshStandardMaterial({color:0xf3548b,roughness:.45});
  const gapMat=new THREE.MeshStandardMaterial({color:0xffdb56,roughness:.45});
@@ -85,7 +85,7 @@ export function createRolloutVisuals(THREE, course) {
  });
  // Inflatable wheels at both ends of the roller and a hub axle through the middle (decor only).
  const wheels=new THREE.Group();root.add(wheels);
- const tyreMat=candyMaterial(THREE,'bands',PALETTE.pink,PALETTE.white,.5),hubMat=softMaterial(THREE,PALETTE.yellow,.4);
+ const tyreMat=candyMaterial(THREE,'bands',PALETTE.violet,PALETTE.white,.5),hubMat=softMaterial(THREE,PALETTE.yellow,.4);
  for(const side of [-1,1]){
   const wheel=new THREE.Group();wheel.position.set(side*(RING_WIDTH*2.5+.9),-RADIUS,0);wheels.add(wheel);
   const tyre=new THREE.Mesh(new THREE.TorusGeometry(RADIUS+.35,.9,14,48),tyreMat);tyre.rotation.y=Math.PI/2;tyre.castShadow=true;wheel.add(tyre);
