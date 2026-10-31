@@ -1,4 +1,4 @@
-import { COURSE, padContains, surfaceAt } from './course.mjs';
+import { COURSE, padContains, surfaceAt, SCALE } from './course.mjs';
 import { fanSurfaceAt } from './fan-platform.mjs';
 
 // A central route leaves side fans available as alternative paths for players.
@@ -7,7 +7,7 @@ const ROUTE = [
   {x:0,z:48}, {x:0,z:64}, {x:0,z:76},
   {x:0,z:87}, {x:-6,z:99}, {x:0,z:110}, {x:0,z:119.5},
   {x:-6,z:132}, {x:0,z:145}, {x:0,z:158}
-];
+].map(p => ({ x: p.x * SCALE, z: p.z * SCALE }));
 const PADS = [COURSE.start, ...COURSE.checkpoints, COURSE.finish];
 const SPEED = 7.2, JUMP = 12.4, GRAVITY = 30, STEP = 1 / 15;
 // Headings tried relative to the waypoint direction; null = stand still and let the fan carry the bot.

@@ -24,27 +24,27 @@ export function createSeeSawVisuals(THREE, course) {
   const planks = course.planks.map(p => {
     const pivot = new THREE.Group(); pivot.position.set(p.x, 0, p.z); root.add(pivot);
     const twin = course.planks.filter(q => q.row === p.row).indexOf(p);
-    const slab = keep(new THREE.Mesh(roundedSlabGeometry(THREE, p.length, p.depth, .7, .6), plankMats[(p.row * 2 + twin) % plankMats.length]), pivot);
+    const slab = keep(new THREE.Mesh(roundedSlabGeometry(THREE, p.length, p.depth, 1, .8), plankMats[(p.row * 2 + twin) % plankMats.length]), pivot);
     slab.castShadow = slab.receiveShadow = true;
     return pivot;
   });
   // Fulcrums (triangular stands along the course under each pivot) never move: one merged mesh.
   const stands = course.planks.map(p => {
     // A 3-sided cylinder laid along Z is a triangular prism; turning it half a turn puts an edge on top.
-    const g = new THREE.CylinderGeometry(1.1, 1.1, p.depth * .8, 3, 1); g.rotateX(Math.PI / 2); g.rotateZ(Math.PI);
-    g.translate(p.x, -1.8, p.z); return g;
+    const g = new THREE.CylinderGeometry(1.6, 1.6, p.depth * .8, 3, 1); g.rotateX(Math.PI / 2); g.rotateZ(Math.PI);
+    g.translate(p.x, -2.6, p.z); return g;
   });
   keep(new THREE.Mesh(mergeGeometries(stands), softMaterial(THREE, PALETTE.white, .5)));
   stands.forEach(g => g.dispose());
 
   const finish = keep(new THREE.Mesh(new THREE.PlaneGeometry(PAD_HALF_WIDTH * 2, 2), candyMaterial(THREE, 'check', 0x2b1a5a, PALETTE.white, 2)));
   finish.rotation.x = -Math.PI / 2; finish.position.set(0, .03, FINISH_Z); scaleUV(finish.geometry, PAD_HALF_WIDTH * 2, 2);
-  const arch = inflatableArch(THREE, { width: PAD_HALF_WIDTH * 2 + .8, height: 7.4, a: PALETTE.violet, b: PALETTE.white, label: 'ФИНИШ!', labelBg: PALETTE.purple });
+  const arch = inflatableArch(THREE, { width: PAD_HALF_WIDTH * 2 + .8, height: 10, a: PALETTE.violet, b: PALETTE.white, label: 'ФИНИШ!', labelBg: PALETTE.purple });
   arch.position.set(0, 0, FINISH_Z); root.add(arch);
   arch.traverse(o => { if (o.geometry) owned.push(o.geometry); });
 
   const spots = [];
-  for (let z = 4; z < FINISH_Z; z += 13) for (const side of [-1, 1]) spots.push({ x: side * (PAD_HALF_WIDTH + 5 + (z % 3)), y: 1 + (z % 4), z: z + side * 3, r: 1.3 + (z % 3) * .2 });
+  for (let z = 4; z < FINISH_Z; z += 18) for (const side of [-1, 1]) spots.push({ x: side * (PAD_HALF_WIDTH + 7 + (z % 3)), y: 1 + (z % 4), z: z + side * 3, r: 1.3 + (z % 3) * .2 });
   const balloons = balloonField(THREE, spots);
   root.add(balloons.mesh); owned.push(balloons.mesh.geometry);
 

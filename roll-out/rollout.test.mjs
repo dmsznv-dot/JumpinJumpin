@@ -6,7 +6,7 @@ test('standing actor is carried with the drum',()=>{const c=createRollout();cons
 test('a racer cannot tunnel through a wall between frames',()=>{const a={z:2,y:0,vz:8};const s={y:0,wallAngle:0};assert.equal(hitWall(s,a,-2),true);assert.ok(a.z<0)});
 
 test('rotation speeds up progressively and spawn positions are solid',()=>{
- const c=createRollout(); for(let i=0;i<15;i++){const x=(((i+2)%5)-2)*RING_WIDTH;const z=(Math.floor(i/5)-1)*1.25;assert.ok(sampleSurface(c,x,z),`spawn ${i} over gap`);}
+ const c=createRollout(); for(let i=0;i<24;i++){const x=(((i+2)%5)-2)*RING_WIDTH;const z=(Math.floor(i/5)-1.5)*2.2;assert.ok(sampleSurface(c,x,z),`spawn ${i} over gap`);}
  const initial=c.rings[0].angle;advanceRollout(c,1);const slow=c.rings[0].angle-initial;c.time=89;const before=c.rings[0].angle;advanceRollout(c,1);assert.ok(c.rings[0].angle-before>slow*2);
 });
 test('bots compensate roller movement and do not hop needlessly', async()=>{

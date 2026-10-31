@@ -5,35 +5,44 @@
 import { steerTo, skillOf, botNumber, SPEED, JUMP, GRAVITY } from '../race-kit/obstacle-race.mjs';
 
 export const LIMIT = 120;
-export const RING = { radius: 7, width: 5.2, gap: .3, sectors: 16, walk: 5.6 };
-export const PAD_HALF_WIDTH = 7;
-export const DRUM = { radius: 9, halfWidth: 7, speed: 4.2 };   // section 4 drums roll toward the racers
-export const SWING = { halfWidth: 2.4, amp: 5, freq: .9 };
+// SCALE: rings, drums, pads and the platform are 1.5× their first version relative to the 1.6 m cube. Spin rates
+// are divided by SCALE so a ring's surface still carries you sideways at the same speed.
+export const SCALE = 1.5;
+export const RING = { radius: 7 * SCALE, width: 5.2 * SCALE, gap: .3 * SCALE, sectors: 16, walk: 5.6 * SCALE };
+export const PAD_HALF_WIDTH = 7 * SCALE;
+// Section 4 drums roll toward the racers. Only their crown is walkable (usable × radius each side of the top),
+// so the drop to the drum's edge stays below a jump and the platform after it can sit at that edge height.
+export const DRUM = { radius: 9 * SCALE, halfWidth: 7 * SCALE, speed: 4.2, usable: .45 };
+export const DRUM_DROP = DRUM.radius - Math.sqrt(DRUM.radius ** 2 - (DRUM.radius * DRUM.usable) ** 2);
+export const SWING = { halfWidth: 2.4 * SCALE, amp: 5 * SCALE, freq: .6 };
 const TAU = Math.PI * 2, SECTOR = TAU / RING.sectors;
 const wrap = a => ((a % TAU) + TAU) % TAU;
 
 export function buildLayout() {
-  const pads = [{ z1: -7, z2: 3, y: 0, kind: 'start' }], rings = [], drums = [];
-  let z = 3 + RING.gap, y = 0, n = 0;
+  const pads = [{ z1: -7 * SCALE, z2: 3 * SCALE, y: 0, kind: 'start' }], rings = [], drums = [];
+  let z = 3 * SCALE + RING.gap, y = 0, n = 0;
   const section = (count, speed, drop, kind, s) => {
     for (let i = 0; i < count; i++, n++) {
-      y -= drop;
-      rings.push({ section: s, z: z + RING.width / 2, y, omega: (n % 2 ? -1 : 1) * speed,
+      y -= drop * SCALE;
+      rings.push({ section: s, z: z + RING.width / 2, y, omega: (n % 2 ? -1 : 1) * speed / SCALE,
         hole: (n * 5 + 3) % RING.sectors, hole2: (n * 5 + 11) % RING.sectors, wall: (n * 7 + 11) % RING.sectors, bumper: s < 2 ? (n * 3 + 7) % RING.sectors : -1, phase: n * .9 });
       z += RING.width + RING.gap;
     }
-    y -= .6;
-    pads.push({ z1: z, z2: z + 6, y, kind, index: s + 1 });
-    z += 6 + RING.gap;
+    y -= .6 * SCALE;
+    pads.push({ z1: z, z2: z + 6 * SCALE, y, kind, index: s + 1 });
+    z += 6 * SCALE + RING.gap;
   };
   section(3, .38, 0, 'checkpoint', 0);
   section(4, .55, 0, 'checkpoint', 1);
   section(6, .45, .7, 'checkpoint', 2);
-  for (let i = 0; i < 2; i++) { drums.push({ z: z + DRUM.radius * .75, y, index: i }); z += DRUM.radius * 1.5; }
-  const swing = { z1: z + 1.4, z2: z + 5.4, y };
-  z = swing.z2 + 1.4;
-  pads.push({ z1: z, z2: z + 12, y, kind: 'finish' });
-  return { pads, rings, drums, swing, finishZ: z + 3 };
+  const crown = DRUM.radius * DRUM.usable;
+  for (let i = 0; i < 2; i++) { drums.push({ z: z + crown, y, index: i }); z += crown * 2; }
+  y -= DRUM_DROP; // the swing and the finish sit level with the drums' edge
+  // Gaps around the swinging platform stay a short hop (2 m).
+  const swing = { z1: z + 2, z2: z + 2 + 4 * SCALE, y };
+  z = swing.z2 + 2;
+  pads.push({ z1: z, z2: z + 12 * SCALE, y, kind: 'finish' });
+  return { pads, rings, drums, swing, finishZ: z + 4 };
 }
 export const LAYOUT = buildLayout();
 export const FINISH_Z = LAYOUT.finishZ;
@@ -55,7 +64,7 @@ function featureX(r, sector, dt) {
 }
 function drumSurface(d, x, z) {
   const dz = z - d.z;
-  if (Math.abs(x) > DRUM.halfWidth || Math.abs(dz) > DRUM.radius * .75) return null;
+  if (Math.abs(x) > DRUM.halfWidth || Math.abs(dz) > DRUM.radius * DRUM.usable) return null;
   return d.y - DRUM.radius + Math.sqrt(DRUM.radius * DRUM.radius - dz * dz);
 }
 function swingX(time) { return SWING.amp * Math.sin(time * SWING.freq); }
@@ -81,7 +90,7 @@ export function createRollOn() {
         const wx = featureX(r, r.wall, dt);
         if (wx !== null) { const y = r.y - RING.radius + Math.sqrt(RING.radius ** 2 - wx * wx); out.push({ x1: wx - .25, x2: wx + .25, y1: y - .5, y2: y + 1.1, z1: r.z - RING.width / 2, z2: r.z + RING.width / 2, wall: true }); }
         const bx = featureX(r, r.bumper, dt);
-        if (bx !== null) { const y = r.y - RING.radius + Math.sqrt(RING.radius ** 2 - bx * bx); out.push({ x1: bx - .8, x2: bx + .8, y1: y - .4, y2: y + .8, z1: r.z - .8, z2: r.z + .8, bumper: true }); }
+        if (bx !== null) { const y = r.y - RING.radius + Math.sqrt(RING.radius ** 2 - bx * bx); out.push({ x1: bx - 1.2, x2: bx + 1.2, y1: y - .4, y2: y + 1, z1: r.z - 1.2, z2: r.z + 1.2, bumper: true }); }
       }
       return out;
     },
@@ -106,7 +115,7 @@ export function createRollOn() {
     },
     respawn(actor) {
       const pad = pads.find(p => p.kind === 'checkpoint' && p.index === actor.rollCheckpoint) || pads[0], n = botNumber(actor);
-      return { x: ((n % 5) - 2) * 2, y: pad.y, z: (pad.z1 + pad.z2) / 2 + ((n % 3) - 1) * .8 };
+      return { x: ((n % 5) - 2) * 2.6, y: pad.y, z: (pad.z1 + pad.z2) / 2 + ((n % 3) - 1) * .8 };
     },
     finished(actor) { return actor.z >= FINISH_Z && actor.y > pads[pads.length - 1].y - 1; },
     decide(actor) { return rollOnBot(this, actor); }

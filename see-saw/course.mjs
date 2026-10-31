@@ -7,23 +7,27 @@ import { steerTo, skillOf, botNumber } from '../race-kit/obstacle-race.mjs';
 
 export const LIMIT = 180;
 export const MAX_TILT = .56;                 // ~32°
-export const PAD_HALF_WIDTH = 12;
-export const DEPTH = 7;                      // plank size along the course
-const GAP = 1.8, SEAM = .1;
-export const START = { z1: -7, z2: 3 };
+// SCALE: see-saws, pads and offsets are 1.5× their first version relative to the 1.6 m cube; the gap between
+// rows is kept to a short hop (2.7 m).
+export const SCALE = 1.5;
+export const PAD_HALF_WIDTH = 12 * SCALE;
+export const DEPTH = 7 * SCALE;              // plank size along the course
+const GAP = 1.8 * SCALE, SEAM = .1;
+export const START = { z1: -7 * SCALE, z2: 3 * SCALE };
 
 // Row recipes: planks as [centre x, length across]; gap: false = touches the previous row.
 const PLAN = [
   { section: 0, rows: [[[0, 18]], [[0, 18]], [[0, 18]], [[0, 18]]] },
-  { section: 1, rows: [[[-4.5, 18]], [[4.5, 18]], [[-4.5, 18]], [[4.5, 18]], [[-4.5, 18]]] },
+  // Section 2: rows shifted a little sideways (not perfectly one behind another), as in the show.
+  { section: 1, rows: [[[-2, 18]], [[2, 18]], [[-2, 18]], [[2, 18]], [[-2, 18]]] },
   { section: 2, rows: [
-    { planks: [[-6.1, 12], [6.1, 12]] },
-    { planks: [[-3, 18]], gap: false },
-    { planks: [[-6.1, 12], [6.1, 12]], gap: false },
-    { planks: [[4, 18]] },
-    { planks: [[-6.1, 12], [6.1, 12]], gap: false },
-    { planks: [[-4, 18]], gap: false },
-    { planks: [[-6.1, 12], [6.1, 12]] }
+    { planks: [[-6, 12], [6, 12]] },
+    { planks: [[-2, 18]], gap: false },
+    { planks: [[-6, 12], [6, 12]], gap: false },
+    { planks: [[2, 18]] },
+    { planks: [[-6, 12], [6, 12]], gap: false },
+    { planks: [[-2, 18]], gap: false },
+    { planks: [[-6, 12], [6, 12]] }
   ] }
 ];
 
@@ -34,15 +38,16 @@ export function buildLayout() {
     rows.forEach(spec => {
       const list = Array.isArray(spec) ? spec : spec.planks, joined = !Array.isArray(spec) && spec.gap === false;
       z += joined ? SEAM : GAP;
-      list.forEach(([x, length]) => planks.push({ section, row, x, z: z + DEPTH / 2, length, depth: DEPTH, joined }));
+      list.forEach(([x, length]) => planks.push({ section, row, x: x * SCALE, z: z + DEPTH / 2, length: length * SCALE, depth: DEPTH, joined }));
       z += DEPTH; row++;
     });
     const last = s === PLAN.length - 1;
     z += GAP;
-    pads.push({ z1: z, z2: z + (last ? 14 : 7), kind: last ? 'finish' : 'checkpoint', index: s + 1 });
-    z += last ? 14 : 7;
+    const padLength = (last ? 14 : 7) * SCALE;
+    pads.push({ z1: z, z2: z + padLength, kind: last ? 'finish' : 'checkpoint', index: s + 1 });
+    z += padLength;
   });
-  return { pads, planks, finishZ: pads[pads.length - 1].z1 + 4 };
+  return { pads, planks, finishZ: pads[pads.length - 1].z1 + 6 };
 }
 export const LAYOUT = buildLayout();
 export const FINISH_Z = LAYOUT.finishZ;
@@ -65,7 +70,7 @@ export function createSeeSaw() {
       }
       for (const p of planks) {
         // Weight against a spring back to level, damped; one racer near an end rolls it all the way over.
-        const inertia = 10 + p.load * .8;
+        const inertia = 15 + p.load * .8; // bigger planks are heavier: they roll over a little slower
         p.spin += ((p.torque - 6 * p.angle - 2.8 * p.spin) / inertia) * dt;
         p.angle += p.spin * dt;
         if (Math.abs(p.angle) > MAX_TILT) { p.angle = Math.sign(p.angle) * MAX_TILT; p.spin = 0; }
@@ -95,9 +100,9 @@ export function createSeeSaw() {
 }
 
 // ---------- Bots ----------
-// Pick the plank in the next row that lines up best and is not crowded, and cross it on its HIGH side: standing
-// there pulls a tipped see-saw back toward level instead of sliding off the low end. Hop gaps at the edge and hop
-// a seam that stands up as a ledge. Weaker bots balance late and pick crowded planks more often.
+// Pick the plank in the next row that lines up best and is not crowded. Get on where its edge is within a jump
+// (a tipped plank's high edge is a wall), then cross near the pivot leaning slightly to the high side. Hop gaps
+// at the edge and hop a seam that stands up as a ledge. Weaker bots lean late and pick crowded planks more often.
 function seeSawBot(course, actor) {
   const skill = skillOf(actor), pace = .82 + skill * .18, id = botNumber(actor);
   const lead = .14;
@@ -122,8 +127,19 @@ function seeSawBot(course, actor) {
     actor.seeTarget = best.p;
   }
   const p = actor.seeTarget, half = p.length / 2 - 1.6;
-  // The higher side of a tipped plank: aim further up the steeper it is (skilled bots react more).
-  const highSide = -Math.sign(p.angle) * Math.min(half, Math.abs(p.angle) * (6 + skill * 8));
-  const x = Math.max(p.x - half, Math.min(p.x + half, p.x + highSide + ((id % 3) - 1) * 1.2));
+  let x;
+  if (onPlank(p, actor.x, actor.z)) {
+    // On it: cross close to the pivot, where a crowd barely tips the plank, leaning a little toward the high side.
+    // (Running the whole crowd to the high edge flips the plank and drops everyone off the other end.)
+    const lean = -Math.sign(p.angle) * Math.min(2.5, Math.abs(p.angle) * (3 + skill * 4));
+    x = p.x + lean + ((id % 3) - 1) * .9;
+  } else {
+    // Getting on: a tipped plank's high edge is a wall, so aim at the point nearest the pivot that is still
+    // within a jump of our height.
+    const tan = Math.tan(p.angle), reach = actor.y + 1.4;
+    x = p.x + ((id % 3) - 1) * 1.2;
+    if (Math.abs(tan) > 1e-3 && plankY(p, x) > reach) x = p.x - reach / tan; // plankY(x) = reach
+  }
+  x = Math.max(p.x - half, Math.min(p.x + half, x));
   return { ...steerTo(actor, x, p.z + p.depth / 2 + 1.5, pace), jump };
 }

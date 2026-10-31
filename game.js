@@ -16,7 +16,7 @@ import { createGamepadReader } from './controls/gamepad.mjs';
 
 import * as THREE from 'three';
 import { GLTFLoader } from './vendor/GLTFLoader.js';
-import { createCourseState, surfaceAt as bigFansSurfaceAt } from './big-fans/course.mjs';
+import { createCourseState, surfaceAt as bigFansSurfaceAt, COURSE as BIG_FANS_COURSE } from './big-fans/course.mjs';
 import { createCourseVisuals } from './big-fans/visuals.mjs';
 import { initializeRacer, updateRace } from './big-fans/race.mjs';
 import { initRacer, updateObstacleRace } from './race-kit/obstacle-race.mjs';
@@ -55,6 +55,7 @@ const DIFFICULTIES = {
     fallDuration: 0.85,   // плавное падение и растворение
     regenDelay: 4.5,      // ускоренный пропорциональный реген (4.5 сек!)
     botIQ: 0.50,
+    raceBots: 13,     // боты на увеличенных уровнях (гонки, барабаны)
     powerupInterval: 5.0,
     specialTileChance: 0.08,
     scoreMult: 1.0
@@ -69,6 +70,7 @@ const DIFFICULTIES = {
     fallDuration: 0.80,
     regenDelay: 5.5,      // 5.5 сек на Классике
     botIQ: 0.80,
+    raceBots: 17,     // боты на увеличенных уровнях (гонки, барабаны)
     powerupInterval: 4.5,
     specialTileChance: 0.12,
     scoreMult: 1.5
@@ -83,6 +85,7 @@ const DIFFICULTIES = {
     fallDuration: 0.75,
     regenDelay: 6.5,      // 6.5 сек на Хардкоре
     botIQ: 0.97,
+    raceBots: 21,     // боты на увеличенных уровнях (гонки, барабаны)
     powerupInterval: 4.5,
     specialTileChance: 0.16,
     scoreMult: 2.2
@@ -97,6 +100,7 @@ const DIFFICULTIES = {
     fallDuration: 0.78,
     regenDelay: 4.8,      // быстрый реген в Мега-Хаосе
     botIQ: 0.90,
+    raceBots: 23,     // боты на увеличенных уровнях (гонки, барабаны)
     powerupInterval: 2.8,
     specialTileChance: 0.26,
     scoreMult: 2.5
@@ -1656,7 +1660,11 @@ beanShadowTexture.colorSpace = THREE.SRGBColorSpace;
 
 // Тень-пятно строго под персонажем на высоте пола под ним, в том числе в прыжке. Чем выше — тем меньше и светлее,
 // но всегда читается. floorY: высота опоры под (x, z) или null над пропастью.
-function placeBlobShadow(actor, floorY) {
+// floorAt(x, z): optional height function; with it the shadow is tilted to lie on slopes and curved rings
+// instead of hanging half above and half inside them.
+const BLOB_FLAT = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
+const blobNormal = new THREE.Vector3(), blobTilt = new THREE.Quaternion(), BLOB_UP = new THREE.Vector3(0, 1, 0);
+function placeBlobShadow(actor, floorY, floorAt = null) {
   const blob = actor.rig.blobShadow;
   if (floorY === null || floorY === undefined || floorY > actor.y + .05) { blob.visible = false; return; }
   const k = Math.min(1, (actor.y - floorY) / 7);
@@ -1664,6 +1672,15 @@ function placeBlobShadow(actor, floorY) {
   blob.position.y = floorY - actor.y + .04;
   blob.scale.setScalar(1.3 * (1 - k * .35)); // the 1.55 m quad × 1.3 ≈ the cube's own footprint
   blob.material.opacity = .95 - k * .45;
+  blob.quaternion.copy(BLOB_FLAT);
+  if (floorAt) {
+    const d = .35, l = floorAt(actor.x - d, actor.z), r = floorAt(actor.x + d, actor.z), b = floorAt(actor.x, actor.z - d), f = floorAt(actor.x, actor.z + d);
+    if (l !== null && r !== null && b !== null && f !== null && Math.abs(r - l) < 1.4 && Math.abs(f - b) < 1.4) {
+      // Surface normal in world space, then into the actor root's frame (the root turns with the facing).
+      blobNormal.set(-(r - l) / (2 * d), 1, -(f - b) / (2 * d)).normalize().applyAxisAngle(BLOB_UP, -actor.rig.root.rotation.y);
+      blob.quaternion.copy(blobTilt.setFromUnitVectors(BLOB_UP, blobNormal).multiply(BLOB_FLAT));
+    }
+  }
 }
 
 // ==================== КЛАСС УЧАСТНИКА 3D (ИГРОК И БОТЫ) ====================
@@ -1972,6 +1989,9 @@ function clearActorsAndFX() {
 }
 
 function beginLevelIntro(kind, title, description) {
+  // Прогрев шейдеров во время пролёта: иначе первая компиляция (уровень, AO, свечение) давала рывок на старте
+  // забега, и управление в первые секунды «залипало».
+  renderer.compileAsync?.(scene, camera).catch(() => {});
   state.introKind = kind;
   state.introDuration = kind === 'big-fans' || kind === 'race' ? 8.0 : 6.0;
   state.introTimer = state.introDuration;
@@ -2001,6 +2021,8 @@ function startMatch(options = {}) {
   const diffKey = state.diffKey;
   const config = { ...DIFFICULTIES[diffKey] };
   if (options.largeField) config.botsCount = Math.max(config.botsCount, 14);
+  // Увеличенные уровни (×1.5 к персонажу) вмещают больше участников — ближе к толпе в Fall Guys
+  if (options.bigField) config.botsCount = Math.max(config.raceBots, options.largeField ? 21 : 0);
   if (options.qualifiers) config.botsCount = options.qualifiers.filter(a => !a.isPlayer).length;
   state.config = config;
   state.elapsed = 0;
@@ -2114,7 +2136,7 @@ function startMatch(options = {}) {
 // Все забеги идут по одной схеме (пролёт, отсчёт, квота 70%, финиш); уровень даёт трассу, визуал и правила.
 const RACE_LEVELS = {
   'big-fans': {
-    title: 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ', progressLabel: 'КОНТРОЛЬНЫЕ ТОЧКИ', length: 155, seaZ: 79,
+    title: 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ', progressLabel: 'КОНТРОЛЬНЫЕ ТОЧКИ', length: BIG_FANS_COURSE.finish.z,
     description: 'Доберитесь до финиша через вращающиеся платформы!',
     create: createCourseState, visuals: createCourseVisuals, init: initializeRacer,
     update: (course, actors, dt, elapsed) => updateRace(course, actors, dt, elapsed),
@@ -2122,28 +2144,28 @@ const RACE_LEVELS = {
     floor: (course, actor) => (bigFansSurfaceAt(course, actor.x, actor.z) ? 0 : null)
   },
   'door-dash': {
-    title: 'ДВЕРНОЙ ПРОРЫВ', progressLabel: 'РЯДЫ ДВЕРЕЙ', length: DOOR_DASH_FINISH, seaZ: 55, limit: DOOR_DASH_LIMIT,
+    title: 'ДВЕРНОЙ ПРОРЫВ', progressLabel: 'РЯДЫ ДВЕРЕЙ', length: DOOR_DASH_FINISH, limit: DOOR_DASH_LIMIT,
     description: 'Одни двери настоящие, другие — нет. Пробейтесь к финишу!',
     create: () => createDoorDash(Math.floor(Math.random() * 1e9)), visuals: createDoorDashVisuals, init: initRacer,
     update: (course, actors, dt, elapsed) => updateObstacleRace(course, actors, dt, elapsed, { limit: DOOR_DASH_LIMIT }),
     progress: (course, actor) => [course.rows.filter(r => actor.z > r.z).length, course.rows.length]
   },
   'gate-crash': {
-    title: 'ВОРОТА', progressLabel: 'РЯДЫ ВОРОТ', length: GATE_CRASH_FINISH, seaZ: 68, limit: GATE_CRASH_LIMIT,
+    title: 'ВОРОТА', progressLabel: 'РЯДЫ ВОРОТ', length: GATE_CRASH_FINISH, limit: GATE_CRASH_LIMIT,
     description: 'Проскакивайте, пока ворота опущены, и прыгайте через крутилки!',
     create: createGateCrash, visuals: createGateCrashVisuals, init: initRacer,
     update: (course, actors, dt, elapsed) => updateObstacleRace(course, actors, dt, elapsed, { limit: GATE_CRASH_LIMIT }),
     progress: (course, actor) => [course.rows.filter(r => actor.z > r.z).length, course.rows.length]
   },
   'see-saw': {
-    title: 'КАЧЕЛИ', progressLabel: 'КОНТРОЛЬНЫЕ ТОЧКИ', length: SEE_SAW_FINISH, seaZ: 80, limit: SEE_SAW_LIMIT,
+    title: 'КАЧЕЛИ', progressLabel: 'КОНТРОЛЬНЫЕ ТОЧКИ', length: SEE_SAW_FINISH, limit: SEE_SAW_LIMIT,
     description: 'Качели наклоняются под весом толпы — держите баланс и прыгайте на следующие!',
     create: createSeeSaw, visuals: createSeeSawVisuals, init: initRacer,
     update: (course, actors, dt, elapsed) => updateObstacleRace(course, actors, dt, elapsed, { limit: SEE_SAW_LIMIT }),
     progress: (course, actor) => [actor.seeCheckpoint || 0, 2]
   },
   'roll-on': {
-    title: 'КАТАЮЩИЕСЯ КОЛЬЦА', progressLabel: 'КОНТРОЛЬНЫЕ ТОЧКИ', length: ROLL_ON_FINISH, seaZ: 65, limit: ROLL_ON_LIMIT,
+    title: 'КАТАЮЩИЕСЯ КОЛЬЦА', progressLabel: 'КОНТРОЛЬНЫЕ ТОЧКИ', length: ROLL_ON_FINISH, limit: ROLL_ON_LIMIT,
     description: 'Кольца крутятся и уносят вбок — обходите дыры, стенки и бамперы!',
     create: createRollOn, visuals: createRollOnVisuals, init: initRacer,
     update: (course, actors, dt, elapsed) => updateObstacleRace(course, actors, dt, elapsed, { limit: ROLL_ON_LIMIT }),
@@ -2154,7 +2176,7 @@ function startBigFans(mode = 'single') { startRaceLevel('big-fans', mode); }
 function startRaceLevel(kind, mode = 'single') {
   const level = RACE_LEVELS[kind];
   state.lastMode = kind === 'big-fans' ? mode : kind;
-  startMatch({largeField: mode === 'championship', musicLevel: 'race'});
+  startMatch({largeField: mode === 'championship', bigField: kind !== 'gate-crash', musicLevel: 'race'});
   state.showMode = mode;
   state.raceLevel = level;
   document.querySelector('.brand-pill .pill-title').textContent = level.title;
@@ -2166,16 +2188,17 @@ function startRaceLevel(kind, mode = 'single') {
   state.race = level.create();
   state.raceFinishNotice = 0;
   document.getElementById('race-finish-notice')?.remove();
-  slimeSeaMesh.position.z = level.seaZ; // море слизи под всей трассой, а не только под стартом
+  slimeSeaMesh.position.z = level.length / 2; // море слизи под всей трассой, а не только под стартом
   state.raceVisuals = level.visuals(THREE, state.race);
   arenaGroup.add(state.raceVisuals.root);
   state.raceVisuals.update();
   state.phase = 'intro_flyover';
   state.countdownTimer = 3.2;
   state.elapsed = 0;
+  // Стартовая решётка: 6 в ряд через 3.2 м, ряды через 2.8 м — толпа не слипается с первой секунды
   state.actors.forEach((actor, i) => {
-    actor.x = ((i % 5) - 2) * 2.2;
-    actor.z = -3 + Math.floor(i / 5) * 2;
+    actor.x = ((i % 6) - 2.5) * 3.2;
+    actor.z = -6 + Math.floor(i / 6) * 2.8;
     actor.y = 0; actor.vx = actor.vy = actor.vz = 0;
     actor.facing = 0; actor.visualFacing = 0;
     level.init(actor);
@@ -2286,7 +2309,8 @@ function updateBigFans(dt) {
   }
   state.raceVisuals.update();
   for (const actor of state.actors) {
-    placeBlobShadow(actor, state.raceLevel.floor ? state.raceLevel.floor(state.race, actor) : state.race.floorAt(actor.x, actor.z, actor.y));
+    if (state.raceLevel.floor) placeBlobShadow(actor, state.raceLevel.floor(state.race, actor));
+    else placeBlobShadow(actor, state.race.floorAt(actor.x, actor.z, actor.y), (x, z) => state.race.floorAt(x, z, actor.y));
     if (actor.raceFinished && !actor.isPlayer) { actor.rig.root.visible = false; actor.labelEl.style.display = 'none'; }
   }
   updateFX(dt); updateThirdPersonCamera(dt); update3DNameplates(); updateRaceHUD();
@@ -2296,7 +2320,7 @@ function updateBigFans(dt) {
 // ==================== ВРАЩАЮЩИЕСЯ БАРАБАНЫ: SURVIVAL ROUND ====================
 function startRollOut(mode = 'single_rollout', qualifiers = null) {
   if (mode === 'single_rollout') state.lastMode = mode;
-  startMatch(qualifiers ? {qualifiers, musicLevel: 'survival'} : {largeField:true, musicLevel: 'survival'});
+  startMatch(qualifiers ? {qualifiers, musicLevel: 'survival'} : {largeField:true, bigField:true, musicLevel: 'survival'});
   state.showMode = mode;
   document.querySelector('.brand-pill .pill-title').textContent='ВРАЩАЮЩИЕСЯ БАРАБАНЫ';
   document.querySelector('.layer-pill .pill-label').textContent='КВАЛИФИКАЦИЯ';
@@ -2309,7 +2333,7 @@ function startRollOut(mode = 'single_rollout', qualifiers = null) {
   state.rolloutQuota = Math.max(1, Math.ceil(state.actors.length * .6));
   state.actors.forEach((actor,i) => {
     actor.x = (((i + 2) % 5)-2)*RING_WIDTH;
-    actor.z = (Math.floor(i/5)-1)*1.25;
+    actor.z = (Math.floor(i/5)-1.5)*2.2; // реже, чем раньше: на увеличенных барабанах толпа не слипается
     actor.y = sampleSurface(state.rollout,actor.x,actor.z)?.y ?? 0; actor.rollNextJump = 4 + i*.37;
     actor.vx=actor.vy=actor.vz=actor.knockVx=actor.knockVz=0;
     actor.onGround=true; actor.currentLayer=0; actor.facing=0; actor.visualFacing=0;
@@ -4817,3 +4841,5 @@ requestAnimationFrame(animate);
 
 
 window.__gameStarted = true;
+// Отладка: ?debug в адресе открывает состояние игры в консоли (window.__game)
+if (new URLSearchParams(location.search).has('debug')) window.__game = { state, music, renderer };

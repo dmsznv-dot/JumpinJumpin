@@ -35,14 +35,15 @@ export function createCourseVisuals(THREE, course) {
   // Only the finish gets an arch: arches over the start and checkpoints filled the screen behind the player.
   const arches = [[COURSE.finish.z, 'ФИНИШ!', PALETTE.violet, PALETTE.purple]];
   for (const [z, label, a, bg] of arches) {
-    const arch = inflatableArch(THREE, { width: 19.2, height: 7.4, a, b: PALETTE.white, label, labelBg: bg });
+    const arch = inflatableArch(THREE, { width: COURSE.finish.halfWidth * 2 + 1.2, height: 9.5, a, b: PALETTE.white, label, labelBg: bg });
     arch.position.set(0, 0, z); root.add(arch);
     arch.traverse(o => { if (o.geometry) owned.push(o.geometry); });
   }
   // Checkered finish line (one printed strip).
-  const line = add(new THREE.Mesh(new THREE.PlaneGeometry(15.6, 1.6), candyMaterial(THREE, 'check', 0x2b1a5a, PALETTE.white, 1.6)));
+  const lineWidth = COURSE.finish.halfWidth * 2 - 1.4;
+  const line = add(new THREE.Mesh(new THREE.PlaneGeometry(lineWidth, 1.6), candyMaterial(THREE, 'check', 0x2b1a5a, PALETTE.white, 1.6)));
   line.rotation.x = -Math.PI / 2; line.position.set(0, .03, COURSE.finish.z + .9);
-  line.geometry.attributes.uv.array.forEach((v, k, arr) => { arr[k] = v * (k % 2 ? 1.6 : 15.6); });
+  line.geometry.attributes.uv.array.forEach((v, k, arr) => { arr[k] = v * (k % 2 ? 1.6 : lineWidth); });
 
   // Confetti that keeps floating over the finish.
   const decorations = [];
@@ -57,7 +58,7 @@ export function createCourseVisuals(THREE, course) {
   root.add(confetti);
   // Balloons line the course on both sides, well clear of the side fans.
   const spots = [];
-  for (let z = 6; z < COURSE.finish.z; z += 13) for (const side of [-1, 1]) spots.push({ x: side * (21 + (z % 3)), y: 1 + (z % 5), z: z + side * 3, r: 1.3 + (z % 4) * .2 });
+  for (let z = 6; z < COURSE.finish.z; z += 18) for (const side of [-1, 1]) spots.push({ x: side * (31 + (z % 3)), y: 1 + (z % 5), z: z + side * 3, r: 1.3 + (z % 4) * .2 });
   const balloons = balloonField(THREE, spots);
   root.add(balloons.mesh); owned.push(balloons.mesh.geometry);
 

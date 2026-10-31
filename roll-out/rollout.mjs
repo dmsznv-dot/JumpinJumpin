@@ -1,6 +1,9 @@
 // Roll Out: five counter-rotating drums. Angle zero is the top of a drum.
-export const RADIUS = 10;
-export const RING_WIDTH = 5.4;
+// SCALE: drums are 1.5× their first version relative to the 1.6 m cube; their spin is divided by SCALE so the
+// surface still moves under the racers at the same speed.
+export const SCALE = 1.5;
+export const RADIUS = 10 * SCALE;
+export const RING_WIDTH = 5.4 * SCALE;
 export const SECTORS = 16;
 export const LIMIT = 120; // round length: the drums reach full speed at 90 s, the last 30 s are the crunch
 export const RINGS = [
@@ -13,7 +16,7 @@ export const speedMultiplier = time => 1 + Math.min(Math.max(time, 0) / 90, 1) *
 const wrap = x => ((x % TAU) + TAU) % TAU;
 export function createRollout() {
   return { time: 0, rings: RINGS.map((spec, i) => ({...spec, index:i,
-    x:(i-2)*RING_WIDTH, angle:i*.03, speed:(i%2 ? -1 : 1)*.20})) };
+    x:(i-2)*RING_WIDTH, angle:i*.03, speed:(i%2 ? -1 : 1)*.20/SCALE})) };
 }
 export function advanceRollout(course, dt) {
   course.time += dt;

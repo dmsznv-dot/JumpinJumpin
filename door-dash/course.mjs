@@ -4,12 +4,14 @@
 import { steerTo, skillOf, botNumber } from '../race-kit/obstacle-race.mjs';
 
 export const LIMIT = 180;
-export const HALF_WIDTH = 11;
-export const ROWS = [[7, 5], [7, 3], [7, 2], [6, 2], [5, 2], [4, 2], [3, 1]].map(([doors, real], i) => ({ z: 14 + i * 12, doors, real }));
-export const DOOR = { width: 2.3, height: 3.2, thick: .5, wall: 4.2 };
-export const UPPER_END = ROWS[ROWS.length - 1].z + 6; // the upper deck ends here; the finish platform is 4 m lower
-export const LOWER_Y = -4, FINISH_Z = UPPER_END + 22;
-export const START = { z1: -7, z2: 3 };
+// SCALE: walls, doors and distances are 1.5× their first version relative to the 1.6 m cube.
+export const SCALE = 1.5;
+export const HALF_WIDTH = 11 * SCALE;
+export const ROWS = [[7, 5], [7, 3], [7, 2], [6, 2], [5, 2], [4, 2], [3, 1]].map(([doors, real], i) => ({ z: (14 + i * 12) * SCALE, doors, real }));
+export const DOOR = { width: 2.3 * SCALE, height: 3.2 * SCALE, thick: .5 * SCALE, wall: 4.2 * SCALE };
+export const UPPER_END = ROWS[ROWS.length - 1].z + 6 * SCALE; // the upper deck ends here; the finish platform is lower
+export const LOWER_Y = -4 * SCALE, FINISH_Z = UPPER_END + 22 * SCALE;
+export const START = { z1: -7 * SCALE, z2: 3 * SCALE };
 
 // Seeded so a round can be replayed in tests; the game passes a random seed.
 function rng(seed) { return () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }; }
@@ -34,7 +36,7 @@ export function createDoorDash(seed = Date.now()) {
     return { ...row, index: r, doors, walls: walls.filter(w => w.x2 - w.x1 > .01) };
   });
   // Side barriers keep racers on the deck (as in the show).
-  const sides = [-1, 1].map(s => ({ x1: s < 0 ? -HALF_WIDTH - 1.2 : HALF_WIDTH, x2: s < 0 ? -HALF_WIDTH : HALF_WIDTH + 1.2, y1: LOWER_Y, y2: 2.2, z1: START.z1, z2: FINISH_Z + 4, wall: true }));
+  const sides = [-1, 1].map(s => ({ x1: s < 0 ? -HALF_WIDTH - 1.2 : HALF_WIDTH, x2: s < 0 ? -HALF_WIDTH : HALF_WIDTH + 1.2, y1: LOWER_Y, y2: 3.3, z1: START.z1, z2: FINISH_Z + 4, wall: true }));
   const course = {
     time: 0, rows, sides, events: [],
     advance(dt) {

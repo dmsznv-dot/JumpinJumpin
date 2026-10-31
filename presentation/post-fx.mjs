@@ -27,6 +27,18 @@ export function createPostFX(THREE, renderer, scene, camera) {
   // Small radius: contact shadows under cubes, in corners of walls and doors, around hex tiles.
   ao.updateGtaoMaterial({ radius: .55, distanceExponent: 1.6, thickness: 1.2, scale: 1.1, samples: 12, distanceFallOff: 1, screenSpaceRadius: false });
   ao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 5, radiusExponent: 1, rings: 2, samples: 12 });
+  // GTAO's own pass hides only points and lines, so transparent decals (drop shadows under the cubes, banners)
+  // and the sky dome went into its depth/normal buffer as solid geometry. A blob shadow floating over a curved
+  // ring then darkened a square around itself, flickering as the ring turned. Keep only opaque, depth-writing
+  // meshes in the AO pass.
+  ao.overrideVisibility = function () {
+    const cache = this._visibilityCache;
+    this.scene.traverse(object => {
+      cache.set(object, object.visible);
+      const m = object.material;
+      if (object.isPoints || object.isLine || (m && !Array.isArray(m) && (m.transparent || m.depthWrite === false))) object.visible = false;
+    });
+  };
   composer.addPass(ao);
 
   // Only values above ~1.0 (HDR, before tone mapping) bloom: sun glints, emissive slime, neon bands — not the sky.

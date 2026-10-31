@@ -33,10 +33,10 @@ export function createDoorDashVisuals(THREE, course) {
   const doorMesh = keep(instances(THREE, doorGeo, softMaterial(THREE, 0xfff1dc, .45), doors.length));
   doorMesh.castShadow = true;
   // A round porthole on every door, the same on real and fake ones.
-  const knobGeo = new THREE.CylinderGeometry(.42, .42, DOOR.thick + .04, 24); knobGeo.rotateX(Math.PI / 2); knobGeo.translate(0, 2.1, 0);
+  const knobGeo = new THREE.CylinderGeometry(DOOR.width * .18, DOOR.width * .18, DOOR.thick + .04, 24); knobGeo.rotateX(Math.PI / 2); knobGeo.translate(0, DOOR.height * .66, 0);
   const knobMesh = keep(instances(THREE, knobGeo, softMaterial(THREE, PALETTE.sky, .3), doors.length));
 
-  const arch = inflatableArch(THREE, { width: HALF_WIDTH * 2 + .8, height: 7.4, a: PALETTE.violet, b: PALETTE.white, label: 'ФИНИШ!', labelBg: PALETTE.purple });
+  const arch = inflatableArch(THREE, { width: HALF_WIDTH * 2 + .8, height: 10, a: PALETTE.violet, b: PALETTE.white, label: 'ФИНИШ!', labelBg: PALETTE.purple });
   arch.position.set(0, LOWER_Y, FINISH_Z); root.add(arch);
   arch.traverse(o => { if (o.geometry) owned.push(o.geometry); });
 

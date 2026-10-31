@@ -3,14 +3,15 @@ import assert from 'node:assert/strict';
 import { COURSE, createCourseState, advanceCourse, surfaceAt, checkpointAt, respawnPosition, beamHit } from './course.mjs';
 test('course has four sections and three persistent checkpoints', () => {
   assert.equal(COURSE.checkpoints.length, 3);
-  let cp = checkpointAt(0, 76, 0); assert.equal(cp, 2);
-  assert.equal(checkpointAt(0, 37, cp), 2);
-  assert.deepEqual(respawnPosition(cp), {x: 0, z: 76, y: 0});
+  const [c1, c2] = COURSE.checkpoints;
+  let cp = checkpointAt(0, c2.z, 0); assert.equal(cp, 2);
+  assert.equal(checkpointAt(0, c1.z, cp), 2);
+  assert.deepEqual(respawnPosition(cp), {x: 0, z: c2.z, y: 0});
 });
 test('fans move while pads stay solid and gaps remain empty', () => {
   const state = createCourseState();
   assert.equal(surfaceAt(state, 0, 0).type, 'pad');
-  assert.equal(surfaceAt(state, 30, 30), null);
+  assert.equal(surfaceAt(state, 45, 45), null);
   const old = state.fans[0].angle; advanceCourse(state, 1);
   assert.notEqual(state.fans[0].angle, old);
 });

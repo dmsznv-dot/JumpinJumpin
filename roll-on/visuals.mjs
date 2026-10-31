@@ -53,7 +53,7 @@ export function createRollOnVisuals(THREE, course) {
     wall.position.set(wx, wy, 0); wall.rotation.z = wa; wall.castShadow = true;
     if (ring.bumper >= 0) {
       const [bx, by, ba] = at(ring.bumper, .35);
-      const donut = keep(new THREE.Mesh(new THREE.TorusGeometry(.62, .32, 10, 20).rotateX(Math.PI / 2), bumperMat), group);
+      const donut = keep(new THREE.Mesh(new THREE.TorusGeometry(.95, .45, 10, 20).rotateX(Math.PI / 2), bumperMat), group);
       donut.position.set(bx, by, 0); donut.rotation.z = ba; donut.castShadow = true;
     }
     return group;
@@ -62,10 +62,13 @@ export function createRollOnVisuals(THREE, course) {
   // Drums: axis along X, top rolls toward the racers; UVs stretched so the stripes stay broad.
   const drumMat = candyMaterial(THREE, 'stripes', PALETTE.violet, PALETTE.violetLight, 1);
   const drums = course.drums.map(d => {
-    const g = new THREE.CylinderGeometry(DRUM.radius, DRUM.radius, DRUM.halfWidth * 2, 48, 1, true);
-    const uv = g.attributes.uv; for (let k = 0; k < uv.count; k++) uv.setXY(k, uv.getX(k) * 18, uv.getY(k) * 4);
+    // Only the walkable crown is drawn (an arc either side of the top); the stripes scroll to show the rolling.
+    const half = Math.asin(DRUM.usable);
+    const g = new THREE.CylinderGeometry(DRUM.radius, DRUM.radius, DRUM.halfWidth * 2, 24, 1, true, Math.PI / 2 - half, half * 2);
+    const uv = g.attributes.uv; for (let k = 0; k < uv.count; k++) uv.setXY(k, uv.getX(k) * 3, uv.getY(k) * 4);
     g.rotateZ(Math.PI / 2);
-    const mesh = keep(new THREE.Mesh(g, drumMat)); mesh.position.set(0, d.y - DRUM.radius, d.z); mesh.receiveShadow = true;
+    const mat = drumMat.clone(); mat.side = THREE.DoubleSide; mat.map = drumMat.map.clone(); mat.map.needsUpdate = true; mat.userData.owned = true;
+    const mesh = keep(new THREE.Mesh(g, mat)); mesh.position.set(0, d.y - DRUM.radius, d.z); mesh.receiveShadow = true;
     return mesh;
   });
   const sw = course.swing;
@@ -75,18 +78,19 @@ export function createRollOnVisuals(THREE, course) {
   const finish = keep(new THREE.Mesh(new THREE.PlaneGeometry(PAD_HALF_WIDTH * 2, 2), candyMaterial(THREE, 'check', 0x2b1a5a, PALETTE.white, 2)));
   const finishPad = course.pads[course.pads.length - 1];
   finish.rotation.x = -Math.PI / 2; finish.position.set(0, finishPad.y + .03, FINISH_Z); scaleUV(finish.geometry, PAD_HALF_WIDTH * 2, 2);
-  const arch = inflatableArch(THREE, { width: PAD_HALF_WIDTH * 2 + .8, height: 7.4, a: PALETTE.violet, b: PALETTE.white, label: 'ФИНИШ!', labelBg: PALETTE.purple });
+  const arch = inflatableArch(THREE, { width: PAD_HALF_WIDTH * 2 + .8, height: 10, a: PALETTE.violet, b: PALETTE.white, label: 'ФИНИШ!', labelBg: PALETTE.purple });
   arch.position.set(0, finishPad.y, FINISH_Z); root.add(arch);
   arch.traverse(o => { if (o.geometry) owned.push(o.geometry); });
 
   const spots = [];
-  for (let z = 4; z < FINISH_Z; z += 12) for (const side of [-1, 1]) spots.push({ x: side * (RING.radius + 6 + (z % 3)), y: -2 + (z % 4), z: z + side * 3, r: 1.3 + (z % 3) * .2 });
+  for (let z = 4; z < FINISH_Z; z += 17) for (const side of [-1, 1]) spots.push({ x: side * (RING.radius + 6 + (z % 3)), y: -2 + (z % 4), z: z + side * 3, r: 1.3 + (z % 3) * .2 });
   const balloons = balloonField(THREE, spots);
   root.add(balloons.mesh); owned.push(balloons.mesh.geometry);
 
   const update = () => {
     course.rings.forEach((r, i) => { rings[i].rotation.z = -r.angle; });
-    drums.forEach(m => { m.rotation.x = -course.time * DRUM.speed / DRUM.radius; });
+    // The crown stays put; its stripes scroll toward the racers at the drum's surface speed.
+    drums.forEach(m => { m.material.map.offset.x = (course.time * DRUM.speed / (DRUM.radius * Math.asin(DRUM.usable) * 2) * 3) % 1; });
     swing.position.x = SWING.amp * Math.sin(course.time * SWING.freq);
     balloons.update(course.time);
   };
