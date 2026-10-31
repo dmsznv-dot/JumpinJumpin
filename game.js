@@ -34,7 +34,6 @@ import { createCourse as createSlimeCourse, advanceCourse as advanceSlimeCourse,
 import { createVisuals as createSlimeVisuals } from './slime-climb/visuals.mjs';
 import { createShowdown, advanceShowdown, sampleSurface as showdownSurface, checkSweeperHit as showdownSweeperHit, botDecision as showdownBotDecision, LIMIT as SHOWDOWN_LIMIT } from './jump-showdown/showdown.mjs';
 import { createShowdownVisuals } from './jump-showdown/visuals.mjs';
-import { TRACKS as MUSIC_TRACKS } from './music/tracks.mjs';
 import { SONGS, pickMusic } from './music/songs.mjs';
 import { introFrame } from './presentation/intro.mjs';
 import { createCubeCharacter } from './characters/cube-character.mjs';
@@ -427,7 +426,6 @@ class FestivalMusicEngine {
     this.masterGain = null;
     this.noiseBuffer = null;
     this.volume = .5;
-    this.track = 0;
   }
 
   ensureContext() {
@@ -465,9 +463,7 @@ class FestivalMusicEngine {
   // level: 'race' | 'survival' | 'final' — picks among that level's songs and the classic themes, never twice in a row.
   selectTrack(level) {
     this.pick = pickMusic(this.pick, level);
-    const [kind, index] = this.pick.split(':');
-    this.song = kind === 'song' ? SONGS[Number(index)] : null;
-    if (kind === 'track') this.track = Number(index);
+    this.song = SONGS[Number(this.pick.split(':')[1])];
     this.step = 0;
   }
 
@@ -480,6 +476,8 @@ class FestivalMusicEngine {
     if (this.mode !== newMode) {
       this.mode = newMode;
       this.step = 0;
+      // Every return to the menu brings the next of the four menu songs (never the same one twice running).
+      if (newMode === 'lobby') this.nextLobbySong();
     }
   }
 
@@ -643,20 +641,7 @@ class FestivalMusicEngine {
     });
   }
 
-  playFestivalWhistle(ctx, t) {
-    // Карнавальный свисток/колокольчик на сильных долях припева
-    const osc = ctx.createOscillator();
-    const g = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(1567.98, t); // G6
-    osc.frequency.setValueAtTime(1760.0, t + 0.06); // A6
-    g.gain.setValueAtTime(0.07, t);
-    g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
-    osc.connect(g);
-    g.connect(this.masterGain);
-    osc.start(t);
-    osc.stop(t + 0.17);
-  }
+
 
   // ---- Voices for the songs (music/songs.mjs) ----
   tone(ctx, t, midi, dur, { type = 'triangle', peak = .14, attack = .008, cutoff = 0, detune = 0, vibrato = 0, partial = 0 } = {}) {
@@ -678,8 +663,8 @@ class FestivalMusicEngine {
     if (voice === 'chip') return this.tone(ctx, t, midi, Math.max(.1, dur * .85), { type: 'square', peak: .07, attack: .003 });
     if (voice === 'whistle') return this.tone(ctx, t, midi + 12, Math.max(.14, dur), { type: 'sine', peak: .11, attack: .03, vibrato: .012 });
   }
-  scheduleSong(ctx, stepIdx, t, stepDur) {
-    const song = this.song, s = stepIdx % (song.bars.length * 16), bar = song.bars[Math.floor(s / 16)], k = s % 16;
+  scheduleSong(ctx, stepIdx, t, stepDur, song = this.song) {
+    const s = stepIdx % (song.bars.length * 16), bar = song.bars[Math.floor(s / 16)], k = s % 16;
     // Swing grooves delay every off-16th by a third of a step.
     const tt = song.groove === 'swing' && k % 2 === 1 ? t + stepDur / 3 : t;
     const g = song.groove;
@@ -691,7 +676,12 @@ class FestivalMusicEngine {
     if (snare) this.playSnareClap(ctx, tt);
     if (g === 'disco' ? k % 4 === 2 : g === 'cumbia' ? k % 2 === 0 : k % 2 === 1) this.playHiHat(ctx, tt, g === 'disco' || k === 15);
     const bass = bar.bassAt[k];
-    if (bass) this.playFunkBass(ctx, tt, bass, stepDur * (g === 'polka' || g === 'stomp' ? 3 : 1.7));
+    if (bass) {
+      const len = stepDur * (g === 'polka' || g === 'stomp' ? 3 : 1.7);
+      this.playFunkBass(ctx, tt, bass, len);
+      // Heavy songs double the bass with a clean sine on the same note: a rounder, fuller low end.
+      if (song.heavy) this.tone(ctx, tt, bass, len * 1.1, { type: 'sine', peak: .16, attack: .004 });
+    }
     // Chords: off-beat stabs for polka/ska ("oom-pah", skank), a soft pad elsewhere.
     if ((g === 'polka' && (k === 4 || k === 12)) || (g === 'ska' && k % 4 === 2)) this.playMarimbaChord(ctx, tt, bar.chord, stepDur * 1.2);
     else if (g !== 'polka' && g !== 'ska' && (k === 0 || (k === 8 && g !== 'halftime'))) this.playMarimbaChord(ctx, tt, bar.chord, stepDur * 6);
@@ -699,13 +689,19 @@ class FestivalMusicEngine {
     if (n) this.playSongLead(ctx, tt, song.voice, n.midi, n.len * stepDur);
   }
 
+  nextLobbySong() { this.lobbyPick = pickMusic(this.lobbyPick, 'lobby'); this.lobbySong = SONGS[Number(this.lobbyPick.split(':')[1])]; }
+  currentSong() {
+    if (this.mode === 'lobby' && !this.lobbySong) this.nextLobbySong(); // the engine starts in the menu
+    return this.mode === 'arena' ? this.song : this.mode === 'lobby' ? this.lobbySong : null;
+  }
+
   scheduleStep(ctx, stepIdx, t) {
+    const song = this.currentSong();
+    if (song) { this.scheduleSong(ctx, stepIdx, t, (60 / song.bpm) / 4, song); return; }
     const s = stepIdx % 64; // 4 такта по 16 шестнадцатых долей
     const bar = Math.floor(s / 16);
     const inBar = s % 16;
-
-    const bpm = this.mode === 'intro' ? 112 : this.mode === 'arena' ? 136 : 126;
-    const stepDur = (60 / bpm) / 4;
+    const stepDur = (60 / 112) / 4;
 
     if (this.mode === 'intro') {
       // An original rising fanfare, held through the flyover and countdown.
@@ -717,110 +713,13 @@ class FestivalMusicEngine {
       if(inBar===12)this.playHiHat(ctx,t,true);
       return;
     }
-
-    if (this.mode === 'arena' && this.song) { this.scheduleSong(ctx, stepIdx, t, (60 / this.song.bpm) / 4); return; }
-    if (this.mode === 'arena' && this.track > 0) {
-      const theme=MUSIC_TRACKS[this.track-1];
-      const bassy=theme.style==='bass', melodic=theme.style==='melodic';
-      if(inBar%4===0 || (bassy && inBar===10))this.playKick(ctx,t,bassy?1:.85);
-      if(inBar===4||inBar===12)this.playSnareClap(ctx,t);
-      if(inBar%2===1)this.playHiHat(ctx,t,inBar===15);
-      if(inBar%2===0 && (!melodic || inBar%4===0))this.playFunkBass(ctx,t,theme.bass[bar]+(inBar%8===4?12:0),stepDur*(bassy?2:1.5));
-      if(inBar===0||inBar===8)this.playMarimbaChord(ctx,t,theme.chords[bar],stepDur*3);
-      if(inBar%2===0) {
-        const note=theme.lead[bar][inBar/2];
-        if(melodic && inBar%4===2)this.playMarimbaChord(ctx,t,[note],stepDur*2.2);
-        else this.playBrassLead(ctx,t,note,stepDur*(melodic?2.1:1.4));
-      }
-      if(inBar===0 && bar===0)this.playFestivalWhistle(ctx,t);
-      return;
-    }
-    if (this.mode === 'lobby') {
-      // ===== ФЕСТИВАЛЬНОЕ ЛОББИ (Bouncy Funk-Pop Groove в Фа-мажоре / Ре-миноре) =====
-      if (inBar % 4 === 0) this.playKick(ctx, t, 0.85);
-      if (inBar === 4 || inBar === 12) this.playSnareClap(ctx, t);
-      if (inBar % 2 === 1) this.playHiHat(ctx, t, inBar === 7 || inBar === 15);
-
-      const lobbyBass = [
-        [53, 0, 53, 65, 53, 0, 55, 57, 58, 0, 58, 70, 60, 0, 62, 64],
-        [53, 0, 53, 65, 53, 0, 55, 57, 62, 0, 60, 0,  58, 0, 55, 57],
-        [50, 0, 50, 62, 52, 0, 53, 55, 58, 0, 58, 70, 60, 0, 62, 64],
-        [53, 0, 55, 0,  57, 0, 58, 0,  60, 60, 0, 60, 65, 0, 60, 57]
-      ];
-      const bNote = lobbyBass[bar][inBar];
-      if (bNote > 0) this.playFunkBass(ctx, t, bNote, stepDur * 1.7);
-
-      // Праздничные аккорды маримбы на слабую долю
-      if (inBar === 2 || inBar === 6 || inBar === 10 || inBar === 14) {
-        const chords = [
-          [65, 69, 72], // F maj
-          [67, 70, 74], // Gm
-          [62, 65, 69], // Dm
-          [60, 64, 67]  // C maj
-        ];
-        this.playMarimbaChord(ctx, t, chords[bar], stepDur * 2.1);
-      }
-
-      // Залипательная мелодия синтезатора Лобби
-      const lobbyLead = [
-        [77, 0, 81, 0, 84, 81, 77, 0, 79, 0, 77, 74, 72, 0, 0, 0],
-        [77, 0, 81, 0, 84, 86, 84, 0, 81, 0, 79, 77, 79, 0, 0, 0],
-        [74, 0, 77, 0, 81, 77, 74, 0, 79, 0, 81, 82, 84, 0, 81, 0],
-        [86, 84, 81, 79, 77, 0, 74, 77, 79, 0, 76, 0, 77, 0, 0, 0]
-      ];
-      const lNote = lobbyLead[bar][inBar];
-      if (lNote > 0) {
-        this.playBrassLead(ctx, t, lNote, stepDur * 1.9, inBar === 0 ? lNote - 2 : null);
-      }
-    } else {
-      // ===== ЗАРЯЖАЮЩИЙ ГИМН АРЕНЫ ШОУ (136 BPM High-Energy Festival Game Show!) =====
-      if (inBar % 4 === 0 || (bar === 3 && inBar === 14)) this.playKick(ctx, t, 1.0);
-      if (inBar === 4 || inBar === 12 || (bar === 3 && inBar === 15)) this.playSnareClap(ctx, t);
-      this.playHiHat(ctx, t, inBar % 4 === 2);
-
-      if (inBar === 0 && (bar === 0 || bar === 2)) {
-        this.playFestivalWhistle(ctx, t);
-      }
-
-      // Октавный драйвовый фанк-бас
-      const arenaBass = [
-        [55, 67, 55, 67, 55, 67, 58, 60, 62, 74, 62, 74, 60, 72, 58, 60],
-        [55, 67, 55, 67, 55, 67, 58, 60, 65, 77, 63, 75, 62, 74, 60, 58],
-        [51, 63, 51, 63, 53, 65, 53, 65, 55, 67, 55, 67, 58, 70, 60, 72],
-        [62, 62, 0,  62, 63, 63, 0,  63, 65, 65, 0,  65, 67, 65, 62, 58]
-      ];
-      const abNote = arenaBass[bar][inBar];
-      if (abNote > 0) this.playFunkBass(ctx, t, abNote, stepDur * 1.45);
-
-      // Мощный фестивальный Brass-хук (в духе Everybody Falls!)
-      const arenaLead = [
-        [79, 0, 79, 82, 86, 0, 84, 82, 84, 0, 79, 77, 79, 0, 74, 0],
-        [79, 0, 79, 82, 86, 0, 89, 86, 84, 0, 82, 79, 81, 0, 0,  0],
-        [75, 0, 79, 0,  77, 0, 81, 0,  79, 82, 86, 84, 82, 0, 79, 0],
-        [86, 86, 0, 86, 87, 87, 0, 87, 89, 89, 0, 89, 91, 89, 86, 82]
-      ];
-      const alNote = arenaLead[bar][inBar];
-      if (alNote > 0) {
-        this.playBrassLead(ctx, t, alNote, stepDur * 1.8, (inBar === 4 || inBar === 12) ? alNote - 2 : null);
-      }
-
-      // Праздничная гармоническая подложка
-      if (inBar === 0 || inBar === 8) {
-        const showChords = [
-          [67, 70, 74], // Gm
-          [65, 69, 72], // F
-          [63, 67, 70], // Eb
-          [62, 66, 69]  // D7
-        ];
-        this.playMarimbaChord(ctx, t, showChords[bar], stepDur * 3.5);
-      }
-    }
   }
 
   scheduler() {
     const ctx = sfx.ctx;
     if (!ctx || !this.isPlaying) return;
-    const bpm = this.mode === 'intro' ? 112 : this.mode === 'arena' ? (this.song?.bpm || 136) : 126;
+    const song = this.currentSong();
+    const bpm = song ? song.bpm : 112; // intro fanfare
     const stepDur = (60 / bpm) / 4;
 
     while (this.nextNoteTime < ctx.currentTime + 0.12) {

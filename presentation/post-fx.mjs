@@ -5,6 +5,7 @@ import { RenderPass } from '../vendor/jsm/postprocessing/RenderPass.js';
 import { GTAOPass } from '../vendor/jsm/postprocessing/GTAOPass.js';
 import { UnrealBloomPass } from '../vendor/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from '../vendor/jsm/postprocessing/OutputPass.js';
+import { ShaderPass } from '../vendor/jsm/postprocessing/ShaderPass.js';
 
 // Phones and tablets: touch-first, small screen or few CPU cores.
 export function isLowPowerDevice() {
@@ -40,6 +41,20 @@ export function createPostFX(THREE, renderer, scene, camera) {
     });
   };
   composer.addPass(ao);
+
+  // Safety net before bloom: a NaN/Inf pixel (a broken normal in some model) would be blurred by bloom into
+  // flickering black squares across the screen. Replace non-finite values and clamp extreme highlights.
+  composer.addPass(new ShaderPass({
+    uniforms: { tDiffuse: { value: null } },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: `uniform sampler2D tDiffuse; varying vec2 vUv;
+      void main(){
+        vec4 c = texture2D(tDiffuse, vUv);
+        bvec4 bad = bvec4(c.r != c.r || abs(c.r) > 1e4, c.g != c.g || abs(c.g) > 1e4, c.b != c.b || abs(c.b) > 1e4, c.a != c.a);
+        if (any(bad)) c = vec4(0.0, 0.0, 0.0, 1.0);
+        gl_FragColor = vec4(min(c.rgb, vec3(32.0)), c.a);
+      }`
+  }));
 
   // Only values above ~1.0 (HDR, before tone mapping) bloom: sun glints, emissive slime, neon bands — not the sky.
   const bloom = new UnrealBloomPass(new THREE.Vector2(size.x, size.y), .32, .45, 1.0);

@@ -2,9 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SONGS, GROOVES, parseBar, noteToMidi, chordNotes, pickMusic } from './songs.mjs';
 
-test('fifteen complete eight-bar songs with distinct names, grooves and sane ranges', () => {
-  assert.equal(SONGS.length, 15);
-  assert.equal(new Set(SONGS.map(s => s.name)).size, 15);
+test('33 complete eight-bar songs with distinct names, grooves and sane ranges', () => {
+  assert.equal(SONGS.length, 33);
+  assert.equal(new Set(SONGS.map(s => s.name)).size, 33);
   for (const s of SONGS) {
     assert.equal(s.bars.length, 8, s.name);
     assert.ok(GROOVES.includes(s.groove), s.name);
@@ -22,8 +22,17 @@ test('notation: notes, rests and holds', () => {
   assert.deepEqual(bar.map(n => [n.step, n.len]), [[0, 3], [4, 1], [8, 2]]);
   assert.deepEqual(chordNotes('Am').notes, [69, 60, 64].map(n => n > 71 ? n - 12 : n));
 });
+test('the main menu has four songs of its own, kept out of the levels', () => {
+  const menu = SONGS.filter(s => s.levels.includes('lobby'));
+  assert.equal(menu.length, 4);
+  assert.equal(new Set(menu.map(s => s.groove)).size, 4, 'four different moods');
+  for (const level of ['race', 'survival', 'final', undefined]) for (let i = 0; i < 30; i++) {
+    const key = pickMusic(null, level, () => i / 30);
+    assert.ok(!SONGS[Number(key.split(':')[1])].levels.includes('lobby'), `${key} leaked into ${level}`);
+  }
+});
 test('every level gets several songs and never the same piece twice in a row', () => {
-  for (const level of ['race', 'survival', 'final']) {
+  for (const level of ['race', 'survival', 'final', 'lobby']) {
     assert.ok(SONGS.filter(s => s.levels.includes(level)).length >= 4, level);
     let prev = null;
     for (let i = 0; i < 40; i++) { const next = pickMusic(prev, level, () => (i * .137) % 1); assert.notEqual(next, prev); prev = next; }

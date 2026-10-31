@@ -1,7 +1,9 @@
-// Fifteen original eight-bar songs for the in-game synthesizer (AA'BA form, 16th-note grid).
+// Original eight-bar songs for the in-game synthesizer (AA'BA form, 16th-note grid): 15 written for the levels,
+// the 9 original arena themes rearranged in the same format, 5 more, and 4 main-menu songs of different moods.
 // Notation, one token per 16th: note `c5` / `f#4` / `bb5`, rest `.`, hold `-` (extends the previous note).
 // Bass lines are rhythm templates over each bar's chord root: R root, O octave up, F fifth, . rest.
-// `levels` says where a song fits: race (courses), survival (Roll Out, Hex arena), final (Jump Showdown).
+// `levels` says where a song fits: race (courses), survival (Roll Out, Hex arena), final (Jump Showdown), lobby (menu).
+// `heavy` doubles the bass with a clean sine on the same note for a fuller low end.
 
 const PC = { c: 0, d: 2, e: 4, f: 5, g: 7, a: 9, b: 11 };
 export function noteToMidi(token) {
@@ -47,7 +49,10 @@ const BASS = {
   hip: 'R . . . . . . R . . R . . . . .', jersey: 'R . . R . . R . . . R . R . . .',
   jig: 'R . . F . . R . . F . . R . F .', hyper: 'R R . R . R R . R . . R . R R .',
   walk: 'R . F . O . F . R . F . O . F .', baile: 'R . . R . . R . . R . . R . . .',
-  stomp: 'R . . . . . . . R . . R . . . .'
+  stomp: 'R . . . . . . . R . . R . . . .',
+  // Busier, bassier lines (the ones players liked): octave pumps, driving 8ths, syncopated funk.
+  octave: 'R . O . R . O . R . O R . R O .', drive: 'R R . R O . R . R R . R O . R .',
+  funk: 'R . . R . O . R . . R . O . R O'
 };
 
 const RAW = [
@@ -140,12 +145,123 @@ const RAW = [
     lead: ['c5 . e5 . g5 . a5 . bb5 . a5 . g5 . e5 .', 'c6 . . . bb5 . g5 . a5 . g5 . e5 . . .',
       'f5 . a5 . c6 . d6 . eb6 . d6 . c6 . a5 .', 'g5 . e5 . c5 . e5 . g5 - - . . . . .',
       'd6 . . . b5 . . . g5 . a5 . b5 . d6 .', 'c6 . . . a5 . . . f5 . g5 . a5 . c6 .',
-      'e6 . d6 . c6 . bb5 . a5 . g5 . e5 . c5 .', 'd5 . f5 . g5 . b5 . d6 - - . . . . .'] }
+      'e6 . d6 . c6 . bb5 . a5 . g5 . e5 . c5 .', 'd5 . f5 . g5 . b5 . d6 - - . . . . .'] },
+  // ---- The original arena themes, rearranged in this format (same motifs and chords, new grooves and bass) ----
+  { name: 'Фестиваль', bpm: 128, groove: 'four', voice: 'brass', bass: 'octave', heavy: true, levels: ['race', 'survival'],
+    chords: ['C', 'F', 'Am', 'G', 'C', 'Am', 'F', 'G'],
+    lead: ['c5 . e5 . g5 - e5 . a5 . g5 . e5 . d5 .', 'f5 . a5 . c6 - a5 . g5 . f5 . e5 . c5 .',
+      'a5 . c6 . e6 - c6 . b5 . a5 . g5 . e5 .', 'g5 . b5 . d6 - c6 . a5 . g5 . e5 . d5 .',
+      'e6 - - . d6 . c6 . g5 - - . e5 . g5 .', 'a5 - - . c6 . e6 . d6 - - . c6 . a5 .',
+      'f5 . a5 . c6 . f6 . e6 . d6 . c6 . a5 .', 'b5 . d6 . g6 - - . f6 . d6 . b5 - - .'] },
+  { name: 'Прыжок', bpm: 140, groove: 'breakbeat', voice: 'pluck', bass: 'funk', heavy: true, levels: ['race'],
+    chords: ['Dm', 'G', 'F', 'Am', 'Dm', 'G', 'F', 'Am'],
+    lead: ['d5 . f5 . a5 . f5 . d5 . a5 . c6 . a5 .', 'g5 . b5 . d6 . b5 . a5 . g5 . f5 . d5 .',
+      'f5 . a5 . c6 . a5 . f5 . e5 . d5 . c5 .', 'a5 . c6 . e6 . d6 . c6 . a5 . g5 . e5 .',
+      'a5 a5 . f5 . d5 . f5 a5 . d6 - - . . .', 'b5 b5 . g5 . d5 . g5 b5 . d6 - - . . .',
+      'c6 c6 . a5 . f5 . a5 c6 . f6 - - . . .', 'e6 . c6 . a5 . e5 . a5 - - - . . . .'] },
+  { name: 'Карнавал', bpm: 124, groove: 'disco', voice: 'bell', bass: 'octave', heavy: true, levels: ['survival', 'race'],
+    chords: ['F', 'Bb', 'G', 'C', 'F', 'Bb', 'G', 'C'],
+    lead: ['f5 . a5 . c6 . f6 - c6 . a5 . g5 . f5 .', 'bb5 . d6 . f6 . d6 - c6 . bb5 . a5 . f5 .',
+      'g5 . b5 . d6 . b5 - g5 . a5 . b5 . d6 .', 'c6 . e6 . g6 . f6 - d6 . c6 . a5 . g5 .',
+      'a5 a5 a5 . c6 . a5 . f5 f5 f5 . a5 . . .', 'bb5 bb5 bb5 . d6 . bb5 . f5 f5 f5 . bb5 . . .',
+      'b5 . d6 . g6 . d6 . b5 . g5 . a5 . b5 .', 'c6 - - . g5 . e5 . c6 - - - . . . .'] },
+  { name: 'Басовый марш', bpm: 96, groove: 'halftime', voice: 'brass', bass: 'drive', heavy: true, levels: ['survival', 'final'],
+    chords: ['Dm', 'Gm', 'F', 'Am', 'Dm', 'Gm', 'F', 'Am'],
+    lead: ['d5 . d5 . f5 . a5 - f5 . d5 . c5 . a4 .', 'g5 . f5 . d5 . bb4 . d5 . f5 . g5 . a5 .',
+      'f5 . f5 . a5 . c6 - a5 . f5 . e5 . c5 .', 'a5 . g5 . e5 . c5 . e5 . g5 . a5 . c6 .',
+      'd6 - - . a5 . f5 . d6 - - . c6 . a5 .', 'bb5 - - . g5 . d5 . bb5 - - . a5 . g5 .',
+      'a5 - - . f5 . c5 . a5 . c6 . f6 . e6 .', 'e6 - - . c6 . a5 . e5 - - - . . . .'] },
+  { name: 'Ночной заезд', bpm: 118, groove: 'four', voice: 'pluck', bass: 'octave', heavy: true, levels: ['race'],
+    chords: ['Em', 'Am', 'G', 'Bm', 'Em', 'Am', 'G', 'Bm'],
+    lead: ['e5 . g5 . b5 . g5 . e5 . d5 . b4 . d5 .', 'a5 . c6 . e6 . c6 . a5 . g5 . e5 . g5 .',
+      'g5 . b5 . d6 . b5 . g5 . f#5 . d5 . f#5 .', 'b5 . d6 . f#6 . d6 . b5 . a5 . f#5 . d5 .',
+      'b5 - - . e6 . b5 . g5 - - . e5 . . .', 'c6 - - . e6 . c6 . a5 - - . e5 . . .',
+      'd6 - - . g6 . d6 . b5 - - . g5 . . .', 'f#6 - - . d6 . b5 . f#5 - - - . . . .'] },
+  { name: 'Солнечный парад', bpm: 150, groove: 'ska', voice: 'brass', bass: 'ska', levels: ['race', 'survival'],
+    chords: ['C', 'G', 'Am', 'F', 'C', 'G', 'Am', 'F'],
+    lead: ['c5 . e5 . g5 . c6 . g5 . e5 . d5 . e5 .', 'g5 . b5 . d6 . b5 . g5 . a5 . b5 . d6 .',
+      'a5 . c6 . e6 . d6 . c6 . a5 . g5 . e5 .', 'f5 . a5 . c6 . a5 . g5 . e5 . d5 . c5 .',
+      'e6 . . e6 . . d6 . c6 . . g5 . . . .', 'd6 . . d6 . . c6 . b5 . . g5 . . . .',
+      'c6 . . c6 . . b5 . a5 . . e5 . . . .', 'f5 . a5 . c6 . f6 . e6 - - . . . . .'] },
+  { name: 'Облачная гонка', bpm: 138, groove: 'jersey', voice: 'bell', bass: 'drive', heavy: true, levels: ['race'],
+    chords: ['F', 'Am', 'Bb', 'G', 'F', 'Am', 'Bb', 'G'],
+    lead: ['f5 . a5 . c6 . a5 . f5 . g5 . a5 . c6 .', 'a5 . c6 . e6 . c6 . a5 . c6 . e6 . f6 .',
+      'bb5 . d6 . f6 . d6 . bb5 . a5 . g5 . f5 .', 'g5 . b5 . d6 . b5 . g5 . f5 . e5 . c5 .',
+      'c6 c6 . c6 . . a5 . f5 . a5 . c6 . . .', 'e6 e6 . e6 . . c6 . a5 . c6 . e6 . . .',
+      'f6 f6 . f6 . . d6 . bb5 . d6 . f6 . . .', 'd6 . b5 . g5 . b5 . d6 - - - . . . .'] },
+  { name: 'Конфетти', bpm: 100, groove: 'dembow', voice: 'pluck', bass: 'dembow', heavy: true, levels: ['survival'],
+    chords: ['Bb', 'Eb', 'C', 'F', 'Bb', 'Eb', 'C', 'F'],
+    lead: ['bb4 . . d5 . . f5 . bb5 . . f5 . d5 . .', 'eb5 . . g5 . . bb5 . g5 . . eb5 . g5 . .',
+      'c5 . . e5 . . g5 . c6 . . g5 . e5 . .', 'f5 . . a5 . . c6 . a5 . . f5 . a5 . c6',
+      'd6 . d6 . . bb5 . f5 d6 . d6 . . bb5 . .', 'eb6 . eb6 . . bb5 . g5 eb6 . eb6 . . bb5 . .',
+      'e6 . e6 . . c6 . g5 e6 . e6 . . c6 . .', 'f6 - - . c6 . a5 . f5 - - - . . . .'] },
+  { name: 'Гимн арены', bpm: 136, groove: 'four', voice: 'brass', bass: 'octave', heavy: true, levels: ['survival', 'race'],
+    chords: ['Gm', 'F', 'Eb', 'D7', 'Gm', 'F', 'Eb', 'D7'],
+    lead: ['g5 . g5 bb5 d6 . c6 bb5 c6 . g5 f5 g5 . d5 .', 'g5 . g5 bb5 d6 . f6 d6 c6 . bb5 g5 a5 . . .',
+      'eb5 . g5 . f5 . a5 . g5 bb5 d6 c6 bb5 . g5 .', 'd6 d6 . d6 eb6 eb6 . eb6 f6 f6 . f6 g6 f6 d6 bb5',
+      'g5 . g5 bb5 d6 . c6 bb5 c6 . g5 f5 g5 . d5 .', 'g5 . g5 bb5 d6 . f6 d6 c6 . bb5 g5 a5 . . .',
+      'bb5 - - . g5 . eb5 . f5 - - . a5 . c6 .', 'd6 - - . c6 . a5 . f#5 - - - . . . .'] },
+  // ---- Five new ones ----
+  { name: 'Бас-батут', bpm: 112, groove: 'baile', voice: 'whistle', bass: 'funk', heavy: true, levels: ['race', 'survival'],
+    chords: ['Gm', 'Gm', 'Eb', 'F', 'Gm', 'Gm', 'Eb', 'F'],
+    lead: ['g5 . . bb5 . . g5 . d6 . . bb5 . g5 . .', 'g5 . . bb5 . . c6 . d6 . . f6 . d6 . .',
+      'eb6 . . d6 . . bb5 . g5 . . bb5 . c6 . .', 'c6 . . a5 . . f5 . a5 - - . . . . .',
+      'd6 d6 . d6 . bb5 . g5 d6 d6 . d6 . bb5 . .', 'f6 f6 . f6 . d6 . bb5 g6 - - . f6 . d6 .',
+      'eb6 eb6 . eb6 . bb5 . g5 eb6 - - . d6 . c6 .', 'c6 - - . a5 . f5 . c6 - - - . . . .'] },
+  { name: 'Мармеладная лава', bpm: 108, groove: 'dembow', voice: 'chip', bass: 'dembow', heavy: true, levels: ['survival'],
+    chords: ['Am', 'F', 'C', 'G', 'Am', 'F', 'C', 'G'],
+    lead: ['e5 . a5 . . c6 . . b5 . a5 . . e5 . .', 'f5 . a5 . . c6 . . a5 . f5 . . c5 . .',
+      'e5 . g5 . . c6 . . d6 . e6 . . c6 . .', 'd6 . . b5 . . g5 . . . . . . . . .',
+      'a5 a5 c6 . a5 a5 e6 . a5 a5 c6 . b5 . a5 .', 'a5 a5 c6 . a5 a5 f6 . a5 a5 c6 . a5 . f5 .',
+      'g5 g5 c6 . g5 g5 e6 . g5 g5 c6 . d6 . e6 .', 'd6 - - . b5 . g5 . d6 - - - . . . .'] },
+  { name: 'Турбо-тубы', bpm: 132, groove: 'four', voice: 'brass', bass: 'drive', heavy: true, levels: ['race'],
+    chords: ['F', 'C', 'Dm', 'Bb', 'F', 'C', 'Dm', 'Bb'],
+    lead: ['c6 . c6 . a5 . f5 . c6 . d6 . c6 . a5 .', 'c6 . c6 . g5 . e5 . c6 . d6 . e6 . . .',
+      'd6 . d6 . a5 . f5 . d6 . e6 . f6 . d6 .', 'f6 - - . d6 . bb5 . f5 . . . . . . .',
+      'a5 . c6 . f6 . c6 . a5 . c6 . f6 . a6 .', 'g5 . c6 . e6 . c6 . g5 . c6 . e6 . g6 .',
+      'f5 . a5 . d6 . a5 . f5 . a5 . d6 . f6 .', 'f6 . d6 . bb5 . f5 . bb5 - - - . . . .'] },
+  { name: 'Ниндзя-лапша', bpm: 150, groove: 'breakbeat', voice: 'pluck', bass: 'funk', heavy: true, levels: ['race'],
+    chords: ['Em', 'D', 'C', 'D', 'Em', 'D', 'C', 'D'],
+    lead: ['e5 . g5 a5 . b5 . . d6 . b5 . a5 g5 . .', 'd5 . f#5 a5 . d6 . . e6 . d6 . a5 f#5 . .',
+      'e5 . g5 c6 . e6 . . g6 . e6 . c6 g5 . .', 'f#6 - - . e6 . d6 . a5 - - . . . . .',
+      'b5 b5 . e6 . b5 . g5 b5 b5 . e6 . g6 . .', 'a5 a5 . d6 . a5 . f#5 a5 a5 . d6 . f#6 . .',
+      'g5 g5 . c6 . g5 . e5 g5 g5 . c6 . e6 . .', 'd6 . a5 . f#5 . d5 . d6 - - - . . . .'] },
+  { name: 'Последний прыжок', bpm: 100, groove: 'stomp', voice: 'brass', bass: 'octave', heavy: true, levels: ['final'],
+    chords: ['Dm', 'Bb', 'F', 'C', 'Dm', 'Bb', 'C', 'Dm'],
+    lead: ['a5 - - . a5 . d6 . f6 - - . e6 . d6 .', 'd6 - - . bb5 . f5 . bb5 - - . . . . .',
+      'c6 - - . c6 . f6 . a6 - - . g6 . f6 .', 'g6 - - . e6 . c6 . e6 - - . . . . .',
+      'a6 . a6 . a6 . g6 . f6 . f6 . f6 . e6 .', 'd6 . d6 . d6 . f6 . bb6 - - . a6 . . .',
+      'g6 . g6 . g6 . a6 . c7 - - . bb6 . a6 .', 'a6 - - . f6 . d6 . d6 - - - . . . .'] },
+  // ---- Main menu: four moods ----
+  { name: 'Уютный фанк', bpm: 104, groove: 'four', voice: 'pluck', bass: 'funk', heavy: true, levels: ['lobby'],
+    chords: ['F', 'Gm', 'Dm', 'C', 'F', 'Gm', 'Dm', 'C'],
+    lead: ['f5 . a5 . c6 a5 f5 . g5 . f5 d5 c5 . . .', 'f5 . a5 . c6 d6 c6 . a5 . g5 f5 g5 . . .',
+      'd5 . f5 . a5 f5 d5 . g5 . a5 bb5 c6 . a5 .', 'd6 c6 a5 g5 f5 . d5 f5 g5 . e5 . f5 . . .',
+      'a5 - - . c6 . a5 . f5 - - . . . . .', 'bb5 - - . d6 . bb5 . g5 - - . . . . .',
+      'a5 - - . f5 . d5 . f5 . a5 . c6 . d6 .', 'e6 - - . c6 . g5 . c6 - - - . . . .'] },
+  { name: 'Мечтательное облако', bpm: 84, groove: 'halftime', voice: 'bell', bass: 'hip', levels: ['lobby'],
+    chords: ['C', 'Em', 'Am', 'F', 'C', 'Em', 'Am', 'F'],
+    lead: ['e5 - - . g5 - - . c6 - - - . . . .', 'b5 - - . g5 - - . e5 - - - . . . .',
+      'c6 - - . a5 - - . e5 - - . g5 . a5 .', 'a5 - - - . . f5 . c6 - - - . . . .',
+      'g5 . e5 . g5 . c6 . e6 - - . d6 . c6 .', 'b5 . g5 . b5 . e6 . g6 - - . e6 . b5 .',
+      'c6 . a5 . c6 . e6 . a6 - - . g6 . e6 .', 'f6 - - . c6 - - . a5 - - - . . . .'] },
+  { name: 'Конфетный марш', bpm: 120, groove: 'polka', voice: 'chip', bass: 'polka', levels: ['lobby'],
+    chords: ['G', 'D', 'G', 'C', 'G', 'D', 'C', 'G'],
+    lead: ['d5 . g5 . b5 . g5 . d6 . b5 . g5 . . .', 'a5 . f#5 . d5 . f#5 . a5 . d6 . a5 . . .',
+      'b5 . d6 . g6 . d6 . b5 . g5 . d6 . . .', 'c6 . e6 . g6 . e6 . c6 - - . . . . .',
+      'g6 g6 . d6 . b5 . d6 g6 g6 . d6 . b5 . .', 'f#6 f#6 . d6 . a5 . d6 f#6 f#6 . d6 . a5 . .',
+      'e6 e6 . c6 . g5 . c6 e6 . d6 . c6 . b5 .', 'g5 . . . d5 . . . g5 - - - . . . .'] },
+  { name: 'Ночная игротека', bpm: 96, groove: 'swing', voice: 'whistle', bass: 'walk', levels: ['lobby'],
+    chords: ['Am', 'Dm', 'E7', 'Am', 'Am', 'Dm', 'E7', 'Am'],
+    lead: ['a5 . . c6 . . e6 . . c6 . a5 . . . .', 'a5 . . d6 . . f6 . . d6 . a5 . . . .',
+      'g#5 . . b5 . . d6 . . b5 . g#5 . e5 . .', 'a5 - - . e5 . a5 . c6 - - . . . . .',
+      'e6 . d6 . c6 . b5 . a5 . b5 . c6 . e6 .', 'f6 . e6 . d6 . c6 . a5 . c6 . d6 . f6 .',
+      'e6 . d6 . b5 . g#5 . e5 . g#5 . b5 . d6 .', 'c6 - - . a5 . e5 . a5 - - - . . . .'] }
 ];
 
 // Pre-parsed, ready for the scheduler.
 export const SONGS = RAW.map(s => ({
-  name: s.name, bpm: s.bpm, groove: s.groove, voice: s.voice, levels: s.levels,
+  name: s.name, bpm: s.bpm, groove: s.groove, voice: s.voice, levels: s.levels, heavy: !!s.heavy,
   bars: s.lead.map((text, i) => {
     const lead = parseBar(text), bass = bassBar(BASS[s.bass], s.chords[i]);
     // Lookup by 16th step for the scheduler.
@@ -155,12 +271,11 @@ export const SONGS = RAW.map(s => ({
   })
 }));
 
-// Next music pick for a level: its songs plus the classic arena themes (`track:0..classicCount-1`),
-// never the same piece twice in a row.
-export function pickMusic(previous, level, random = Math.random, classicCount = 9) {
-  const pool = SONGS.flatMap((s, i) => (!level || s.levels.includes(level) ? ['song:' + i] : []));
-  for (let k = 0; k < classicCount; k++) pool.push('track:' + k);
-  const options = pool.filter(key => key !== previous);
+// Next song for a level ('race' | 'survival' | 'final' | 'lobby'), never the same one twice in a row.
+// Menu songs only play in the menu; without a level any game song can come up.
+export function pickMusic(previous, level, random = Math.random) {
+  const pool = SONGS.flatMap((s, i) => ((level ? s.levels.includes(level) : !s.levels.includes('lobby')) ? ['song:' + i] : []));
+  const options = pool.length > 1 ? pool.filter(key => key !== previous) : pool;
   return options[Math.min(options.length - 1, Math.floor(random() * options.length))];
 }
 export const GROOVES = ['four', 'disco', 'dembow', 'polka', 'ska', 'breakbeat', 'halftime', 'jersey', 'cumbia', 'swing', 'baile', 'stomp'];
