@@ -99,7 +99,8 @@ export function createCubeCharacter(THREE, {shadowTexture=null,skin=null}={}) {
     if(mode==='dance'){
       const beat=clock*5.6,swing=Math.sin(beat);
       bodyPivot.rotation.z=swing*.16;bodyPivot.rotation.x=Math.cos(beat*.5)*.07;
-      bodyPivot.position.y=Math.abs(Math.sin(beat))*.10;
+      // Feet stay down: the body bounces by squashing on the beat instead of lifting legs and all.
+      const bounce=Math.abs(Math.sin(beat));bodyPivot.scale.set(1+bounce*.05,1-bounce*.07,1+bounce*.05);
       head.rotation.y=Math.sin(beat*.5)*.18;
       named.LeftLeg.rotation.x=swing*.5;named.RightLeg.rotation.x=-swing*.5;
       named.LeftFoot.rotation.z=-.12;named.RightFoot.rotation.z=.12;
@@ -123,7 +124,7 @@ export function createCubeCharacter(THREE, {shadowTexture=null,skin=null}={}) {
       bodyPivot.rotation.x=1.15;bodyPivot.position.y=.25;
       named.LeftLeg.rotation.x=-.3;named.RightLeg.rotation.x=-.3;
     } else if(mode==='win'||mode==='wave') {
-      bodyPivot.rotation.z=Math.sin(phase)*.15;bodyPivot.position.y=Math.abs(Math.sin(phase))*(mode==='win'?.18:.04);
+      bodyPivot.rotation.z=Math.sin(phase)*.15;bodyPivot.position.y=mode==='win'?Math.abs(Math.sin(phase))*.18:0; // a wave keeps both feet on the ground
       named.LeftLeg.rotation.x=Math.sin(phase)*.25;named.RightLeg.rotation.x=-Math.sin(phase)*.25;
     } else if(mode==='land') {
       const progress=pose?Math.min(1,clock/.5):1-landingTime/.16;

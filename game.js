@@ -36,6 +36,8 @@ import { createShowdown, advanceShowdown, sampleSurface as showdownSurface, chec
 import { createShowdownVisuals } from './jump-showdown/visuals.mjs';
 import { SONGS, pickMusic } from './music/songs.mjs';
 import { introFrame } from './presentation/intro.mjs';
+import { planChampionship, roundLabel } from './championship/plan.mjs';
+import { createLobbyBehaviour } from './presentation/lobby-behaviour.mjs';
 import { createCubeCharacter } from './characters/cube-character.mjs';
 import { PRINT_CATALOG } from './characters/print-catalog.mjs';
 import { createSky, candyColumn, PALETTE } from './presentation/fg-style.mjs';
@@ -1088,6 +1090,7 @@ let lobbyPodiumGroup = null;
 let lobbyActiveTab = 'play';
 let lobbyBeanYaw = 0;
 let lobbyTargetBeanYaw = 0;
+const lobbyBehaviour = createLobbyBehaviour();
 
 function buildLobbyPedestalScene() {
   lobbyGroup.clear();
@@ -1150,17 +1153,16 @@ function rebuildLobbyBeanModel() {
 function updateLobby3D(dt, nowSec) {
   if (!lobbyPodiumGroup || !lobbyBeanRig) return;
 
-  // Плавное вращение фасолинки на пьедестале
+  // Поворот перетаскиванием + собственное поведение куба (presentation/lobby-behaviour.mjs): стоит, машет,
+  // оглядывается, танцует на месте, крутится в прыжке, подпрыгивает, садится. Ноги на пьедестале, кроме прыжков.
   lobbyBeanYaw += (lobbyTargetBeanYaw - lobbyBeanYaw) * Math.min(1, dt * 10);
-  lobbyBeanRig.bodyPivot.rotation.y = lobbyBeanYaw;
-
-  // Живая анимация дыхания и приветственного помахивания на пьедестале
-  const breath = Math.sin(nowSec * 3.0);
-  lobbyBeanRig.bodyPivot.position.y = breath * 0.035;
-  lobbyBeanRig.bodyPivot.rotation.z = Math.sin(nowSec * 1.5) * 0.035;
-  lobbyBeanRig.leftArm.rotation.x = Math.sin(nowSec * 2.5) * 0.18;
-  lobbyBeanRig.rightArm.rotation.x = -Math.sin(nowSec * 2.5) * 0.18;
-  lobbyBeanRig.animate?.(dt, {pose:'lobby'});
+  const act = lobbyBehaviour.update(dt);
+  lobbyBeanRig.animate?.(dt, { pose: act.pose, squash: act.squash });
+  lobbyBeanRig.bodyPivot.rotation.y = lobbyBeanYaw + act.spin;
+  // Прыжок поднимает весь куб; тень остаётся на пьедестале и уменьшается с высотой
+  lobbyBeanRig.root.position.y = act.hop;
+  lobbyBeanRig.blobShadow.position.y = .025 - act.hop;
+  lobbyBeanRig.blobShadow.scale.setScalar(1 - act.hop * .5);
 
   // В зависимости от открытой вкладки Лобби пьедестал плавно смещается:
   // - В 'play' — строго по центру
@@ -2072,10 +2074,48 @@ const RACE_LEVELS = {
   }
 };
 function startBigFans(mode = 'single') { startRaceLevel('big-fans', mode); }
-function startRaceLevel(kind, mode = 'single') {
+
+// ==================== ЧЕМПИОНАТ: 4 РАУНДА С ОТСЕВОМ ====================
+// Порядок раундов — championship/plan.mjs: старт (качели / вентиляторы / кольца), два случайных уровня в середине,
+// гранд-финал (прыжковый финал или гекса-арена). Прошедшие участники переходят в следующий раунд.
+const ROUND_TITLES = { 'roll-out': 'ВРАЩАЮЩИЕСЯ БАРАБАНЫ', showdown: 'ПРЫЖКОВЫЙ ФИНАЛ', hex: 'ГЕКСА-АРЕНА' };
+const roundTitle = kind => RACE_LEVELS[kind]?.title || ROUND_TITLES[kind];
+const championshipLabel = () => roundLabel(state.championship.index, state.championship.rounds.length);
+function startChampionship() {
+  state.championship = { rounds: planChampionship(), index: 0 };
+  state.lastMode = 'championship';
+  startChampionshipRound(null);
+}
+function startChampionshipRound(qualifiers) {
+  const kind = state.championship.rounds[state.championship.index];
+  if (RACE_LEVELS[kind]) startRaceLevel(kind, 'championship', qualifiers);
+  else if (kind === 'roll-out') startRollOut('championship', qualifiers);
+  else if (kind === 'showdown') startJumpShowdown('championship', qualifiers);
+  else startHexFinal(qualifiers);
+}
+// The player made it through this round: banner with the next round, then carry the qualifiers over.
+function advanceChampionship(qualifiers) {
+  const c = state.championship, next = c.rounds[c.index + 1];
+  showCelebrationOverlay({
+    type: 'qualified',
+    icon: '🏁',
+    ribbon: `РАУНД ${c.index + 1} ПРОЙДЕН!`,
+    title: 'РАУНД ПРОЙДЕН!',
+    subtitle: `ТЫ ПРОШЁЛ! Дальше — ${roundLabel(c.index + 1, c.rounds.length).toLowerCase()}: ${roundTitle(next)}`,
+    duration: 2.6,
+    onComplete: () => { c.index++; startChampionshipRound(qualifiers); }
+  });
+}
+function startHexFinal(qualifiers) {
+  startMatch(qualifiers ? { qualifiers, musicLevel: 'final' } : { largeField: true, musicLevel: 'final' });
+  state.showMode = 'championship';
+  document.getElementById('countdown-badge').textContent = `ГЕКСА-АРЕНА • ${championshipLabel()}`;
+}
+
+function startRaceLevel(kind, mode = 'single', qualifiers = null) {
   const level = RACE_LEVELS[kind];
-  state.lastMode = kind === 'big-fans' ? mode : kind;
-  startMatch({largeField: mode === 'championship', bigField: kind !== 'gate-crash', musicLevel: 'race'});
+  if (mode !== 'championship') state.lastMode = kind;
+  startMatch(qualifiers ? { qualifiers, musicLevel: 'race' } : {largeField: mode === 'championship', bigField: kind !== 'gate-crash', musicLevel: 'race'});
   state.showMode = mode;
   state.raceLevel = level;
   document.querySelector('.brand-pill .pill-title').textContent = level.title;
@@ -2105,7 +2145,7 @@ function startRaceLevel(kind, mode = 'single') {
   state.targetCamYaw = Math.PI;
   state.camYaw = Math.PI;
   state.camFocusPos.set(state.player.x, 1.3, state.player.z);
-  const badge = state.showMode === 'championship' ? `${level.title} • РАУНД 1` : level.title;
+  const badge = state.showMode === 'championship' ? `${level.title} • ${championshipLabel()}` : level.title;
   document.getElementById('countdown-badge').textContent = badge;
   document.getElementById('countdown-text').textContent = '3';
   document.getElementById('countdown-sub').textContent = level.description;
@@ -2116,7 +2156,7 @@ function updateRaceHUD() {
   const finished = state.actors.filter(a => a.raceFinished).length;
   const quota = Math.max(1, Math.ceil(state.actors.length * .7));
   const level = state.raceLevel;
-  setText('hud-mode-label', state.showMode === 'championship' ? `${level.title} • РАУНД 1` : level.title);
+  setText('hud-mode-label', state.showMode === 'championship' ? `${level.title} • ${championshipLabel()}` : level.title);
   setText('hud-alive', `${finished} / ${quota}`);
   const [done, total] = level.progress(state.race, state.player);
   setText('hud-layer', `${done} / ${total}`);
@@ -2125,25 +2165,12 @@ function updateRaceHUD() {
 function finishRace(result) {
   const qualifiers = result.finished.slice(0, result.quota);
   const playerQualified = qualifiers.includes(state.player);
-  if (state.showMode === 'championship' && playerQualified) {
-    showCelebrationOverlay({
-      type: 'qualified',
-      icon: '🏁',
-      ribbon: 'РАУНД 1 ПРОЙДЕН!',
-      title: 'РАУНД ПРОЙДЕН!',
-      subtitle: 'ТЫ ПРОШЁЛ! Переход в Раунд 2: Вращающиеся барабаны...',
-      duration: 2.4,
-      onComplete: () => {
-        startRollOut('championship_rollout', qualifiers);
-      }
-    });
-    return;
-  }
+  if (state.showMode === 'championship' && playerQualified) { advanceChampionship(qualifiers); return; }
   state.phase = 'gameover';
   const p = state.player;
   const place = result.finished.indexOf(p) + 1;
   const passed = playerQualified;
-  document.getElementById('result-ribbon').textContent = state.showMode === 'championship' ? `${state.raceLevel.title} • РАУНД 1` : state.raceLevel.title;
+  document.getElementById('result-ribbon').textContent = state.showMode === 'championship' ? `${state.raceLevel.title} • ${championshipLabel()}` : state.raceLevel.title;
   document.getElementById('result-title').textContent = passed ? `ВЫ ПРОШЛИ! МЕСТО #${place}` : 'ЗАБЕГ ОКОНЧЕН';
   document.getElementById('result-subtitle').textContent = passed ? 'Вы достигли финиша в числе прошедших!' : 'Квота заполнена или время закончилось. Попробуйте ещё раз!';
   document.getElementById('spot-winner-name').textContent = result.finished[0]?.name || 'Финиширующих нет';
@@ -2194,7 +2221,7 @@ function updateBigFans(dt) {
     showCelebrationOverlay({
       type: 'qualified',
       icon: '🏁',
-      ribbon: state.showMode === 'championship' ? `${state.raceLevel.title} • РАУНД 1` : `${state.raceLevel.title} • ФИНИШ`,
+      ribbon: state.showMode === 'championship' ? `${state.raceLevel.title} • ${championshipLabel()}` : `${state.raceLevel.title} • ФИНИШ`,
       title: 'ФИНИШ!',
       subtitle: `ТЫ ПРОШЁЛ! Место #${place} из ${result.quota} прошедших!`,
       duration: 3.0,
@@ -2239,10 +2266,10 @@ function startRollOut(mode = 'single_rollout', qualifiers = null) {
   });
   state.phase='intro_flyover'; state.countdownTimer=3.2; state.elapsed=0;
   state.camYaw=state.targetCamYaw=Math.PI; state.camFocusPos.set(state.player.x,1.2,state.player.z);
-  document.getElementById('countdown-badge').textContent = mode === 'championship_rollout' ? 'ВРАЩАЮЩИЕСЯ БАРАБАНЫ • РАУНД 2' : 'ВРАЩАЮЩИЕСЯ БАРАБАНЫ • ТЕСТ';
+  document.getElementById('countdown-badge').textContent = mode === 'championship' ? `ВРАЩАЮЩИЕСЯ БАРАБАНЫ • ${championshipLabel()}` : 'ВРАЩАЮЩИЕСЯ БАРАБАНЫ • ТЕСТ';
   document.getElementById('countdown-text').textContent='3';
   document.getElementById('countdown-sub').textContent='Переходите между вращающимися секциями и не падайте!';
-  beginLevelIntro('roll-out', 'ВРАЩАЮЩИЕСЯ БАРАБАНЫ', 'Переходите между вращающимися секциями и не падайте!');
+  beginLevelIntro('roll-out', document.getElementById('countdown-badge').textContent, 'Переходите между вращающимися секциями и не падайте!');
   updateRolloutHUD();
 }
 function updateRolloutHUD() {
@@ -2255,20 +2282,7 @@ function updateRolloutHUD() {
 function finishRollOut() {
   const survivors=state.actors.filter(a=>a.alive);
   const playerAlive = state.player && state.player.alive;
-  if (state.showMode==='championship_rollout' && playerAlive) {
-    showCelebrationOverlay({
-      type: 'qualified',
-      icon: '🏁',
-      ribbon: 'РАУНД 2 ПРОЙДЕН!',
-      title: 'РАУНД ПРОЙДЕН!',
-      subtitle: 'ТЫ ПРОШЁЛ! Переход в финал: Прыжковый финал...',
-      duration: 2.6,
-      onComplete: () => {
-        startJumpShowdown('championship_showdown', survivors);
-      }
-    });
-    return;
-  }
+  if (state.showMode==='championship' && playerAlive) { advanceChampionship(survivors); return; }
   if (playerAlive) {
     showCelebrationOverlay({
       type: 'qualified',
@@ -2593,10 +2607,10 @@ function startJumpShowdown(mode = 'single_showdown', qualifiers = null) {
   state.camYaw = state.targetCamYaw = state.player.facing + Math.PI;
   state.camFocusPos.set(state.player.x, 1.2, state.player.z);
 
-  document.getElementById('countdown-badge').textContent = mode === 'championship_showdown' ? 'ПРЫЖКОВЫЙ ФИНАЛ • ГРАНД-ФИНАЛ' : 'ПРЫЖКОВЫЙ ФИНАЛ • ФИНАЛ';
+  document.getElementById('countdown-badge').textContent = mode === 'championship' ? `ПРЫЖКОВЫЙ ФИНАЛ • ${championshipLabel()}` : 'ПРЫЖКОВЫЙ ФИНАЛ • ФИНАЛ';
   document.getElementById('countdown-text').textContent = '3';
   document.getElementById('countdown-sub').textContent = 'Перепрыгивайте валики и не оставайтесь на падающих секциях!';
-  beginLevelIntro('jump-showdown', 'ПРЫЖКОВЫЙ ФИНАЛ', 'Перепрыгивайте валики и не оставайтесь на падающих секциях!');
+  beginLevelIntro('jump-showdown', document.getElementById('countdown-badge').textContent, 'Перепрыгивайте валики и не оставайтесь на падающих секциях!');
   updateShowdownHUD();
 }
 
@@ -3934,7 +3948,7 @@ function showFinalResultsModal() {
     ? 'ПОБЕДА! КОРОНА ВАША! 👑'
     : `ВЫ ЗАНЯЛИ #${playerPlace} МЕСТО!`;
   document.getElementById('result-subtitle').textContent = isVictory
-    ? 'Блестящая победа на трёхмерной башне Гекса-арена!'
+    ? 'Блестящая победа в гранд-финале шоу!'
     : `Победитель шоу: ${winner ? winner.name : 'Бот'} 👑`;
 
   document.getElementById('spot-winner-name').textContent = winner ? `${winner.name} ${winner.isPlayer ? '(Вы)' : ''}` : 'Чемпион';
@@ -4633,7 +4647,7 @@ nameplateToggle.addEventListener('change', () => {
 });
 
 document.getElementById('btn-level-select').addEventListener('click', () => document.getElementById('level-choices').classList.toggle('hidden'));
-document.getElementById('btn-championship').addEventListener('click', () => startBigFans('championship'));
+document.getElementById('btn-championship').addEventListener('click', () => startChampionship());
 document.getElementById('btn-start-match').addEventListener('click', () => {
   state.lastMode = 'hex'; state.showMode = 'single';
   saveData.playerName = nameInput.value.trim() || 'СуперКубик';
@@ -4641,7 +4655,7 @@ document.getElementById('btn-start-match').addEventListener('click', () => {
   startMatch();
 });
 
-document.getElementById('btn-play-again').addEventListener('click', () => state.lastMode === 'hex' ? startMatch() : state.lastMode === 'single_rollout' ? startRollOut() : state.lastMode === 'single_slime' ? startSlimeClimb() : state.lastMode === 'single_showdown' ? startJumpShowdown() : RACE_LEVELS[state.lastMode] ? startRaceLevel(state.lastMode) : startBigFans(state.lastMode || 'single'));
+document.getElementById('btn-play-again').addEventListener('click', () => state.lastMode === 'championship' ? startChampionship() : state.lastMode === 'hex' ? startMatch() : state.lastMode === 'single_rollout' ? startRollOut() : state.lastMode === 'single_slime' ? startSlimeClimb() : state.lastMode === 'single_showdown' ? startJumpShowdown() : RACE_LEVELS[state.lastMode] ? startRaceLevel(state.lastMode) : startBigFans(state.lastMode || 'single'));
 document.getElementById('btn-door-dash').addEventListener('click', () => startRaceLevel('door-dash'));
 document.getElementById('btn-gate-crash').addEventListener('click', () => startRaceLevel('gate-crash'));
 document.getElementById('btn-see-saw').addEventListener('click', () => startRaceLevel('see-saw'));
@@ -4741,4 +4755,4 @@ requestAnimationFrame(animate);
 
 window.__gameStarted = true;
 // Отладка: ?debug в адресе открывает состояние игры в консоли (window.__game)
-if (new URLSearchParams(location.search).has('debug')) window.__game = { state, music, renderer };
+if (new URLSearchParams(location.search).has('debug')) window.__game = { state, music, renderer, advanceChampionship };
