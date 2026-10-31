@@ -38,6 +38,7 @@ import { SONGS, pickMusic } from './music/songs.mjs';
 import { introFrame } from './presentation/intro.mjs';
 import { planChampionship, roundLabel } from './championship/plan.mjs';
 import { createLobbyBehaviour } from './presentation/lobby-behaviour.mjs';
+import { LEVELS, GROUPS, levelTitle } from './presentation/levels.mjs';
 import { createCubeCharacter } from './characters/cube-character.mjs';
 import { PRINT_CATALOG } from './characters/print-catalog.mjs';
 import { createSky, candyColumn, PALETTE } from './presentation/fg-style.mjs';
@@ -1915,7 +1916,7 @@ function startMatch(options = {}) {
   if (state.rolloutVisuals) { state.rolloutVisuals.dispose(); state.rolloutVisuals = null; }
   state.rollout = null;
   if (slimeSeaMesh) { slimeSeaMesh.material.color.setHex(0xff2a85); slimeSeaMesh.material.emissive.setHex(0xc80055); slimeSeaMesh.position.z = 0; }
-  document.querySelector('.brand-pill .pill-title').textContent='ГЕКСА-АРЕНА 3D';
+  document.querySelector('.brand-pill .pill-title').textContent=levelTitle('hex');
   document.querySelector('.layer-pill .pill-label').textContent='ЯРУС';
   if (state.raceVisuals) { state.raceVisuals.dispose(); state.raceVisuals = null; }
   state.race = null;
@@ -2024,11 +2025,11 @@ function startMatch(options = {}) {
   const cdText = document.getElementById('countdown-text');
   const cdSub = document.getElementById('countdown-sub');
   cdOverlay.classList.remove('hidden');
-  cdBadge.textContent = `БАШНЯ ГЕКСА-АРЕНА: ${config.layersCount} ЯРУСА • ${totalActors} ИГРОКОВ`;
+  cdBadge.textContent = `${levelTitle('hex')}: ${config.layersCount} ЯРУСА • ${totalActors} ИГРОКОВ`;
   cdText.textContent = '👀';
   cdSub.textContent = 'Обзор 3D-арены... Приготовьтесь к старту!';
 
-  beginLevelIntro('hex', 'ГЕКСА-АРЕНА', 'Не падайте с исчезающих платформ!');
+  beginLevelIntro('hex', levelTitle('hex'), 'Не падайте с исчезающих платформ!');
 
   updateHUD();
 }
@@ -2037,7 +2038,7 @@ function startMatch(options = {}) {
 // Все забеги идут по одной схеме (пролёт, отсчёт, квота 70%, финиш); уровень даёт трассу, визуал и правила.
 const RACE_LEVELS = {
   'big-fans': {
-    title: 'БОЛЬШИЕ ВЕНТИЛЯТОРЫ', progressLabel: 'КОНТРОЛЬНЫЕ ТОЧКИ', length: BIG_FANS_COURSE.finish.z,
+    title: levelTitle('big-fans'), progressLabel: 'КОНТРОЛЬНЫЕ ТОЧКИ', length: BIG_FANS_COURSE.finish.z,
     description: 'Доберитесь до финиша через вращающиеся платформы!',
     create: createCourseState, visuals: createCourseVisuals, init: initializeRacer,
     update: (course, actors, dt, elapsed) => updateRace(course, actors, dt, elapsed),
@@ -2045,28 +2046,28 @@ const RACE_LEVELS = {
     floor: (course, actor) => (bigFansSurfaceAt(course, actor.x, actor.z) ? 0 : null)
   },
   'door-dash': {
-    title: 'ДВЕРНОЙ ПРОРЫВ', progressLabel: 'РЯДЫ ДВЕРЕЙ', length: DOOR_DASH_FINISH, limit: DOOR_DASH_LIMIT,
+    title: levelTitle('door-dash'), progressLabel: 'РЯДЫ ДВЕРЕЙ', length: DOOR_DASH_FINISH, limit: DOOR_DASH_LIMIT,
     description: 'Одни двери настоящие, другие — нет. Пробейтесь к финишу!',
     create: () => createDoorDash(Math.floor(Math.random() * 1e9)), visuals: createDoorDashVisuals, init: initRacer,
     update: (course, actors, dt, elapsed) => updateObstacleRace(course, actors, dt, elapsed, { limit: DOOR_DASH_LIMIT }),
     progress: (course, actor) => [course.rows.filter(r => actor.z > r.z).length, course.rows.length]
   },
   'gate-crash': {
-    title: 'ВОРОТА', progressLabel: 'РЯДЫ ВОРОТ', length: GATE_CRASH_FINISH, limit: GATE_CRASH_LIMIT,
+    title: levelTitle('gate-crash'), progressLabel: 'РЯДЫ ВОРОТ', length: GATE_CRASH_FINISH, limit: GATE_CRASH_LIMIT,
     description: 'Проскакивайте, пока ворота опущены, и прыгайте через крутилки!',
     create: createGateCrash, visuals: createGateCrashVisuals, init: initRacer,
     update: (course, actors, dt, elapsed) => updateObstacleRace(course, actors, dt, elapsed, { limit: GATE_CRASH_LIMIT }),
     progress: (course, actor) => [course.rows.filter(r => actor.z > r.z).length, course.rows.length]
   },
   'see-saw': {
-    title: 'КАЧЕЛИ', progressLabel: 'КОНТРОЛЬНЫЕ ТОЧКИ', length: SEE_SAW_FINISH, limit: SEE_SAW_LIMIT,
+    title: levelTitle('see-saw'), progressLabel: 'КОНТРОЛЬНЫЕ ТОЧКИ', length: SEE_SAW_FINISH, limit: SEE_SAW_LIMIT,
     description: 'Качели наклоняются под весом толпы — держите баланс и прыгайте на следующие!',
     create: createSeeSaw, visuals: createSeeSawVisuals, init: initRacer,
     update: (course, actors, dt, elapsed) => updateObstacleRace(course, actors, dt, elapsed, { limit: SEE_SAW_LIMIT }),
     progress: (course, actor) => [actor.seeCheckpoint || 0, 2]
   },
   'roll-on': {
-    title: 'КАТАЮЩИЕСЯ КОЛЬЦА', progressLabel: 'КОНТРОЛЬНЫЕ ТОЧКИ', length: ROLL_ON_FINISH, limit: ROLL_ON_LIMIT,
+    title: levelTitle('roll-on'), progressLabel: 'КОНТРОЛЬНЫЕ ТОЧКИ', length: ROLL_ON_FINISH, limit: ROLL_ON_LIMIT,
     description: 'Кольца крутятся и уносят вбок — обходите дыры, стенки и бамперы!',
     create: createRollOn, visuals: createRollOnVisuals, init: initRacer,
     update: (course, actors, dt, elapsed) => updateObstacleRace(course, actors, dt, elapsed, { limit: ROLL_ON_LIMIT }),
@@ -2078,8 +2079,7 @@ function startBigFans(mode = 'single') { startRaceLevel('big-fans', mode); }
 // ==================== ЧЕМПИОНАТ: 4 РАУНДА С ОТСЕВОМ ====================
 // Порядок раундов — championship/plan.mjs: старт (качели / вентиляторы / кольца), два случайных уровня в середине,
 // гранд-финал (прыжковый финал или гекса-арена). Прошедшие участники переходят в следующий раунд.
-const ROUND_TITLES = { 'roll-out': 'ВРАЩАЮЩИЕСЯ БАРАБАНЫ', showdown: 'ПРЫЖКОВЫЙ ФИНАЛ', hex: 'ГЕКСА-АРЕНА' };
-const roundTitle = kind => RACE_LEVELS[kind]?.title || ROUND_TITLES[kind];
+const roundTitle = levelTitle;
 const championshipLabel = () => roundLabel(state.championship.index, state.championship.rounds.length);
 function startChampionship() {
   state.championship = { rounds: planChampionship(), index: 0 };
@@ -2109,7 +2109,7 @@ function advanceChampionship(qualifiers) {
 function startHexFinal(qualifiers) {
   startMatch(qualifiers ? { qualifiers, musicLevel: 'final' } : { largeField: true, musicLevel: 'final' });
   state.showMode = 'championship';
-  document.getElementById('countdown-badge').textContent = `ГЕКСА-АРЕНА • ${championshipLabel()}`;
+  document.getElementById('countdown-badge').textContent = `${levelTitle('hex')} • ${championshipLabel()}`;
 }
 
 function startRaceLevel(kind, mode = 'single', qualifiers = null) {
@@ -2156,7 +2156,7 @@ function updateRaceHUD() {
   const finished = state.actors.filter(a => a.raceFinished).length;
   const quota = Math.max(1, Math.ceil(state.actors.length * .7));
   const level = state.raceLevel;
-  setText('hud-mode-label', state.showMode === 'championship' ? `${level.title} • ${championshipLabel()}` : level.title);
+  setText('hud-mode-label', state.showMode === 'championship' ? championshipLabel() : 'ГОНКА');
   setText('hud-alive', `${finished} / ${quota}`);
   const [done, total] = level.progress(state.race, state.player);
   setText('hud-layer', `${done} / ${total}`);
@@ -2248,7 +2248,7 @@ function startRollOut(mode = 'single_rollout', qualifiers = null) {
   if (mode === 'single_rollout') state.lastMode = mode;
   startMatch(qualifiers ? {qualifiers, musicLevel: 'survival'} : {largeField:true, bigField:true, musicLevel: 'survival'});
   state.showMode = mode;
-  document.querySelector('.brand-pill .pill-title').textContent='ВРАЩАЮЩИЕСЯ БАРАБАНЫ';
+  document.querySelector('.brand-pill .pill-title').textContent=levelTitle('roll-out');
   document.querySelector('.layer-pill .pill-label').textContent='КВАЛИФИКАЦИЯ';
   stadiumPillars.forEach(pillar => { pillar.visible = false; });
   arenaGroup.clear();
@@ -2266,7 +2266,7 @@ function startRollOut(mode = 'single_rollout', qualifiers = null) {
   });
   state.phase='intro_flyover'; state.countdownTimer=3.2; state.elapsed=0;
   state.camYaw=state.targetCamYaw=Math.PI; state.camFocusPos.set(state.player.x,1.2,state.player.z);
-  document.getElementById('countdown-badge').textContent = mode === 'championship' ? `ВРАЩАЮЩИЕСЯ БАРАБАНЫ • ${championshipLabel()}` : 'ВРАЩАЮЩИЕСЯ БАРАБАНЫ • ТЕСТ';
+  document.getElementById('countdown-badge').textContent = mode === 'championship' ? `${levelTitle('roll-out')} • ${championshipLabel()}` : `${levelTitle('roll-out')} • ВЫЖИВАНИЕ`;
   document.getElementById('countdown-text').textContent='3';
   document.getElementById('countdown-sub').textContent='Переходите между вращающимися секциями и не падайте!';
   beginLevelIntro('roll-out', document.getElementById('countdown-badge').textContent, 'Переходите между вращающимися секциями и не падайте!');
@@ -2274,7 +2274,7 @@ function startRollOut(mode = 'single_rollout', qualifiers = null) {
 }
 function updateRolloutHUD() {
   const count=state.actors.filter(a=>a.alive).length;
-  setText('hud-mode-label', 'ВРАЩАЮЩИЕСЯ БАРАБАНЫ • ВЫЖИВАНИЕ');
+  setText('hud-mode-label', state.showMode === 'championship' ? championshipLabel() : 'ВЫЖИВАНИЕ');
   setText('hud-alive', `${count} / ${state.actors.length}`);
   setText('hud-layer', `${state.rolloutQuota} проходят`);
   setText('hud-timer', formatTime(Math.max(0, ROLLOUT_LIMIT - state.elapsed)));
@@ -2287,7 +2287,7 @@ function finishRollOut() {
     showCelebrationOverlay({
       type: 'qualified',
       icon: '🏁',
-      ribbon: 'ВРАЩАЮЩИЕСЯ БАРАБАНЫ • ВЫЖИВАНИЕ',
+      ribbon: `${levelTitle('roll-out')} • ВЫЖИВАНИЕ`,
       title: 'РАУНД ПРОЙДЕН!',
       subtitle: `ТЫ ПРОШЁЛ! Вы удержались на барабанах! Выжило: ${survivors.length}`,
       duration: 2.6,
@@ -2303,7 +2303,7 @@ function finishRollOut() {
 function showRollOutResultsModal(survivors) {
   state.phase='gameover';
   document.getElementById('spectator-bar').classList.add('hidden');
-  document.getElementById('result-ribbon').textContent='ВРАЩАЮЩИЕСЯ БАРАБАНЫ • ВЫЖИВАНИЕ';
+  document.getElementById('result-ribbon').textContent=`${levelTitle('roll-out')} • ВЫЖИВАНИЕ`;
   document.getElementById('result-title').textContent=state.player.alive?'ВЫ ПРОШЛИ! 🎉':'ВЫ ВЫБЫЛИ';
   document.getElementById('result-subtitle').textContent=`Участников прошло: ${survivors.length} из ${state.actors.length}`;
   document.getElementById('spot-winner-name').textContent=state.player.alive?'Вы удержались!':'Раунд окончен';
@@ -2394,7 +2394,7 @@ function finishSlimeClimb(){
      icon: '🏆',
      ribbon: 'РАУНД 3 ПРОЙДЕН!',
      title: 'КВАЛИФИЦИРОВАН!',
-     subtitle: 'ТЫ В ГРАНД-ФИНАЛЕ! Переход в Прыжковый финал...',
+     subtitle: `ТЫ В ГРАНД-ФИНАЛЕ! Дальше — «${LEVELS.showdown.name}»...`,
      duration: 2.6,
      onComplete: () => {
        startJumpShowdown('championship_showdown', finished);
@@ -2571,7 +2571,7 @@ function startJumpShowdown(mode = 'single_showdown', qualifiers = null) {
   if (mode === 'single_showdown') state.lastMode = mode;
   startMatch(qualifiers ? { qualifiers, musicLevel: 'final' } : { largeField: true, musicLevel: 'final' });
   state.showMode = mode;
-  document.querySelector('.brand-pill .pill-title').textContent = 'ПРЫЖКОВЫЙ ФИНАЛ';
+  document.querySelector('.brand-pill .pill-title').textContent = levelTitle('showdown');
   document.querySelector('.layer-pill .pill-label').textContent = 'ФИНАЛ';
   stadiumPillars.forEach(pillar => { pillar.visible = true; });
   slimeSeaMesh.material.color.setHex(0xff2a85);
@@ -2607,7 +2607,7 @@ function startJumpShowdown(mode = 'single_showdown', qualifiers = null) {
   state.camYaw = state.targetCamYaw = state.player.facing + Math.PI;
   state.camFocusPos.set(state.player.x, 1.2, state.player.z);
 
-  document.getElementById('countdown-badge').textContent = mode === 'championship' ? `ПРЫЖКОВЫЙ ФИНАЛ • ${championshipLabel()}` : 'ПРЫЖКОВЫЙ ФИНАЛ • ФИНАЛ';
+  document.getElementById('countdown-badge').textContent = mode === 'championship' ? `${levelTitle('showdown')} • ${championshipLabel()}` : `${levelTitle('showdown')} • ФИНАЛ`;
   document.getElementById('countdown-text').textContent = '3';
   document.getElementById('countdown-sub').textContent = 'Перепрыгивайте валики и не оставайтесь на падающих секциях!';
   beginLevelIntro('jump-showdown', document.getElementById('countdown-badge').textContent, 'Перепрыгивайте валики и не оставайтесь на падающих секциях!');
@@ -2617,7 +2617,7 @@ function startJumpShowdown(mode = 'single_showdown', qualifiers = null) {
 function updateShowdownHUD() {
   const active = state.actors.filter(a => a.alive).length;
   const remainingSectors = state.showdown ? state.showdown.sectors.filter(s => s.state !== 'dropped').length : 8;
-  setText('hud-mode-label', 'ПРЫЖКОВЫЙ ФИНАЛ • ФИНАЛ');
+  setText('hud-mode-label', state.showMode === 'championship' ? championshipLabel() : 'ФИНАЛ');
   setText('hud-alive', `${active} / ${state.actors.length}`);
   setText('hud-layer', `${remainingSectors} секторов`);
   setText('hud-timer', formatTime(state.elapsed));
@@ -2987,6 +2987,7 @@ function cycleCamPreset() {
 window.addEventListener('keydown', (e) => {
   if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
   keys[e.code] = true;
+  if (e.code === 'Escape' && closeLevelSheet()) return;
   if (state.phase === 'menu') {
     const order = ['play', 'custom', 'season', 'shop', 'settings'];
     if (e.code === 'KeyQ') {
@@ -3303,7 +3304,7 @@ function updateWorld3D(dt, nowSec) {
       const cdSub = document.getElementById('countdown-sub');
       cdBadge.textContent = 'ПРИГОТОВЬТЕСЬ К СТАРТУ!';
       cdText.textContent = '3';
-      cdSub.textContent = 'WASD / Стрелки — бег • ПРОБЕЛ — прыжок • SHIFT — нырок';
+      cdSub.textContent = matchMedia('(pointer: coarse)').matches ? 'Джойстик — бег • кнопки справа — прыжок и нырок' : 'WASD / Стрелки — бег • ПРОБЕЛ — прыжок • SHIFT — нырок';
       sfx.play('count');
     }
     update3DNameplates();
@@ -4402,6 +4403,7 @@ function renderAllLobbyPanels() {
 
 function switchLobbyTab(tabId) {
   lobbyActiveTab = tabId;
+  closeLevelSheet(false);
   document.querySelectorAll('.fg-nav-tab').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tabId);
   });
@@ -4413,11 +4415,11 @@ function switchLobbyTab(tabId) {
   });
 
   const titles = {
-    play: 'ГЛАВНАЯ (ЛОББИ)',
-    custom: 'ГАРДЕРОБ ФАСОЛЬКИ',
-    season: 'СЕЗОН 1 • НАГРАДЫ',
-    shop: 'МАГАЗИН ШОУ',
-    settings: 'НАСТРОЙКИ АРЕНЫ'
+    play: 'ГЛАВНАЯ',
+    custom: 'ГАРДЕРОБ',
+    season: 'НАГРАДЫ СЕЗОНА',
+    shop: 'МАГАЗИН',
+    settings: 'НАСТРОЙКИ'
   };
   document.getElementById('lobby-screen-title').textContent = titles[tabId] || 'ЛОББИ';
 
@@ -4587,6 +4589,8 @@ document.querySelectorAll('.diff-card').forEach(card => {
 document.querySelectorAll('.qm-pill').forEach(pill => {
   pill.addEventListener('click', () => setDifficultyKey(pill.dataset.diff));
 });
+// The markup marks «normal» as chosen; show the saved difficulty instead.
+document.querySelectorAll('.diff-card, .qm-pill').forEach(el => el.classList.toggle('active', el.dataset.diff === state.diffKey));
 
 document.getElementById('btn-watch-ad-kudos').addEventListener('click', () => {
   watchRewardedAd('БОНУС ШОУ: +500 ЛАВРОВ 🟣', () => {
@@ -4646,7 +4650,33 @@ nameplateToggle.addEventListener('change', () => {
   saveGameData();
 });
 
-document.getElementById('btn-level-select').addEventListener('click', () => document.getElementById('level-choices').classList.toggle('hidden'));
+// Single round picker: cards from presentation/levels.mjs; closes on ✕, Esc, a click outside the card or a pick.
+const levelSheet = document.getElementById('level-choices'), levelSelectBtn = document.getElementById('btn-level-select');
+for (const group of GROUPS) {
+  const section = levelSheet.querySelector(`[data-group="${group.id}"]`);
+  section.querySelector('h3').textContent = group.title;
+  section.querySelector('p').textContent = group.hint;
+}
+levelSheet.querySelectorAll('.level-card').forEach(card => {
+  const level = LEVELS[card.dataset.level];
+  card.innerHTML = `<span class="level-card-icon" aria-hidden="true">${level.icon}</span><span class="level-card-text"><strong>${level.name}</strong><small>${level.tagline}</small></span>`;
+  card.addEventListener('click', () => closeLevelSheet(false));
+});
+function openLevelSheet() {
+  levelSheet.classList.remove('hidden');
+  levelSheet.querySelector('.level-card').focus();
+}
+// Returns true when the sheet was open (Esc then only closes it).
+function closeLevelSheet(restoreFocus = true) {
+  const sheet = document.getElementById('level-choices');
+  if (sheet.classList.contains('hidden')) return false;
+  sheet.classList.add('hidden');
+  if (restoreFocus) document.getElementById('btn-level-select').focus();
+  return true;
+}
+levelSelectBtn.addEventListener('click', openLevelSheet);
+document.getElementById('btn-level-close').addEventListener('click', () => closeLevelSheet());
+levelSheet.addEventListener('click', e => { if (e.target === levelSheet) closeLevelSheet(); });
 document.getElementById('btn-championship').addEventListener('click', () => startChampionship());
 document.getElementById('btn-start-match').addEventListener('click', () => {
   state.lastMode = 'hex'; state.showMode = 'single';

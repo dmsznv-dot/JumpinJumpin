@@ -104,7 +104,7 @@
 
         <!-- Center Hint: Rotate Bean on Pedestal -->
         <div class="pedestal-rotate-hint">
-          <span>↺ Зажмите мышь, чтобы покрутить фасолинку на пьедестале ↻</span>
+          <span>↺ Потяни, чтобы покрутить куб ↻</span>
         </div>
 
         <!-- Bottom-Left Player Banner Card -->
@@ -117,20 +117,36 @@
           <button class="pnc-dice" id="btn-random-nick" title="Случайный смешной ник">🎲</button>
         </div>
 
-        <!-- Bottom-Right GIANT ACCENT PLAY! BUTTON -->
+        <!-- Bottom-Right: one primary action (championship), single rounds behind a secondary button -->
         <div class="play-cta-wrap">
-          <div class="play-sub-hint">🏆 Выбери режим игры</div>
+          <div class="play-sub-hint">4 раунда с отсевом • финал за корону</div>
           <button class="fg-giant-play-btn" id="btn-championship"><span class="play-key-circle">🏆</span><span class="play-btn-text">ЧЕМПИОНАТ</span></button>
-          <button class="fg-btn primary-btn" id="btn-level-select" style="margin-top:10px">🎮 ВЫБОР УРОВНЯ</button>
-          <div id="level-choices" class="hidden" style="margin-top:8px">
-            <button class="fg-btn primary-btn" id="btn-big-fans">🌀 БОЛЬШИЕ ВЕНТИЛЯТОРЫ</button>
-            <button class="fg-btn primary-btn" id="btn-start-match">⬡ ГЕКСА-АРЕНА</button>
-            <button class="fg-btn primary-btn" id="btn-door-dash">🚪 ДВЕРНОЙ ПРОРЫВ</button>
-            <button class="fg-btn primary-btn" id="btn-gate-crash">🚧 ВОРОТА</button>
-            <button class="fg-btn primary-btn" id="btn-see-saw">⚖️ КАЧЕЛИ</button>
-            <button class="fg-btn primary-btn" id="btn-roll-on">🛞 КАТАЮЩИЕСЯ КОЛЬЦА</button>
-            <button class="fg-btn primary-btn" id="btn-roll-out">🎡 ВРАЩАЮЩИЕСЯ БАРАБАНЫ — ТЕСТ</button>
-            <button class="fg-btn primary-btn" id="btn-jump-showdown">🎪 ПРЫЖКОВЫЙ ФИНАЛ</button>
+          <button class="lobby-secondary-btn" id="btn-level-select" aria-haspopup="dialog" aria-controls="level-choices">🎮 Отдельный раунд</button>
+        </div>
+
+        <!-- Single round picker: cards grouped by round type, filled from presentation/levels.mjs -->
+        <div id="level-choices" class="level-sheet hidden" role="dialog" aria-modal="true" aria-labelledby="level-sheet-title">
+          <div class="level-sheet-card">
+            <header class="level-sheet-head">
+              <h2 id="level-sheet-title">Отдельный раунд</h2>
+              <button class="level-sheet-close" id="btn-level-close" aria-label="Закрыть">✕</button>
+            </header>
+            <div class="level-sheet-body">
+              <section class="level-group" data-group="race"><h3></h3><p></p><div class="level-grid">
+                <button class="level-card" id="btn-big-fans" data-level="big-fans"></button>
+                <button class="level-card" id="btn-door-dash" data-level="door-dash"></button>
+                <button class="level-card" id="btn-gate-crash" data-level="gate-crash"></button>
+                <button class="level-card" id="btn-see-saw" data-level="see-saw"></button>
+                <button class="level-card" id="btn-roll-on" data-level="roll-on"></button>
+              </div></section>
+              <section class="level-group" data-group="survival"><h3></h3><p></p><div class="level-grid">
+                <button class="level-card" id="btn-roll-out" data-level="roll-out"></button>
+              </div></section>
+              <section class="level-group" data-group="final"><h3></h3><p></p><div class="level-grid">
+                <button class="level-card" id="btn-start-match" data-level="hex"></button>
+                <button class="level-card" id="btn-jump-showdown" data-level="showdown"></button>
+              </div></section>
+            </div>
           </div>
         </div>
       </section>
@@ -175,7 +191,7 @@
       <!-- TAB 3: SEASON PASS & PROGRESSION REWARDS (Like Screenshot 2) -->
       <section class="lobby-tab-pane hidden" id="pane-season">
         <div class="season-info-card">
-          <div class="sic-badge">СЕЗОН 1 • ГЕКСА-АРЕНА</div>
+          <div class="sic-badge">СЕЗОН 1 • ШОУ КУБИКОВ</div>
           <h2 class="sic-title" id="season-featured-title">ЗОЛОТОЙ РЫЦАРЬ</h2>
           <p class="sic-desc">Играйте в шоу, разрушайте соты и побеждайте, чтобы получать опыт славы и открывать редкие цвета и костюмы!</p>
         </div>
@@ -284,7 +300,7 @@
         <div class="pill-card brand-pill">
           <span class="pill-icon">⬡</span>
           <div class="pill-info">
-            <span class="pill-title">ГЕКСА-АРЕНА 3D</span>
+            <span class="pill-title">СОТОВЫЙ ОБВАЛ</span>
             <span class="pill-sub" id="hud-mode-label">Классика шоу</span>
           </div>
         </div>
@@ -382,7 +398,7 @@
     <!-- Intro Flyover & Countdown Overlay -->
     <div class="countdown-overlay hidden" id="countdown-overlay">
       <div class="countdown-card">
-        <div class="countdown-badge" id="countdown-badge">ОБЗОР 3D-БАШНИ ГЕКСА-АРЕНА</div>
+        <div class="countdown-badge" id="countdown-badge">СОТОВЫЙ ОБВАЛ</div>
         <div class="countdown-text" id="countdown-text">3</div>
         <div class="countdown-sub" id="countdown-sub">Не падайте в розовую слизь! Соты восстанавливаются по очереди!</div>
       </div>

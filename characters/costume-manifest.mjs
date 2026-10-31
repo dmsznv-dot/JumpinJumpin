@@ -320,5 +320,145 @@ export const COSTUME_ASSETS = {
     "icon": "🍉",
     "slot": "head",
     "tris": 1376
+  },
+  "prop_alien": {
+    "file": "assets/headwear/alien.glb",
+    "title": "Пришелец-попутчик",
+    "icon": "👽",
+    "slot": "head",
+    "tris": 292
+  },
+  "prop_enemy-ufo-a": {
+    "file": "assets/headwear/enemy-ufo-a.glb",
+    "title": "Летающая тарелка",
+    "icon": "🛸",
+    "slot": "head",
+    "tris": 520
+  },
+  "prop_race": {
+    "file": "assets/headwear/race.glb",
+    "title": "Гоночная машинка",
+    "icon": "🏎️",
+    "slot": "head",
+    "tris": 1952
+  },
+  "prop_character-ghost": {
+    "file": "assets/headwear/character-ghost.glb",
+    "title": "Привидение",
+    "icon": "👻",
+    "slot": "head",
+    "tris": 413
+  },
+  "prop_tree-palm": {
+    "file": "assets/headwear/tree-palm.glb",
+    "title": "Пальма",
+    "icon": "🌴",
+    "slot": "head",
+    "tris": 186
+  },
+  "prop_cactus-tall": {
+    "file": "assets/headwear/cactus-tall.glb",
+    "title": "Кактус",
+    "icon": "🌵",
+    "slot": "head",
+    "tris": 122
+  },
+  "prop_flower-yellowa": {
+    "file": "assets/headwear/flower-yellowa.glb",
+    "title": "Солнечный цветок",
+    "icon": "🌼",
+    "slot": "head",
+    "tris": 76
+  },
+  "prop_ceilingfan": {
+    "file": "assets/headwear/ceilingfan.glb",
+    "title": "Шапка-пропеллер",
+    "icon": "🚁",
+    "slot": "head",
+    "tris": 214
+  },
+  "prop_televisionvintage": {
+    "file": "assets/headwear/televisionvintage.glb",
+    "title": "Ретро-телевизор",
+    "icon": "📺",
+    "slot": "head",
+    "tris": 280
+  },
+  "prop_jewel": {
+    "file": "assets/headwear/jewel.glb",
+    "title": "Самоцвет",
+    "icon": "💎",
+    "slot": "head",
+    "tris": 12
+  },
+  "prop_spring": {
+    "file": "assets/headwear/spring.glb",
+    "title": "Пружинка",
+    "icon": "➰",
+    "slot": "head",
+    "tris": 356
+  },
+  "prop_lantern-candle": {
+    "file": "assets/headwear/lantern-candle.glb",
+    "title": "Фонарь со свечой",
+    "icon": "🏮",
+    "slot": "head",
+    "tris": 224
+  },
+  "prop_flag-pirate": {
+    "file": "assets/headwear/flag-pirate.glb",
+    "title": "Пиратский флаг",
+    "icon": "🏴‍☠️",
+    "slot": "back",
+    "tris": 144
+  },
+  "prop_blaster-a": {
+    "file": "assets/headwear/blaster-a.glb",
+    "title": "Пенный бластер",
+    "icon": "🔫",
+    "slot": "back",
+    "tris": 470
+  },
+  "prop_weapon-sword": {
+    "file": "assets/headwear/weapon-sword.glb",
+    "title": "Рыцарский меч",
+    "icon": "🗡️",
+    "slot": "back",
+    "tris": 80
+  },
+  "prop_banner": {
+    "file": "assets/headwear/banner.glb",
+    "title": "Знамя",
+    "icon": "🚩",
+    "slot": "back",
+    "tris": 200
+  },
+  "prop_radio": {
+    "file": "assets/headwear/radio.glb",
+    "title": "Бумбокс",
+    "icon": "📻",
+    "slot": "back",
+    "tris": 432
+  },
+  "prop_target-large": {
+    "file": "assets/headwear/target-large.glb",
+    "title": "Мишень",
+    "icon": "🎯",
+    "slot": "back",
+    "tris": 84
+  },
+  "prop_rover": {
+    "file": "assets/headwear/rover.glb",
+    "title": "Луноход",
+    "icon": "🛰️",
+    "slot": "head",
+    "tris": 172
+  },
+  "prop_astronauta": {
+    "file": "assets/headwear/astronauta.glb",
+    "title": "Космонавт",
+    "icon": "🧑‍🚀",
+    "slot": "head",
+    "tris": 296
   }
 };

@@ -1,0 +1,129 @@
+{
+ "alien": {
+  "src": "alien",
+  "slot": "head"
+ },
+ "enemy-ufo-a": {
+  "src": "enemy-ufo-a",
+  "slot": "head"
+ },
+ "race": {
+  "src": "race",
+  "slot": "head",
+  "scale": 1.25
+ },
+ "character-ghost": {
+  "src": "character-ghost",
+  "slot": "head"
+ },
+ "tree-palm": {
+  "src": "tree-palm",
+  "slot": "head"
+ },
+ "cactus-tall": {
+  "src": "cactus-tall",
+  "slot": "head",
+  "scale": 0.9
+ },
+ "flower-yellowa": {
+  "src": "flower-yellowa",
+  "slot": "head",
+  "scale": 0.85
+ },
+ "ceilingfan": {
+  "src": "ceilingfan",
+  "slot": "head",
+  "rotate": [
+   180,
+   0,
+   0
+  ]
+ },
+ "televisionvintage": {
+  "src": "televisionvintage",
+  "slot": "head",
+  "scale": 0.9
+ },
+ "jewel": {
+  "src": "jewel",
+  "slot": "head",
+  "scale": 0.8
+ },
+ "spring": {
+  "src": "spring",
+  "slot": "head",
+  "scale": 0.85
+ },
+ "lantern-candle": {
+  "src": "lantern-candle",
+  "slot": "head",
+  "scale": 0.9
+ },
+ "flag-pirate": {
+  "src": "flag-pirate",
+  "slot": "back",
+  "scale": 1.5,
+  "lift": 0.4,
+  "rotate": [
+   0,
+   180,
+   0
+  ]
+ },
+ "blaster-a": {
+  "src": "blaster-a",
+  "slot": "back",
+  "rotate": [
+   0,
+   90,
+   40
+  ],
+  "scale": 1.2
+ },
+ "weapon-sword": {
+  "src": "weapon-sword",
+  "slot": "back",
+  "rotate": [
+   0,
+   0,
+   40
+  ],
+  "scale": 1.3
+ },
+ "banner": {
+  "src": "banner",
+  "slot": "back",
+  "rotate": [
+   0,
+   180,
+   0
+  ]
+ },
+ "radio": {
+  "src": "radio",
+  "slot": "back",
+  "rotate": [
+   0,
+   180,
+   0
+  ]
+ },
+ "target-large": {
+  "src": "target-large",
+  "slot": "back",
+  "rotate": [
+   0,
+   -90,
+   0
+  ]
+ },
+ "rover": {
+  "src": "rover",
+  "slot": "head",
+  "scale": 1.1
+ },
+ "astronauta": {
+  "src": "astronauta",
+  "slot": "head"
+ }
+}
