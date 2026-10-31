@@ -4269,7 +4269,7 @@ function handleSelectOrUnlockCostume(cos) {
   }
 
   if (cos.unlockType === 'ad') {
-    watchRewardedAd(`ОТКРЫВАЕМ ПРЕДМЕТ НА ГОЛОВУ: ${cos.title}`, () => {
+    watchRewardedAd(`ОТКРЫВАЕМ АКСЕССУАР: ${cos.title}`, () => {
       if (!saveData.unlockedCostumes.includes(cos.id)) saveData.unlockedCostumes.push(cos.id);
       saveData.selectedCostumeId = cos.id;
       saveGameData();
@@ -4416,7 +4416,7 @@ function renderAllLobbyPanels() {
       const card = document.createElement('div');
       card.className = 'fg-shop-card';
       card.innerHTML = `
-        <div class="shop-card-top">${cos.rarity} • ПРЕДМЕТ НА ГОЛОВУ</div>
+        <div class="shop-card-top">${cos.rarity} • ${cos.sub.toUpperCase()}</div>
         <div class="shop-card-body">
           <div class="shop-preview-swatch" style="background:linear-gradient(135deg,#ff2a85,#7c4dff)">${cos.icon}</div>
           <strong style="font-size:14px">${cos.title}</strong>

@@ -5,7 +5,7 @@ export const CUBE_COSMETICS = [
   ...Object.entries(COSTUME_ASSETS)
 ].map(([hat,item]) => ({
   id:'hat_'+hat, hat, title:item.title, icon:item.icon, full:false,
-  sub:hat==='none'?'':'Предмет на голову', rarity:'ОБЫЧНЫЙ', unlockType:'free', cost:0
+  slot:item.slot, sub:hat==='none'?'':item.slot==='back'?'Предмет на спину':'Предмет на голову', rarity:'ОБЫЧНЫЙ', unlockType:'free', cost:0
 }));
 
 const geometryByFile = new Map();
