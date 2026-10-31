@@ -59,7 +59,7 @@ function visitModule(file, from) {
 }
 
 add('index.html', 'root');
-for (const file of ['assets/costumes/LICENSE.md','assets/costumes/CC-BY-4.0.txt','characters/PRINT-LICENSE.md']) add(file,'asset attribution');
+for (const file of ['assets/headwear/LICENSE.md','characters/PRINT-LICENSE.md']) add(file,'asset attribution');
 for (const [, tag, url] of html.matchAll(/<(script|link)\b[^>]*?\b(?:src|href)="([^"]+)"/g)) {
   if (external(url)) continue;
   if (tag === 'script') visitModule(url, 'index.html'); else visitAsset(url, 'index.html');

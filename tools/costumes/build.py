@@ -249,7 +249,7 @@ def build(cid, spec, info=False):
 
 
 def write_manifest(entries):
-    path = os.path.join(ROOT, 'characters', 'costume-manifest.mjs')
+    path = os.path.join(HERE, 'backlog', 'costume-manifest.mjs')
     old = {}
     if os.path.exists(path):
         text = open(path).read()

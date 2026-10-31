@@ -19,8 +19,14 @@ export function createCubeCharacter(THREE, {shadowTexture=null,skin=null}={}) {
     const shin=bone(side+'Shin',leg,0,-.15,0);
     bone(side+'Foot',shin,0,-.14,0);
   }
+  const finishes = {
+    gold:{metalness:.82,roughness:.24}, silver:{metalness:.9,roughness:.19},
+    chrome:{metalness:.97,roughness:.09}, pearl:{metalness:.36,roughness:.21,
+      iridescence:1,iridescenceIOR:1.55,iridescenceThicknessRange:[180,560],clearcoat:.75}
+  };
+  const finish=finishes[skin?.finish];
   const mats={
-    shell:new THREE.MeshStandardMaterial({color:0xffdb20,roughness:.5}),
+    shell:finish ? new THREE.MeshPhysicalMaterial({color:0xffdb20,...finish}) : new THREE.MeshStandardMaterial({color:0xffdb20,roughness:.5}),
     skin:new THREE.MeshStandardMaterial({color:0xf7cdac,roughness:.62}),
     shoe:new THREE.MeshStandardMaterial({color:0xf2596e,roughness:.5}),
     dark:new THREE.MeshStandardMaterial({color:0x292e31,roughness:.48})

@@ -113,14 +113,14 @@ const LAYER_THEMES = [
 
 // ==================== КАТАЛОГ ЦВЕТОВЫХ ПАЛИТР, ПАТТЕРНОВ И ПОЛНЫХ КОСТЮМОВ (FALL GUYS) ====================
 const COLOR_PALETTES = [
-  { id: 'c_pink_yellow', title: 'Розовый Фламинго',   c1: 0xff2a85, c2: 0xffe600, css1: '#ff2a85', css2: '#ffe600', defaultPat: 'pat_belly',     rarity: 'ОБЫЧНЫЙ',    unlockType: 'free',   cost: 0 },
-  { id: 'c_cyan_blue',   title: 'Неоновая Лазурь',    c1: 0x00e5ff, c2: 0x1e40af, css1: '#00e5ff', css2: '#1e40af', defaultPat: 'pat_stripes',   rarity: 'ОБЫЧНЫЙ',    unlockType: 'free',   cost: 0 },
-  { id: 'c_lime_choco',  title: 'Мятный Пончик',      c1: 0x00e676, c2: 0x3e2723, css1: '#00e676', css2: '#3e2723', defaultPat: 'pat_polka',     rarity: 'ОБЫЧНЫЙ',    unlockType: 'free',   cost: 0 },
-  { id: 'c_orange_cyan', title: 'Светофор Тусовки',   c1: 0xff9100, c2: 0x00e5ff, css1: '#ff9100', css2: '#00e5ff', defaultPat: 'pat_flames',    rarity: 'РЕДКИЙ',     unlockType: 'ad',     cost: 0 },
-  { id: 'c_purple_lime', title: 'Кибер-Виноград',     c1: 0xd500f9, c2: 0x76ff03, css1: '#d500f9', css2: '#76ff03', defaultPat: 'pat_lightning', rarity: 'РЕДКИЙ',     unlockType: 'ad',     cost: 0 },
-  { id: 'c_red_white',   title: 'Клубничный Крем',    c1: 0xff1744, c2: 0xffffff, css1: '#ff1744', css2: '#ffffff', defaultPat: 'pat_stars',     rarity: 'РЕДКИЙ',     unlockType: 'kudos',  cost: 400 },
-  { id: 'c_aqua_pink',   title: 'Сахарная Вата',      c1: 0x26c6da, c2: 0xff80ab, css1: '#26c6da', css2: '#ff80ab', defaultPat: 'pat_rings',     rarity: 'ЭПИЧЕСКИЙ',  unlockType: 'kudos',  cost: 800 },
-  { id: 'c_gold_ruby',   title: 'Королевское Золото', c1: 0xffd700, c2: 0xb71c1c, css1: '#ffd700', css2: '#b71c1c', defaultPat: 'pat_diamonds',  rarity: 'ЛЕГЕНДА',    unlockType: 'crowns', cost: 1 }
+  { id: 'c_pink_yellow', title: 'Розовый Фламинго',   c1: 0xff2a85, c2: 0xffe600, css1: '#ff2a85', css2: '#ffe600', rarity: 'ОБЫЧНЫЙ',    unlockType: 'free',   cost: 0 },
+  { id: 'c_cyan_blue',   title: 'Неоновая Лазурь',    c1: 0x00e5ff, c2: 0x1e40af, css1: '#00e5ff', css2: '#1e40af', rarity: 'ОБЫЧНЫЙ',    unlockType: 'free',   cost: 0 },
+  { id: 'c_lime_choco',  title: 'Мятный Пончик',      c1: 0x00e676, c2: 0x3e2723, css1: '#00e676', css2: '#3e2723', rarity: 'ОБЫЧНЫЙ',    unlockType: 'free',   cost: 0 },
+  { id: 'c_orange_cyan', title: 'Светофор Тусовки',   c1: 0xff9100, c2: 0x00e5ff, css1: '#ff9100', css2: '#00e5ff', rarity: 'РЕДКИЙ',     unlockType: 'ad',     cost: 0 },
+  { id: 'c_purple_lime', title: 'Кибер-Виноград',     c1: 0xd500f9, c2: 0x76ff03, css1: '#d500f9', css2: '#76ff03', rarity: 'РЕДКИЙ',     unlockType: 'ad',     cost: 0 },
+  { id: 'c_red_white',   title: 'Клубничный Крем',    c1: 0xff1744, c2: 0xffffff, css1: '#ff1744', css2: '#ffffff', rarity: 'РЕДКИЙ',     unlockType: 'kudos',  cost: 400 },
+  { id: 'c_aqua_pink',   title: 'Сахарная Вата',      c1: 0x26c6da, c2: 0xff80ab, css1: '#26c6da', css2: '#ff80ab', rarity: 'ЭПИЧЕСКИЙ',  unlockType: 'kudos',  cost: 800 },
+  { id: 'c_gold_ruby',   title: 'Королевское Золото', c1: 0xffd700, c2: 0xb71c1c, css1: '#ffd700', css2: '#b71c1c', rarity: 'ЛЕГЕНДА',    unlockType: 'crowns', cost: 1 }
 ];
 
 // Additional selectable two-colour palettes.
@@ -141,9 +141,22 @@ const COLOR_PALETTES = [
  ['c_sand','Песок и море',0xe9c47a,0x36b1a7]
 ].forEach(([id,title,c1,c2]) => COLOR_PALETTES.push({id,title,c1,c2,
  css1:'#'+c1.toString(16).padStart(6,'0'),css2:'#'+c2.toString(16).padStart(6,'0'),
- defaultPat:'pat_belly',rarity:'ОБЫЧНЫЙ',unlockType:'free',cost:0}));
+ rarity:'ОБЫЧНЫЙ',unlockType:'free',cost:0}));
 
-COLOR_PALETTES.unshift({id:'c_cube_yellow',title:'Солнечный куб',c1:0xffdb20,c2:0xf53867,css1:'#ffdb20',css2:'#f53867',defaultPat:'pat_plain',rarity:'ОБЫЧНЫЙ',unlockType:'free',cost:0});
+// Special finishes use the same two independent colour channels as matte palettes.
+for (const [id,title,c1,c2,finish] of [
+  ['gold_ink','Золото и чернила',0xffc458,0x242337,'gold'],
+  ['silver_ice','Серебро и лёд',0xe0e8f0,0x508ed4,'silver'],
+  ['rose_gold','Розовое золото и слива',0xf3ac97,0x693451,'gold'],
+  ['mirror','Зеркальный хром и кобальт',0xe6f4ff,0x3849c3,'chrome'],
+  ['aurora','Аврора и мята',0x82a5ff,0x78ffc4,'pearl'],
+  ['opal','Опал и сирень',0xffebd7,0xab83db,'pearl']
+]) {
+  COLOR_PALETTES.push({id:'c_'+id,title,c1,c2,finish,
+    css1:'#'+c1.toString(16).padStart(6,'0'),css2:'#'+c2.toString(16).padStart(6,'0'),
+    unlockType:'free',cost:0,rarity:'ОСОБЫЙ'});
+}
+COLOR_PALETTES.unshift({id:'c_cube_yellow',title:'Солнечный куб',c1:0xffdb20,c2:0xf53867,css1:'#ffdb20',css2:'#f53867',rarity:'ОБЫЧНЫЙ',unlockType:'free',cost:0});
 
 const PATTERN_ITEMS = [
   {id:'pat_plain',title:'Чистый цвет',icon:'🟨',pattern:'plain',rarity:'ОБЫЧНЫЙ',unlockType:'free',cost:0},
@@ -171,30 +184,18 @@ const SEASON_TIERS = [
   { level: 1, xpReq: 0,    title: 'Старт Сезона',       icon: '🟨', rewardText: 'Солнечный куб' },
   { level: 2, xpReq: 300,  title: 'Бонус Лавров',       icon: '🟣', rewardText: '+300 Лавров' },
   { level: 3, xpReq: 700,  title: 'Карамельные волны',  icon: '🌊', rewardText: 'Принт «Карамельные волны»' },
-  { level: 4, xpReq: 1200, title: 'Кубозавр',           icon: '🦖', rewardText: 'Полный костюм' },
+  { level: 4, xpReq: 1200, title: 'Двойной чизбургер', icon: '🍔', rewardText: 'Предмет на голову' },
   { level: 5, xpReq: 1800, title: 'Кубок Чемпиона',     icon: '👑', rewardText: '+1 Корона' },
-  { level: 6, xpReq: 2500, title: 'Мастер киянки',     icon: '🔨', rewardText: 'Аксессуар за спиной' },
-  { level: 7, xpReq: 3500, title: 'Император Короны',   icon: '🏆', rewardText: 'Золотая корона' }
+  { level: 6, xpReq: 2500, title: 'Именинный торт', icon: '🎂', rewardText: 'Предмет на голову' },
+  { level: 7, xpReq: 3500, title: 'Чемпион сезона', icon: '🏆', rewardText: 'Золотая корона' }
 ];
 
 // Разнообразные скины ботов (с 1 и 2 глазами-очками миньона, разными паттернами и полными костюмами)
-const SKINS = [
-  { id: 0, title: 'Кубозавр',           icon: '🦖', c1: 0x00e676, c2: 0xffe600, css1: '#00e676', css2: '#ffe600', pattern: 'stripes',   hat: 'dino',      eyeCount: 2 },
-  { id: 1, title: 'Сочный Хот-Дог',     icon: '🌭', c1: 0xff2a85, c2: 0xffe600, css1: '#ff2a85', css2: '#ffe600', pattern: 'belly',     hat: 'hotdog',    eyeCount: 1 },
-  { id: 2, title: 'Капитан Пират',      icon: '🏴‍☠️', c1: 0x00e5ff, c2: 0x1e40af, css1: '#00e5ff', css2: '#1e40af', pattern: 'stripes',   hat: 'pirate',    eyeCount: 1 },
-  { id: 3, title: 'Строитель',          icon: '👷', c1: 0xff9100, c2: 0xffffff, css1: '#ff9100', css2: '#ffffff', pattern: 'polka',     hat: 'hardhat',   eyeCount: 2 },
-  { id: 4, title: 'Кубонавт',           icon: '👩‍🚀', c1: 0xd500f9, c2: 0x76ff03, css1: '#d500f9', css2: '#76ff03', pattern: 'stars',     hat: 'astronaut', eyeCount: 1 },
-  { id: 5, title: 'Мастер киянки',     icon: '🔨', c1: 0xff1744, c2: 0xffd700, css1: '#ff1744', css2: '#ffd700', pattern: 'flames',    hat: 'mallet',   eyeCount: 2 },
-  { id: 6, title: 'Верховный Чародей',  icon: '🧙‍♂️', c1: 0x26c6da, c2: 0xff80ab, css1: '#26c6da', css2: '#ff80ab', pattern: 'stars',     hat: 'wizard',    eyeCount: 2 },
-  { id: 7, title: 'Тропический Ананас', icon: '🍍', c1: 0xffd700, c2: 0x00e676, css1: '#ffd700', css2: '#00e676', pattern: 'diamonds',  hat: 'pineapple', eyeCount: 1 },
-  { id: 8, title: 'Император Короны',   icon: '👑', c1: 0xffd700, c2: 0xb71c1c, css1: '#ffd700', css2: '#b71c1c', pattern: 'diamonds',  hat: 'king',      eyeCount: 2 },
-  // Костюмы из ассетов SimReady (цвета берутся из самого костюма, принт не нужен)
-  { id: 9,  title: 'Бананокуб',  icon: '🍌', c1: 0xffd93b, c2: 0xffffff, css1: '#ffd93b', css2: '#ffffff', pattern: 'plain', hat: 'banana', eyeCount: 2 },
-  { id: 10, title: 'Круассан',   icon: '🥐', c1: 0xff8fc8, c2: 0xffffff, css1: '#ff8fc8', css2: '#ffffff', pattern: 'plain', hat: 'croissant',  eyeCount: 2 },
-  { id: 11, title: 'Кукурузка',  icon: '🌽', c1: 0xffd93b, c2: 0xffffff, css1: '#ffd93b', css2: '#ffffff', pattern: 'plain', hat: 'corn',   eyeCount: 1 },
-  { id: 12, title: 'Бочка',      icon: '🛢️', c1: 0x3a7bd5, c2: 0xffffff, css1: '#3a7bd5', css2: '#ffffff', pattern: 'plain', hat: 'barrel', eyeCount: 2 },
-  { id: 13, title: 'Коробка',    icon: '📦', c1: 0xc8925a, c2: 0xffffff, css1: '#c8925a', css2: '#ffffff', pattern: 'plain', hat: 'box',    eyeCount: 1 }
-];
+const SKINS = COSTUME_ITEMS.slice(1).map((item, index) => {
+  const palette = COLOR_PALETTES[index % COLOR_PALETTES.length];
+  return {...palette,id:index,title:item.title,icon:item.icon,hat:item.hat,
+    pattern:PATTERN_ITEMS[index % PATTERN_ITEMS.length].pattern,eyeCount:index % 3 === 0 ? 1 : 2};
+});
 
 function getPlayerComposedSkin() {
   const col = COLOR_PALETTES.find(c => c.id === saveData.selectedColorId) || COLOR_PALETTES[0];
@@ -205,6 +206,7 @@ function getPlayerComposedSkin() {
     icon: cos.icon,
     c1: col.c1,
     c2: col.c2,
+    finish: col.finish,
     css1: col.css1,
     css2: col.css2,
     pattern: pat.pattern,
@@ -908,7 +910,7 @@ function loadSaveData() {
     selectedCostumeId: 'hat_none',
     unlockedColors: ['c_pink_yellow', 'c_cyan_blue', 'c_lime_choco'],
     unlockedPatterns: ['pat_belly', 'pat_stripes', 'pat_polka'],
-    unlockedCostumes: ['hat_none', 'hat_dino'],
+    unlockedCostumes: ['hat_none'],
     difficulty: 'normal',
     crowns: 0,
     kudos: 350,
@@ -4186,19 +4188,9 @@ function getUnlockBadgeText(item, unlocked) {
   return 'Закрыто';
 }
 
-function applyColorWithDefaultPattern(col) {
-  saveData.selectedColorId = col.id;
-  if (col.defaultPat) {
-    const patObj = PATTERN_ITEMS.find(p => p.id === col.defaultPat);
-    if (patObj && isPatternUnlocked(patObj)) {
-      saveData.selectedPatternId = patObj.id;
-    }
-  }
-}
-
 function handleSelectOrUnlockColor(col) {
   if (isColorUnlocked(col)) {
-    applyColorWithDefaultPattern(col);
+    saveData.selectedColorId = col.id;
     saveGameData();
     sfx.play('step');
     rebuildLobbyBeanModel();
@@ -4209,10 +4201,7 @@ function handleSelectOrUnlockColor(col) {
   if (col.unlockType === 'ad') {
     watchRewardedAd(`ОТКРЫВАЕМ РАСЦВЕТКУ: ${col.title}`, () => {
       if (!saveData.unlockedColors.includes(col.id)) saveData.unlockedColors.push(col.id);
-      if (col.defaultPat && !saveData.unlockedPatterns.includes(col.defaultPat)) {
-        saveData.unlockedPatterns.push(col.defaultPat);
-      }
-      applyColorWithDefaultPattern(col);
+      saveData.selectedColorId = col.id;
       saveGameData();
       rebuildLobbyBeanModel();
       renderAllLobbyPanels();
@@ -4221,10 +4210,7 @@ function handleSelectOrUnlockColor(col) {
     if ((saveData.kudos || 0) >= col.cost) {
       saveData.kudos -= col.cost;
       saveData.unlockedColors.push(col.id);
-      if (col.defaultPat && !saveData.unlockedPatterns.includes(col.defaultPat)) {
-        saveData.unlockedPatterns.push(col.defaultPat);
-      }
-      applyColorWithDefaultPattern(col);
+      saveData.selectedColorId = col.id;
       saveGameData();
       sfx.play('powerup');
       rebuildLobbyBeanModel();
@@ -4283,7 +4269,7 @@ function handleSelectOrUnlockCostume(cos) {
   }
 
   if (cos.unlockType === 'ad') {
-    watchRewardedAd(`ОТКРЫВАЕМ ПОЛНЫЙ КОСТЮМ: ${cos.title}`, () => {
+    watchRewardedAd(`ОТКРЫВАЕМ ПРЕДМЕТ НА ГОЛОВУ: ${cos.title}`, () => {
       if (!saveData.unlockedCostumes.includes(cos.id)) saveData.unlockedCostumes.push(cos.id);
       saveData.selectedCostumeId = cos.id;
       saveGameData();
@@ -4326,18 +4312,17 @@ function renderAllLobbyPanels() {
     COLOR_PALETTES.forEach(col => {
       const unlocked = isColorUnlocked(col);
       const isSelected = saveData.selectedColorId === col.id;
-      const patObj = PATTERN_ITEMS.find(p => p.id === col.defaultPat);
       const btn = document.createElement('div');
       btn.className = 'fg-color-tile' + (isSelected ? ' active' : '');
       btn.style.setProperty('--c1', col.css1);
       btn.style.setProperty('--c2', col.css2);
       btn.innerHTML = `
         ${isSelected ? '<div class="tile-check-badge">✓</div>' : ''}
-        <div style="position:absolute;top:6px;left:8px;font-size:16px;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.5))">${patObj ? patObj.icon : '🎨'}</div>
+        <div style="position:absolute;top:6px;left:8px;font-size:16px;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.5))">${col.finish ? '✦' : '🎨'}</div>
         ${!unlocked ? `<div class="tile-lock-tag">${getUnlockBadgeText(col, false)}</div>` : `<div class="tile-lock-tag" style="background:rgba(0,0,0,0.45);color:#fff">${col.title}</div>`}
       `;
       btn.addEventListener('click', () => {
-        document.getElementById('custom-selected-title').textContent = `${col.title} (${patObj ? patObj.title : 'Узор'})`;
+        document.getElementById('custom-selected-title').textContent = col.title;
         document.getElementById('custom-selected-rarity').textContent = col.rarity;
         handleSelectOrUnlockColor(col);
       });
@@ -4425,13 +4410,13 @@ function renderAllLobbyPanels() {
   if (featRow) {
     featRow.innerHTML = '';
     let featuredCostumes = COSTUME_ITEMS.filter(c => c.unlockType === 'crowns').slice(0, 3);
-    if (!featuredCostumes.length) featuredCostumes = COSTUME_ITEMS.filter(c => c.full).slice(0, 3);
+    if (!featuredCostumes.length) featuredCostumes = COSTUME_ITEMS.filter(c => c.hat !== 'none').slice(0, 3);
     featuredCostumes.forEach(cos => {
       const unlocked = isCostumeUnlocked(cos);
       const card = document.createElement('div');
       card.className = 'fg-shop-card';
       card.innerHTML = `
-        <div class="shop-card-top">${cos.rarity} • ПОЛНЫЙ КОСТЮМ</div>
+        <div class="shop-card-top">${cos.rarity} • ПРЕДМЕТ НА ГОЛОВУ</div>
         <div class="shop-card-body">
           <div class="shop-preview-swatch" style="background:linear-gradient(135deg,#ff2a85,#7c4dff)">${cos.icon}</div>
           <strong style="font-size:14px">${cos.title}</strong>

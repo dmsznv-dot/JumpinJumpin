@@ -15,7 +15,7 @@ parser.add_argument('--cache', required=True)
 parser.add_argument('ids', nargs='*')
 args=parser.parse_args()
 specs=json.load(open(os.path.join(HERE,'props.json')))
-manifest_path=os.path.join(ROOT,'characters','costume-manifest.mjs')
+manifest_path=os.path.join(HERE,'backlog','costume-manifest.mjs')
 old=open(manifest_path).read()
 manifest=json.loads(old[old.index('{'):old.rindex('}')+1])
 for cid,spec in specs.items():
